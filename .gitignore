@@ -4,3 +4,6 @@ dist
 .turbo
 coverage
 *.tsbuildinfo
+GIGAWIKI_V2_TASKS.md
+GIGAWIKI_V2_TECH_STACK.md
+.idea
