@@ -1,0 +1,81 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+}
+
+// ENUMS
+enum Role {
+    ADMIN
+    EDITOR
+    GUEST
+}
+
+enum Visibility {
+    PUBLIC
+    PRIVATE
+}
+
+enum ActivityType {
+    CREATED
+    UPDATED
+    DELETED
+    COMMENTED
+    REPLIED
+    RESTORED
+}
+
+enum ResourceType {
+    PAGE
+    PROJECT
+    SECTION
+    SUBJECT
+}
+
+enum ImageType {
+    COVER
+    AVATAR
+    INLINE
+}
+
+// User
+model User {
+    id              String    @id @default(cuid())
+    name            String
+    email           String    @unique
+    emailVerifiedAt DateTime?
+    emailConfirmed  Boolean   @default(false)
+    password        String
+    slug            String    @unique
+    role            Role      @default(GUEST)
+    avatarId        String?
+    avatar          Image?    @relation("UserAvatar", fields: [avatarId], references: [id])
+    createdAt       DateTime  @default(now())
+    updatedAt       DateTime  @updatedAt
+
+    imagesUploaded  Image[]   @relation("ImageCreatedBy")
+    imagesUpdated   Image[]   @relation("ImageUpdatedBy")
+
+    @@map("users")
+}
+
+model Image {
+    id          String    @id @default(cuid())
+    name        String
+    url         String
+    path        String
+    type        ImageType
+    createdById String
+    updatedById String?
+    createdBy   User      @relation("ImageCreatedBy", fields: [createdById], references: [id])
+    updatedBy   User?     @relation("ImageUpdatedBy", fields: [updatedById], references: [id])
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
+
+    // Back-relations
+    userAvatars User[]    @relation("UserAvatar")
+
+    @@map("images")
+}
