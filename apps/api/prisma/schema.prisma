@@ -1,5 +1,6 @@
 generator client {
-    provider = "prisma-client-js"
+    provider        = "prisma-client-js"
+    previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -40,26 +41,46 @@ enum ImageType {
     INLINE
 }
 
-// User
-model User {
-    id              String    @id @default(cuid())
-    name            String
-    email           String    @unique
-    emailVerifiedAt DateTime?
-    emailConfirmed  Boolean   @default(false)
-    password        String
-    slug            String    @unique
-    role            Role      @default(GUEST)
-    avatarId        String?
-    avatar          Image?    @relation("UserAvatar", fields: [avatarId], references: [id])
-    createdAt       DateTime  @default(now())
-    updatedAt       DateTime  @updatedAt
+// ─────────────────────────────────────────────
+// USER
+// ─────────────────────────────────────────────
 
-    imagesUploaded  Image[]   @relation("ImageCreatedBy")
-    imagesUpdated   Image[]   @relation("ImageUpdatedBy")
+model User {
+    id                String    @id @default(cuid())
+    name              String
+    email             String    @unique
+    emailVerifiedAt   DateTime?
+    emailConfirmed    Boolean   @default(false)
+    password          String
+    slug              String    @unique
+    role              Role      @default(GUEST)
+    avatarId          String?
+    avatar            Image?    @relation("UserAvatar", fields: [avatarId], references: [id])
+    createdAt         DateTime  @default(now())
+    updatedAt         DateTime  @updatedAt
+
+    // Relations
+    subjects          Subject[]
+    projects          Project[]
+    pagesCreated      Page[]         @relation("PageCreatedBy")
+    pagesUpdated      Page[]         @relation("PageUpdatedBy")
+    pagesOwned        Page[]         @relation("PageOwnedBy")
+    revisions         Revision[]
+    comments          Comment[]
+    tags              Tag[]
+    favorites         Favorite[]
+    views             View[]
+    activities        Activity[]
+    imagesUploaded    Image[]        @relation("ImageCreatedBy")
+    imagesUpdated     Image[]        @relation("ImageUpdatedBy")
+    invitesSent       EmailInvite[]  @relation("InviteSentBy")
 
     @@map("users")
 }
+
+// ─────────────────────────────────────────────
+// IMAGE
+// ─────────────────────────────────────────────
 
 model Image {
     id          String    @id @default(cuid())
@@ -76,6 +97,367 @@ model Image {
 
     // Back-relations
     userAvatars User[]    @relation("UserAvatar")
+    subjects    Subject[]
+    projects    Project[]
 
     @@map("images")
+}
+
+// ─────────────────────────────────────────────
+// SUBJECT
+// ─────────────────────────────────────────────
+
+model Subject {
+    id          String     @id @default(cuid())
+    userId      String
+    user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+    name        String     @unique @db.VarChar(100)
+    slug        String     @unique
+    description String?
+    imageId     String?
+    image       Image?     @relation(fields: [imageId], references: [id], onDelete: SetNull)
+    visibility  Visibility @default(PUBLIC)
+    deletedAt   DateTime?
+    createdAt   DateTime   @default(now())
+    updatedAt   DateTime   @updatedAt
+
+    // Relations
+    projects    Project[]
+
+    @@index([slug])
+    @@index([userId])
+    @@index([deletedAt])
+    @@map("subjects")
+}
+
+// ─────────────────────────────────────────────
+// PROJECT
+// ─────────────────────────────────────────────
+
+model Project {
+    id          String     @id @default(cuid())
+    userId      String
+    user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+    subjectId   String
+    subject     Subject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+    name        String     @unique @db.VarChar(190)
+    slug        String     @unique
+    description String?
+    imageId     String?
+    image       Image?     @relation(fields: [imageId], references: [id], onDelete: SetNull)
+    visibility  Visibility @default(PUBLIC)
+    deletedAt   DateTime?
+    createdAt   DateTime   @default(now())
+    updatedAt   DateTime   @updatedAt
+
+    // Relations
+    sections    Section[]
+    revisions   Revision[]
+    tags        Tag[]       @relation("ProjectTags")
+    comments    Comment[]   @relation("ProjectComments")
+    favorites   Favorite[]  @relation("ProjectFavorites")
+    views       View[]      @relation("ProjectViews")
+    activities  Activity[]  @relation("ProjectActivities")
+    pages       Page[]
+
+    @@index([slug])
+    @@index([subjectId])
+    @@index([userId])
+    @@index([deletedAt])
+    @@map("projects")
+}
+
+// ─────────────────────────────────────────────
+// SECTION
+// ─────────────────────────────────────────────
+
+model Section {
+    id          String     @id @default(cuid())
+    projectId   String
+    project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+    title       String     @db.VarChar(190)
+    slug        String     @unique
+    description String?
+    position    Int        @default(0)
+    visibility  Visibility @default(PUBLIC)
+    deletedAt   DateTime?
+    createdAt   DateTime   @default(now())
+    updatedAt   DateTime   @updatedAt
+
+    // Relations
+    pages       Page[]
+    revisions   Revision[]
+    tags        Tag[]       @relation("SectionTags")
+    comments    Comment[]   @relation("SectionComments")
+    favorites   Favorite[]  @relation("SectionFavorites")
+    views       View[]      @relation("SectionViews")
+    activities  Activity[]  @relation("SectionActivities")
+
+    @@index([slug])
+    @@index([projectId])
+    @@index([deletedAt])
+    @@map("sections")
+}
+
+// ─────────────────────────────────────────────
+// PAGE
+// ─────────────────────────────────────────────
+
+model Page {
+    id              String     @id @default(cuid())
+    createdById     String
+    createdBy       User       @relation("PageCreatedBy", fields: [createdById], references: [id])
+    updatedById     String
+    updatedBy       User       @relation("PageUpdatedBy", fields: [updatedById], references: [id])
+    ownedById       String
+    ownedBy         User       @relation("PageOwnedBy", fields: [ownedById], references: [id])
+    projectId       String
+    project         Project    @relation(fields: [projectId], references: [id])
+    sectionId       String
+    section         Section    @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+    title           String     @unique
+    slug            String     @unique
+    content         String     @db.Text
+    position        Int        @default(0)
+    visibility      Visibility @default(PUBLIC)
+    restricted      Boolean    @default(false)
+    currentRevision Int        @default(0)
+    isDraft         Boolean    @default(false)
+    deletedAt       DateTime?
+    publishedAt     DateTime?
+    createdAt       DateTime   @default(now())
+    updatedAt       DateTime   @updatedAt
+
+    // Relations
+    revisions       Revision[]
+    tags            Tag[]       @relation("PageTags")
+    comments        Comment[]   @relation("PageComments")
+    favorites       Favorite[]  @relation("PageFavorites")
+    views           View[]      @relation("PageViews")
+    activities      Activity[]  @relation("PageActivities")
+
+    @@index([slug])
+    @@index([sectionId])
+    @@index([projectId])
+    @@index([deletedAt])
+    @@index([isDraft])
+    @@map("pages")
+}
+
+// ─────────────────────────────────────────────
+// REVISION
+// ─────────────────────────────────────────────
+
+model Revision {
+    id             String   @id @default(cuid())
+    pageId         String
+    page           Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+    projectId      String
+    project        Project  @relation(fields: [projectId], references: [id])
+    sectionId      String
+    section        Section  @relation(fields: [sectionId], references: [id])
+    createdById    String
+    createdBy      User     @relation(fields: [createdById], references: [id])
+    title          String
+    content        String   @db.Text
+    slug           String
+    summary        String?
+    revisionNumber Int
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @updatedAt
+
+    @@index([pageId])
+    @@index([pageId, revisionNumber])
+    @@map("revisions")
+}
+
+// ─────────────────────────────────────────────
+// COMMENT
+// ─────────────────────────────────────────────
+
+model Comment {
+    id        String   @id @default(cuid())
+    userId    String
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    body      String   @db.Text
+    parentId  String?
+    parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+    replies   Comment[] @relation("CommentReplies")
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    // Polymorphic targets (only one will be set)
+    pageId    String?
+    page      Page?    @relation("PageComments", fields: [pageId], references: [id], onDelete: Cascade)
+    projectId String?
+    project   Project? @relation("ProjectComments", fields: [projectId], references: [id], onDelete: Cascade)
+    sectionId String?
+    section   Section? @relation("SectionComments", fields: [sectionId], references: [id], onDelete: Cascade)
+
+    @@index([pageId])
+    @@index([projectId])
+    @@index([sectionId])
+    @@index([parentId])
+    @@map("comments")
+}
+
+// ─────────────────────────────────────────────
+// TAG
+// ─────────────────────────────────────────────
+
+model Tag {
+    id        String   @id @default(cuid())
+    userId    String
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    name      String   @db.VarChar(50)
+    createdAt DateTime @default(now())
+
+    // Polymorphic targets
+    pageId    String?
+    page      Page?    @relation("PageTags", fields: [pageId], references: [id], onDelete: Cascade)
+    projectId String?
+    project   Project? @relation("ProjectTags", fields: [projectId], references: [id], onDelete: Cascade)
+    sectionId String?
+    section   Section? @relation("SectionTags", fields: [sectionId], references: [id], onDelete: Cascade)
+
+    @@index([userId])
+    @@index([name])
+    @@index([pageId])
+    @@index([projectId])
+    @@index([sectionId])
+    @@map("tags")
+}
+
+// ─────────────────────────────────────────────
+// FAVORITE
+// ─────────────────────────────────────────────
+
+model Favorite {
+    id        String   @id @default(cuid())
+    userId    String
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    createdAt DateTime @default(now())
+
+    // Polymorphic targets
+    pageId    String?
+    page      Page?    @relation("PageFavorites", fields: [pageId], references: [id], onDelete: Cascade)
+    projectId String?
+    project   Project? @relation("ProjectFavorites", fields: [projectId], references: [id], onDelete: Cascade)
+    sectionId String?
+    section   Section? @relation("SectionFavorites", fields: [sectionId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, pageId])
+    @@unique([userId, projectId])
+    @@unique([userId, sectionId])
+    @@index([userId])
+    @@map("favorites")
+}
+
+// ─────────────────────────────────────────────
+// VIEW
+// ─────────────────────────────────────────────
+
+model View {
+    id        String   @id @default(cuid())
+    userId    String
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    count     Int      @default(1)
+    lastSeenAt DateTime @default(now())
+
+    // Polymorphic targets
+    pageId    String?
+    page      Page?    @relation("PageViews", fields: [pageId], references: [id], onDelete: Cascade)
+    projectId String?
+    project   Project? @relation("ProjectViews", fields: [projectId], references: [id], onDelete: Cascade)
+    sectionId String?
+    section   Section? @relation("SectionViews", fields: [sectionId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, pageId])
+    @@unique([userId, projectId])
+    @@unique([userId, sectionId])
+    @@index([pageId])
+    @@index([projectId])
+    @@index([sectionId])
+    @@map("views")
+}
+
+// ─────────────────────────────────────────────
+// ACTIVITY
+// ─────────────────────────────────────────────
+
+model Activity {
+    id           String       @id @default(cuid())
+    userId       String
+    user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+    type         ActivityType
+    resourceType ResourceType
+    details      String?
+    ip           String?
+    createdAt    DateTime     @default(now())
+
+    // Polymorphic targets
+    pageId    String?
+    page      Page?    @relation("PageActivities", fields: [pageId], references: [id], onDelete: SetNull)
+    projectId String?
+    project   Project? @relation("ProjectActivities", fields: [projectId], references: [id], onDelete: SetNull)
+    sectionId String?
+    section   Section? @relation("SectionActivities", fields: [sectionId], references: [id], onDelete: SetNull)
+
+    @@index([userId])
+    @@index([resourceType])
+    @@index([pageId])
+    @@index([projectId])
+    @@index([sectionId])
+    @@map("activities")
+}
+
+// ─────────────────────────────────────────────
+// SETTING
+// ─────────────────────────────────────────────
+
+model Setting {
+    id    String @id @default(cuid())
+    key   String @unique
+    value String
+
+    @@map("settings")
+}
+
+// ─────────────────────────────────────────────
+// EMAIL INVITE
+// ─────────────────────────────────────────────
+
+model EmailInvite {
+    id          String    @id @default(cuid())
+    email       String    @unique
+    name        String
+    role        Role      @default(GUEST)
+    sentById    String
+    sentBy      User      @relation("InviteSentBy", fields: [sentById], references: [id])
+    acceptedAt  DateTime?
+    expiresAt   DateTime
+    token       String    @unique @default(cuid())
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
+
+    @@index([token])
+    @@map("email_invites")
+}
+
+// ─────────────────────────────────────────────
+// REFRESH TOKEN
+// (not in v1 — needed for JWT rotation)
+// ─────────────────────────────────────────────
+
+model RefreshToken {
+    id        String   @id @default(cuid())
+    userId    String
+    token     String   @unique
+    expiresAt DateTime
+    createdAt DateTime @default(now())
+    revokedAt DateTime?
+
+    @@index([userId])
+    @@index([token])
+    @@map("refresh_tokens")
 }

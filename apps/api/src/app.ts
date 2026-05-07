@@ -1,34 +1,20 @@
-import FastifyInstance from 'fastify'
+import './lib/env'
+import Fastify from 'fastify'
 
 import { ProjectsRoute } from './routes/projects/projectsRoute'
-// import express from 'express'
+import {
+  createUser,
+  fetchUser,
+  updateUser,
+  deleteUser,
+  fetchAllUsers,
+} from './routes/users/usersRoutes'
 
-/*export async function  build(opts = {}) {
-    const app = fastify(opts)
-
-    app.get('/', async (request, reply) => {
-        return { hello: 'world' }
-    })
-
-    return app
-}*/
-
-/*const opts: FastifyServerOptions = {}
-if (process.stdout.isTTY) {
-    opts.logger = {
-        transport: {
-            target: 'pino-pretty'
-        }
-    }
-} else {
-    opts.logger = true;
-}*/
-
-export const fastify = FastifyInstance({ logger: true })
+export const fastify = Fastify({ logger: true })
 
 fastify.register(ProjectsRoute)
-
-/*
-const app = express()
-
-app.use('/api/v1', ProjectsRoute)*/
+fastify.register(createUser)
+fastify.register(fetchUser)
+fastify.register(updateUser)
+fastify.register(deleteUser)
+fastify.register(fetchAllUsers)
