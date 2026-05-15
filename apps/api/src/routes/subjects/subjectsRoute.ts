@@ -4,7 +4,6 @@ import slugify from 'slugify'
 import { prisma } from '../../lib/prisma.js'
 
 type CreateSubjectBody = {
-  userId: string
   name: string
   description?: string
   visibility?: 'PUBLIC' | 'PRIVATE'
@@ -21,12 +20,17 @@ type SubjectParams = {
 }
 
 export function createSubject(fastify: FastifyInstance) {
-  fastify.post<{ Body: CreateSubjectBody }>('/subjects/create', async (req, reply) => {
-    const { userId, name, description, visibility } = req.body
+  fastify.post<{ Body: CreateSubjectBody }>('/subjects/create', async (request, reply) => {
+    const { name, description, visibility } = request.body
 
+    const userId = request.user.id
+    const role = request.user.role
     const slug = slugify(name, { lower: true, strict: true })
 
     try {
+      if (role === 'GUEST') {
+        return reply.status(403).send({ message: 'You are not authorized' })
+      }
       const subject = await prisma.subject.create({
         data: { userId, name, slug, description, visibility },
         select: {

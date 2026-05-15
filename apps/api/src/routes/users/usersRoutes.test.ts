@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach, test } from 'vitest'
 import Fastify from 'fastify'
 import { Role } from '@prisma/client'
 
+import { prisma } from '../../lib/prisma.js'
+
 import { createUser, fetchUser, fetchAllUsers, updateUser, deleteUser } from './usersRoutes.js'
 
 vi.mock('../../lib/prisma.js', () => ({
@@ -22,8 +24,6 @@ vi.mock('argon2', () => ({
     argon2id: 2,
   },
 }))
-
-import { prisma } from '../../lib/prisma.js'
 
 const mockPrismaUser = vi.mocked(prisma.user)
 

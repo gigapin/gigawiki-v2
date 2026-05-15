@@ -26,7 +26,7 @@ async function verifyPassword(password: string) {
 }
 
 export function login(fastify: FastifyInstance) {
-  fastify.post<{ Body: UserBodyType }>('/login', async (request, reply) => {
+  fastify.post<{ Body: UserBodyType }>('/api/v2/login', async (request, reply) => {
     const data = request.body
 
     const user = await prisma.user.findUnique({
@@ -43,9 +43,7 @@ export function login(fastify: FastifyInstance) {
         .send({ message: 'Authentication failed, please try again typing the password' })
     }
 
-    const token = fastify.jwt.sign({
-      payload: { email: data.email, id: user.id, role: user.role },
-    })
+    const token = fastify.jwt.sign({ id: user.id, email: data.email, role: user.role })
 
     return reply.status(200).send({ token })
   })

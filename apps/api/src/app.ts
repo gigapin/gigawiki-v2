@@ -37,10 +37,14 @@ export const fastify = Fastify({ logger: true })
 fastify.register(cookie)
 fastify.register(authJwtPlugin)
 
+// Route for login
 fastify.register(login)
 
+// Protected route
 fastify.register(
   (app, _, done) => {
+    app.addHook('preHandler', app.authenticate)
+
     app.register(createProject)
     app.register(fetchProject)
     app.register(fetchAllProjects)
@@ -67,5 +71,5 @@ fastify.register(
 
     done()
   },
-  { prefix: '/api/v2', preHandler: authJwtPlugin },
+  { prefix: '/api/v2' },
 )
