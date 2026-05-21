@@ -1,75 +1,73 @@
-import './lib/env.js'
 import Fastify from 'fastify'
 import cookie from '@fastify/cookie'
+import multipart from '@fastify/multipart'
+import { ZodError } from 'zod'
 
-import {
-  createProject,
-  fetchProject,
-  fetchAllProjects,
-  updateProject,
-  deleteProject,
-} from './routes/projects/projectsRoute.js'
-import {
-  createSubject,
-  fetchSubject,
-  fetchAllSubjects,
-  updateSubject,
-  deleteSubject,
-} from './routes/subjects/subjectsRoute.js'
-import {
-  createSection,
-  fetchSection,
-  fetchAllSections,
-  updateSection,
-  deleteSection,
-} from './routes/sections/sectionsRoute.js'
-import {
-  createUser,
-  fetchUser,
-  updateUser,
-  deleteUser,
-  fetchAllUsers,
-} from './routes/users/usersRoutes.js'
-import { login } from './routes/auth/authRoutes.js'
+import { env } from './config/env.js'
 import authJwtPlugin from './plugins/auth.js'
-export const fastify = Fastify({ logger: true })
+import corsPlugin from './plugins/cors.js'
+import { registerRoutes } from './routes/index.js'
 
-fastify.register(cookie)
-fastify.register(authJwtPlugin)
+export const app = Fastify({ logger: true })
 
-// Route for login
-fastify.register(login)
+// ── Plugins ──────────────────────────────────────────────────────
+app.register(cookie)
+app.register(multipart)
+app.register(authJwtPlugin)
+app.register(corsPlugin)
 
-// Protected route
-fastify.register(
-  (app, _, done) => {
-    app.addHook('preHandler', app.authenticate)
+// ── Health check ─────────────────────────────────────────────────
+app.get('/health', async () => ({ status: 'ok', uptime: process.uptime() }))
 
-    app.register(createProject)
-    app.register(fetchProject)
-    app.register(fetchAllProjects)
-    app.register(updateProject)
-    app.register(deleteProject)
+// ── Global error handler ─────────────────────────────────────────
+app.setErrorHandler((error, _request, reply) => {
+  // Zod validation error
+  if (error instanceof ZodError) {
+    return reply.status(400).send({
+      success: false,
+      error: { code: 'VALIDATION_ERROR', message: 'Validation failed', details: error.issues },
+    })
+  }
 
-    app.register(createSubject)
-    app.register(fetchSubject)
-    app.register(fetchAllSubjects)
-    app.register(updateSubject)
-    app.register(deleteSubject)
+  // Prisma known request errors — duck-type on `code`
+  if (error && typeof error === 'object' && 'code' in error) {
+    if (error.code === 'P2002') {
+      return reply.status(409).send({
+        success: false,
+        error: { code: 'CONFLICT', message: 'A record with that value already exists' },
+      })
+    }
+    if (error.code === 'P2025') {
+      return reply.status(404).send({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Record not found' },
+      })
+    }
+  }
 
-    app.register(createSection)
-    app.register(fetchSection)
-    app.register(fetchAllSections)
-    app.register(updateSection)
-    app.register(deleteSection)
+  // Fastify HTTP errors (e.g. 401 from JWT plugin)
+  const statusCode =
+    error && typeof error === 'object' && 'statusCode' in error
+      ? (error as { statusCode: number }).statusCode
+      : undefined
+  const message = error instanceof Error ? error.message : 'An unexpected error occurred'
 
-    app.register(createUser)
-    app.register(fetchUser)
-    app.register(fetchAllUsers)
-    app.register(updateUser)
-    app.register(deleteUser)
+  if (statusCode) {
+    return reply.status(statusCode).send({
+      success: false,
+      error: { code: 'HTTP_ERROR', message },
+    })
+  }
 
-    done()
-  },
-  { prefix: '/api/v2' },
-)
+  if (error instanceof Error) reply.log.error(error)
+  return reply.status(500).send({
+    success: false,
+    error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred' },
+  })
+})
+
+// ── Routes ────────────────────────────────────────────────────────
+registerRoutes(app)
+
+// Expose env for use in server.ts
+export { env }

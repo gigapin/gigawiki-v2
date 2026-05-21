@@ -25,7 +25,7 @@ async function verifyPassword(password: string) {
   }
 }
 
-export function login(fastify: FastifyInstance) {
+export async function login(fastify: FastifyInstance) {
   fastify.post<{ Body: UserBodyType }>('/api/v2/login', async (request, reply) => {
     const data = request.body
 

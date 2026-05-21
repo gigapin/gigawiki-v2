@@ -3,136 +3,199 @@ import slugify from 'slugify'
 
 import { prisma } from '../../lib/prisma.js'
 
+const SECTION_SELECT = {
+  id: true,
+  title: true,
+  slug: true,
+  description: true,
+  position: true,
+  visibility: true,
+  projectId: true,
+  deletedAt: true,
+  createdAt: true,
+  updatedAt: true,
+}
+
+type SectionSlugParams = { slug: string }
+type ProjectSectionsParams = { projectSlug: string }
+
 type CreateSectionBody = {
   projectId: string
   title: string
   description?: string
-  position?: number
   visibility?: 'PUBLIC' | 'PRIVATE'
 }
 
-type UpdateSectionBody = {
+type PatchSectionBody = {
   title?: string
   description?: string
-  position?: number
   visibility?: 'PUBLIC' | 'PRIVATE'
 }
 
-type SectionParams = {
-  id: string
+type ReorderBody = {
+  positions: { id: string; position: number }[]
 }
 
-export function createSection(fastify: FastifyInstance) {
-  fastify.post<{ Body: CreateSectionBody }>('/sections/create', async (req, reply) => {
-    const { projectId, title, description, position, visibility } = req.body
-
-    const slug = slugify(title, { lower: true, strict: true })
-
-    try {
-      const section = await prisma.section.create({
-        data: { projectId, title, slug, description, position, visibility },
-        select: {
-          id: true,
-          title: true,
-          slug: true,
-          description: true,
-          position: true,
-          visibility: true,
-          projectId: true,
-          createdAt: true,
-        },
-      })
-
-      return reply.status(201).send(section)
-    } catch (error: unknown) {
-      if (
-        typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        (error as { code: string }).code === 'P2002'
-      ) {
-        return reply.status(409).send({ error: 'Section slug already in use' })
-      }
-      throw error
-    }
-  })
-}
-
-export function fetchSection(fastify: FastifyInstance) {
-  fastify.get<{ Params: SectionParams }>('/sections/:id', async (req, reply) => {
-    const { id } = req.params
-
-    try {
-      const section = await prisma.section.findUnique({
-        where: { id, deletedAt: null },
-      })
-
-      if (!section) {
-        return reply.status(404).send({ error: 'Section not found' })
-      }
-
-      return reply.send(section)
-    } catch (error) {
-      req.log.error({ error }, 'fetchSection error')
-      return reply.status(404).send({ error: 'Section not found' })
-    }
-  })
-}
-
-export function fetchAllSections(fastify: FastifyInstance) {
-  fastify.get('/sections', async (req, reply) => {
-    try {
-      const sections = await prisma.section.findMany({
-        where: { deletedAt: null },
-      })
-
-      return reply.status(200).send({ sections, message: 'All sections fetched' })
-    } catch (error) {
-      req.log.error({ error }, 'fetchAllSections error')
-      return reply.status(500).send({ message: 'Something went wrong' })
-    }
-  })
-}
-
-export function updateSection(fastify: FastifyInstance) {
-  fastify.put<{ Params: SectionParams; Body: UpdateSectionBody }>(
-    '/sections/:id/edit',
+export async function fetchSectionsByProject(fastify: FastifyInstance) {
+  fastify.get<{ Params: ProjectSectionsParams }>(
+    '/projects/:projectSlug/sections',
     async (req, reply) => {
-      const { id } = req.params
-      const { title, description, position, visibility } = req.body
+      const { projectSlug } = req.params
 
-      const data: UpdateSectionBody & { slug?: string } = { description, position, visibility }
-      if (title) {
-        data.title = title
-        data.slug = slugify(title, { lower: true, strict: true })
+      const project = await prisma.project.findFirst({
+        where: { slug: projectSlug, deletedAt: null },
+        select: { id: true },
+      })
+
+      if (!project) {
+        return reply.status(404).send({ error: 'Project not found' })
       }
 
-      try {
-        const section = await prisma.section.update({
-          where: { id },
-          data,
-        })
+      const sections = await prisma.section.findMany({
+        where: { projectId: project.id, deletedAt: null },
+        include: { _count: { select: { pages: true } } },
+        orderBy: { position: 'asc' },
+      })
 
-        return reply.status(200).send({ data: section, message: 'Section updated successfully' })
-      } catch (error) {
-        req.log.error({ error }, 'updateSection error')
-        return reply.status(500).send({ message: 'An internal server error occurred' })
-      }
+      return reply.status(200).send({ sections })
     },
   )
 }
 
-export function deleteSection(fastify: FastifyInstance) {
-  fastify.delete<{ Params: SectionParams }>('/sections/:id/delete', async (req, reply) => {
-    const { id } = req.params
+export async function fetchSection(fastify: FastifyInstance) {
+  fastify.get<{ Params: SectionSlugParams }>('/sections/:slug', async (req, reply) => {
+    const { slug } = req.params
 
-    try {
-      await prisma.section.delete({ where: { id } })
+    const section = await prisma.section.findFirst({
+      where: { slug, deletedAt: null },
+      select: {
+        ...SECTION_SELECT,
+        pages: {
+          where: { deletedAt: null },
+          orderBy: { position: 'asc' },
+          select: { title: true, slug: true, isDraft: true },
+        },
+      },
+    })
 
-      return reply.status(200).send({ message: 'Section deleted successfully' })
-    } catch (error) {
-      req.log.error({ error }, 'deleteSection error')
-      return reply.status(500).send({ message: 'An error occurred during section deletion' })
+    if (!section) {
+      return reply.status(404).send({ error: 'Section not found' })
     }
+
+    return reply.status(200).send(section)
+  })
+}
+
+export async function createSection(fastify: FastifyInstance) {
+  fastify.post<{ Body: CreateSectionBody }>('/sections', async (req, reply) => {
+    if (req.user.role === 'GUEST') {
+      return reply.status(403).send({ error: 'Editor or Admin role required' })
+    }
+
+    const { projectId, title, description, visibility } = req.body
+    const slug = slugify(title, { lower: true, strict: true })
+
+    const aggregate = await prisma.section.aggregate({
+      where: { projectId },
+      _max: { position: true },
+    })
+    const position = (aggregate._max.position ?? -1) + 1
+
+    const section = await prisma.section.create({
+      data: { projectId, title, slug, description, visibility, position },
+      select: SECTION_SELECT,
+    })
+
+    return reply.status(201).send(section)
+  })
+}
+
+export async function updateSection(fastify: FastifyInstance) {
+  fastify.patch<{ Params: SectionSlugParams; Body: PatchSectionBody }>(
+    '/sections/:slug',
+    async (req, reply) => {
+      const { slug } = req.params
+      const { title, description, visibility } = req.body
+
+      const existing = await prisma.section.findFirst({
+        where: { slug, deletedAt: null },
+        select: {
+          id: true,
+          project: { select: { userId: true } },
+        },
+      })
+
+      if (!existing) {
+        return reply.status(404).send({ error: 'Section not found' })
+      }
+
+      const isAdmin = req.user.role === 'ADMIN'
+      const isOwner = existing.project.userId === req.user.id
+
+      if (!isAdmin && !isOwner) {
+        return reply.status(403).send({ error: 'Forbidden' })
+      }
+
+      const data: Record<string, unknown> = {}
+      if (title !== undefined) {
+        data.title = title
+        data.slug = slugify(title, { lower: true, strict: true })
+      }
+      if (description !== undefined) data.description = description
+      if (visibility !== undefined) data.visibility = visibility
+
+      const section = await prisma.section.update({
+        where: { id: existing.id },
+        data,
+        select: SECTION_SELECT,
+      })
+
+      return reply.status(200).send(section)
+    },
+  )
+}
+
+export async function reorderSections(fastify: FastifyInstance) {
+  fastify.patch<{ Params: SectionSlugParams; Body: ReorderBody }>(
+    '/sections/:slug/position',
+    async (req, reply) => {
+      if (req.user.role === 'GUEST') {
+        return reply.status(403).send({ error: 'Editor or Admin role required' })
+      }
+
+      const { positions } = req.body
+
+      await prisma.$transaction(
+        positions.map(({ id, position }) =>
+          prisma.section.update({ where: { id }, data: { position } }),
+        ),
+      )
+
+      return reply.status(200).send({ message: 'Positions updated' })
+    },
+  )
+}
+
+export async function deleteSection(fastify: FastifyInstance) {
+  fastify.delete<{ Params: SectionSlugParams }>('/sections/:slug', async (req, reply) => {
+    if (req.user.role !== 'ADMIN') {
+      return reply.status(403).send({ error: 'Admin access required' })
+    }
+
+    const existing = await prisma.section.findFirst({
+      where: { slug: req.params.slug, deletedAt: null },
+      select: { id: true },
+    })
+
+    if (!existing) {
+      return reply.status(404).send({ error: 'Section not found' })
+    }
+
+    await prisma.section.update({
+      where: { id: existing.id },
+      data: { deletedAt: new Date() },
+    })
+
+    return reply.status(200).send({ message: 'Section deleted successfully' })
   })
 }
