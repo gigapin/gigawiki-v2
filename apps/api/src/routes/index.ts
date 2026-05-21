@@ -88,7 +88,6 @@ export function registerRoutes(app: FastifyInstance) {
   app.register(
     (instance, _, done) => {
       instance.addHook('preHandler', instance.authenticate)
-      instance.addHook('preHandler', instance.cors)
 
       instance.register(fetchAllSubjects)
       instance.register(fetchSubject)

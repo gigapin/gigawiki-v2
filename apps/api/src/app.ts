@@ -1,20 +1,24 @@
 import Fastify from 'fastify'
 import cookie from '@fastify/cookie'
-import multipart from '@fastify/multipart'
 import { ZodError } from 'zod'
 
 import { env } from './config/env.js'
-import authJwtPlugin from './plugins/auth.js'
+import helmetPlugin from './plugins/helmet.js'
 import corsPlugin from './plugins/cors.js'
+import rateLimitPlugin from './plugins/rate-limit.js'
+import authJwtPlugin from './plugins/auth.js'
+import multipartPlugin from './plugins/multipart.js'
 import { registerRoutes } from './routes/index.js'
 
 export const app = Fastify({ logger: true })
 
-// ── Plugins ──────────────────────────────────────────────────────
-app.register(cookie)
-app.register(multipart)
-app.register(authJwtPlugin)
+// ── Plugins (order matters) ───────────────────────────────────────
+app.register(helmetPlugin)
 app.register(corsPlugin)
+app.register(cookie)
+app.register(rateLimitPlugin)
+app.register(authJwtPlugin)
+app.register(multipartPlugin)
 
 // ── Health check ─────────────────────────────────────────────────
 app.get('/health', async () => ({ status: 'ok', uptime: process.uptime() }))

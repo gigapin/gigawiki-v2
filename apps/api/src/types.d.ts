@@ -4,7 +4,9 @@ import '@fastify/jwt'
 declare module 'fastify' {
   interface FastifyInstance {
     authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>
-    cors: (request: FastifyRequest, reply: FastifyReply, done: () => void) => void
+    requireRole: (
+      role: string,
+    ) => (request: FastifyRequest, reply: FastifyReply, done: () => void) => void
   }
 }
 

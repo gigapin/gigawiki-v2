@@ -12,6 +12,7 @@ const envSchema = z.object({
 
   API_URL: z.string().min(1),
   APP_URL: z.string().min(1),
+  FRONTEND_URL: z.string().min(1),
 
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().min(1),
