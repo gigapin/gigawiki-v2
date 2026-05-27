@@ -11,7 +11,6 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3001),
 
   API_URL: z.string().min(1),
-  APP_URL: z.string().min(1),
   FRONTEND_URL: z.string().min(1),
 
   DATABASE_URL: z.string().min(1),

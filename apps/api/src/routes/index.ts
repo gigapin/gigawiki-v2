@@ -54,11 +54,35 @@ import { fetchFavorites, toggleFavorite } from './favorites/favoritesRoute.js'
 import { fetchPageViews } from './views/viewsRoute.js'
 import { fetchActivities, fetchUserActivities } from './activities/activitiesRoute.js'
 import { uploadImage, deleteImage } from './images/imagesRoute.js'
-import { login } from './auth/authRoutes.js'
+import {
+  login,
+  logout,
+  refresh,
+  register,
+  forgotPassword,
+  resetPassword,
+  verifyEmail,
+  acceptInvite,
+  me,
+} from './auth/authRoutes.js'
 
 export function registerRoutes(app: FastifyInstance) {
-  // Auth (unprotected)
-  app.register(login)
+  // Auth routes (unprotected, under /api/v2)
+  app.register(
+    (instance, _, done) => {
+      instance.register(login)
+      instance.register(logout)
+      instance.register(refresh)
+      instance.register(register)
+      instance.register(forgotPassword)
+      instance.register(resetPassword)
+      instance.register(verifyEmail)
+      instance.register(acceptInvite)
+      instance.register(me)
+      done()
+    },
+    { prefix: '/api/v2' },
+  )
 
   // Public routes
   /* app.register(

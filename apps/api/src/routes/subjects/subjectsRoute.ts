@@ -93,6 +93,14 @@ export async function createSubject(fastify: FastifyInstance) {
     const { name, description, visibility } = req.body
     const slug = slugify(name, { lower: true, strict: true })
 
+    const checkDuplicateSubjectName = await prisma.subject.findFirst({
+      where: { name },
+    })
+
+    if (checkDuplicateSubjectName) {
+      return reply.status(500).send({ message: 'Name already used' })
+    }
+
     const subject = await prisma.subject.create({
       data: { userId: req.user.id, name, slug, description, visibility },
       select: SUBJECT_SELECT,
