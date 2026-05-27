@@ -1,5 +1,7 @@
 import { app } from './app.js'
 import { env } from './config/env.js'
+import { startEmailWorker } from './workers/email.worker.js'
+import { startImageWorker } from './workers/image.worker.js'
 
 app.listen({ port: env.PORT, host: '0.0.0.0' }, (err, address) => {
   if (err) {
@@ -7,4 +9,6 @@ app.listen({ port: env.PORT, host: '0.0.0.0' }, (err, address) => {
     process.exit(1)
   }
   app.log.info(`Server listening at ${address}`)
+  startEmailWorker()
+  startImageWorker()
 })
