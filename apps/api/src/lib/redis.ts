@@ -4,6 +4,8 @@ import { env } from '../config/env.js'
 
 const globalForRedis = globalThis as unknown as { redis: Redis | undefined }
 
-export const redis = globalForRedis.redis ?? new Redis(env.REDIS_URL, { lazyConnect: true })
+export const redis =
+  globalForRedis.redis ??
+  new Redis(env.REDIS_URL, { lazyConnect: true, maxRetriesPerRequest: null })
 
 if (env.NODE_ENV !== 'production') globalForRedis.redis = redis

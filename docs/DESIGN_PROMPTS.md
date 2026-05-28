@@ -205,3 +205,8 @@ Design a "System & shared states" template for GigaWiki that standardizes polish
 | Admin: global activity log | 19 |
 | App shell / nav / dashboard | 7, 8 |
 | Error / empty / loading / toasts | 20 |
+
+
+### Claude Design commands for claude code:
+#7 Fetch this design file, read its readme, and implement the relevant aspects of the design. https://api.anthropic.com/v1/design/h/oDcpSWpwRgf5p-ebbITUMQ?open_file=Dashboard.html
+Implement: Dashboard.html
