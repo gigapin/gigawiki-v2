@@ -210,3 +210,9 @@ Design a "System & shared states" template for GigaWiki that standardizes polish
 ### Claude Design commands for claude code:
 #7 Fetch this design file, read its readme, and implement the relevant aspects of the design. https://api.anthropic.com/v1/design/h/oDcpSWpwRgf5p-ebbITUMQ?open_file=Dashboard.html
 Implement: Dashboard.html
+
+Fetch this design file, read its readme, and implement the relevant aspects of the design. https://api.anthropic.com/v1/design/h/CcY5Cktgfmy8ms8G0LMGgQ?open_file=Dashboard.html
+Implement: Dashboard.html
+
+#1 Login.   Fetch this design file, read its readme, and implement the relevant aspects of the design. https://api.anthropic.com/v1/design/h/wScRAn_aB06uSLcNVQPMdw?open_file=GigaWiki+Login.html
+Implement: GigaWiki Login.html

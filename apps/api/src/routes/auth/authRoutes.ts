@@ -40,6 +40,7 @@ async function createRefreshToken(reply: FastifyReply, userId: string) {
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
   await prisma.refreshToken.create({ data: { userId, token, expiresAt } })
   setRefreshCookie(reply, token, expiresAt)
+
   return token
 }
 

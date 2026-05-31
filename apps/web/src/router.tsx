@@ -1,26 +1,10 @@
-import {
-  createRootRoute,
-  createRoute,
-  createRouter,
-  Outlet,
-  redirect,
-} from '@tanstack/react-router'
-import { useEffect } from 'react'
+import { createRootRoute, createRoute, createRouter, redirect } from '@tanstack/react-router'
 
+import { AppInit } from '@/components/AppInit'
+import { AppShell } from '@/components/layout/AppShell'
+import { LoginPage } from '@/pages/LoginPage'
+import { DashboardPage } from '@/pages/DashboardPage'
 import { useAuthStore } from '@/stores/auth.store'
-import { useSettingsStore } from '@/stores/settings.store'
-
-function AppInit() {
-  const initAuth = useAuthStore((s) => s.initAuth)
-  const fetchSettings = useSettingsStore((s) => s.fetchSettings)
-
-  useEffect(() => {
-    initAuth()
-    fetchSettings()
-  }, [initAuth, fetchSettings])
-
-  return <Outlet />
-}
 
 const rootRoute = createRootRoute({
   component: AppInit,
@@ -29,11 +13,10 @@ const rootRoute = createRootRoute({
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/login',
-  component: () => (
-    <div className="flex min-h-screen items-center justify-center">
-      <p className="text-muted-foreground">Login page (task 28)</p>
-    </div>
-  ),
+  validateSearch: (search: Record<string, unknown>) => ({
+    redirect: (search.redirect as string) ?? '',
+  }),
+  component: LoginPage,
 })
 
 const authLayout = createRoute({
@@ -48,20 +31,14 @@ const authLayout = createRoute({
       })
     }
   },
-  component: () => <Outlet />,
+  component: AppShell,
 })
 
 const indexRoute = createRoute({
   getParentRoute: () => authLayout,
   path: '/',
-  component: () => (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold tracking-tight">GiGaWiki</h1>
-        <p className="text-muted-foreground">Your collaborative knowledge base</p>
-      </div>
-    </div>
-  ),
+  staticData: { title: 'Dashboard' },
+  component: DashboardPage,
 })
 
 const routeTree = rootRoute.addChildren([loginRoute, authLayout.addChildren([indexRoute])])
