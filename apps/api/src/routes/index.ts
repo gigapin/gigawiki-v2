@@ -54,6 +54,7 @@ import { fetchFavorites, toggleFavorite } from './favorites/favoritesRoute.js'
 import { fetchPageViews } from './views/viewsRoute.js'
 import { fetchActivities, fetchUserActivities } from './activities/activitiesRoute.js'
 import { uploadImage, deleteImage } from './images/imagesRoute.js'
+import { fetchSettings, updateSetting } from './settings/settingsRoute.js'
 import {
   login,
   logout,
@@ -79,6 +80,10 @@ export function registerRoutes(app: FastifyInstance) {
       instance.register(verifyEmail)
       instance.register(acceptInvite)
       instance.register(me)
+
+      // Public: the frontend needs these before a session exists
+      instance.register(fetchSettings)
+
       done()
     },
     { prefix: '/api/v2' },
@@ -173,6 +178,8 @@ export function registerRoutes(app: FastifyInstance) {
 
       instance.register(uploadImage)
       instance.register(deleteImage)
+
+      instance.register(updateSetting)
 
       done()
     },
