@@ -230,6 +230,10 @@ model Page {
     createdAt       DateTime   @default(now())
     updatedAt       DateTime   @updatedAt
 
+    /// Postgres GENERATED ALWAYS tsvector column (migration 20260527000000).
+    /// Never written by Prisma; queried via $queryRaw in pagesRoute.searchPages.
+    searchVector    Unsupported("tsvector")? @map("search_vector") @default(dbgenerated("to_tsvector('english'::regconfig, ((COALESCE(title, ''::text) || ' '::text) || COALESCE(content, ''::text)))"))
+
     // Relations
     revisions       Revision[]
     tags            Tag[]       @relation("PageTags")
@@ -243,6 +247,7 @@ model Page {
     @@index([projectId])
     @@index([deletedAt])
     @@index([isDraft])
+    @@index([searchVector(ops: raw("tsvector_ops"))], type: Gin, map: "pages_search_vector_idx")
     @@map("pages")
 }
 
