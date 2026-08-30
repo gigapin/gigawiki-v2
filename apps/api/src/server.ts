@@ -1,16 +1,14 @@
-/*
-import { build } from './app';
-import { FastifyServerOptions } from "fastify";
+import { app } from './app.js'
+import { env } from './config/env.js'
+import { startEmailWorker } from './workers/email.worker.js'
+import { startImageWorker } from './workers/image.worker.js'
 
-const opts: FastifyServerOptions = {
-    logger: {
-        level: 'info',
-        transport: process.stdout.isTTY ? { target: 'pino-pretty' } : undefined
-    }
-}
-
-const app = await build(opts)
-await app.listen({ port: 3001, host: '0.0.0.0' })*/
-import { fastify } from './app'
-
-await fastify.listen({ port: 3001, host: '0.0.0.0' })
+app.listen({ port: env.PORT, host: '0.0.0.0' }, (err, address) => {
+  if (err) {
+    app.log.error(err)
+    process.exit(1)
+  }
+  app.log.info(`Server listening at ${address}`)
+  startEmailWorker()
+  startImageWorker()
+})
