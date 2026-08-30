@@ -20,6 +20,7 @@ vi.mock('../../lib/prisma.js', () => ({
     page: {
       findFirst: vi.fn(),
       findMany: vi.fn(),
+      findUnique: vi.fn(),
       count: vi.fn(),
       aggregate: vi.fn(),
       create: vi.fn(),
@@ -60,6 +61,8 @@ function buildAuthApp(role: string = 'ADMIN', userId: string = 'user-1') {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // slug helper looks up the candidate slug; free unless a test says otherwise
+  mockPage.findUnique.mockResolvedValue(null)
 })
 
 const fakePage = {

@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify'
 import { Prisma } from '@prisma/client'
-import slugify from 'slugify'
 
+import { generateSlug, generateUniqueSlug } from '../../lib/slugify.js'
 import { prisma } from '../../lib/prisma.js'
 
 const PAGE_INDEX_SELECT = {
@@ -142,7 +142,9 @@ export async function createPage(fastify: FastifyInstance) {
       return reply.status(404).send({ error: 'Section not found' })
     }
 
-    const slug = slugify(title, { lower: true, strict: true })
+    const slug = await generateUniqueSlug(title, async (candidate) =>
+      Boolean(await prisma.page.findUnique({ where: { slug: candidate }, select: { id: true } })),
+    )
 
     const aggregate = await prisma.page.aggregate({
       where: { sectionId },
@@ -203,8 +205,7 @@ export async function replacePage(fastify: FastifyInstance) {
       },
     })
 
-    const newSlug =
-      title !== existing.title ? slugify(title, { lower: true, strict: true }) : existing.slug
+    const newSlug = title !== existing.title ? generateSlug(title) : existing.slug
 
     const page = await prisma.page.update({
       where: { id: existing.id },
@@ -263,7 +264,7 @@ export async function updatePage(fastify: FastifyInstance) {
 
       if (title !== undefined) {
         data.title = title
-        data.slug = slugify(title, { lower: true, strict: true })
+        data.slug = generateSlug(title)
       }
       if (content !== undefined) data.content = content
       if (isDraft !== undefined) {

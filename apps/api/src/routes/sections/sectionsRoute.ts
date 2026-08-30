@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify'
-import slugify from 'slugify'
 
+import { generateSlug, generateUniqueSlug } from '../../lib/slugify.js'
 import { prisma } from '../../lib/prisma.js'
 
 const SECTION_SELECT = {
@@ -93,7 +93,12 @@ export async function createSection(fastify: FastifyInstance) {
     }
 
     const { projectId, title, description, visibility } = req.body
-    const slug = slugify(title, { lower: true, strict: true })
+
+    const slug = await generateUniqueSlug(title, async (candidate) =>
+      Boolean(
+        await prisma.section.findUnique({ where: { slug: candidate }, select: { id: true } }),
+      ),
+    )
 
     const aggregate = await prisma.section.aggregate({
       where: { projectId },
@@ -139,7 +144,7 @@ export async function updateSection(fastify: FastifyInstance) {
       const data: Record<string, unknown> = {}
       if (title !== undefined) {
         data.title = title
-        data.slug = slugify(title, { lower: true, strict: true })
+        data.slug = generateSlug(title)
       }
       if (description !== undefined) data.description = description
       if (visibility !== undefined) data.visibility = visibility

@@ -17,6 +17,7 @@ vi.mock('../../lib/prisma.js', () => ({
     subject: {
       findMany: vi.fn(),
       findFirst: vi.fn(),
+      findUnique: vi.fn(),
       count: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
@@ -48,6 +49,8 @@ function buildAuthApp(role: string = 'ADMIN', userId: string = 'user-1') {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // slug helper looks up the candidate slug; free unless a test says otherwise
+  mockSubject.findUnique.mockResolvedValue(null)
 })
 
 const fakeSubject = {
@@ -185,6 +188,36 @@ describe('POST /subjects', () => {
         data: expect.objectContaining({ slug: 'my-cool-subject' }),
       }),
     )
+  })
+
+  it('appends a random suffix when the generated slug is taken', async () => {
+    mockSubject.findUnique.mockResolvedValue({ id: 'sub-existing' } as never)
+    mockSubject.create.mockResolvedValue(fakeSubject)
+
+    const app = buildAuthApp('ADMIN')
+    await app.inject({
+      method: 'POST',
+      url: '/subjects',
+      payload: { name: 'Engineering' },
+    })
+
+    const { data } = mockSubject.create.mock.calls[0][0] as { data: { slug: string } }
+    expect(data.slug).toMatch(/^engineering-.{6}$/)
+  })
+
+  it('returns 409 when the name is already used', async () => {
+    mockSubject.findFirst.mockResolvedValue({ id: 'sub-existing' } as never)
+
+    const app = buildAuthApp('ADMIN')
+    const res = await app.inject({
+      method: 'POST',
+      url: '/subjects',
+      payload: { name: 'Engineering' },
+    })
+
+    expect(res.statusCode).toBe(409)
+    expect(res.json().error).toMatch(/already used/i)
+    expect(mockSubject.create).not.toHaveBeenCalled()
   })
 })
 

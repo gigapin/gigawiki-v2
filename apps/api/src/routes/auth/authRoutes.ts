@@ -1,8 +1,8 @@
 import { FastifyInstance, FastifyReply } from 'fastify'
 import * as argon2 from 'argon2'
-import slugify from 'slugify'
 import { nanoid } from 'nanoid'
 
+import { generateUniqueSlug } from '../../lib/slugify.js'
 import { prisma } from '../../lib/prisma.js'
 import { redis } from '../../lib/redis.js'
 import { emailQueue } from '../../lib/queue.js'
@@ -111,7 +111,9 @@ export async function register(fastify: FastifyInstance) {
       }
 
       const hashedPassword = await argon2.hash(password, ARGON2_OPTIONS)
-      const slug = slugify(name, { lower: true, strict: true })
+      const slug = await generateUniqueSlug(name, async (candidate) =>
+        Boolean(await prisma.user.findUnique({ where: { slug: candidate }, select: { id: true } })),
+      )
 
       const user = await prisma.user.create({
         data: { name, email, password: hashedPassword, slug, role: 'GUEST', emailConfirmed: false },
@@ -203,7 +205,9 @@ export async function acceptInvite(fastify: FastifyInstance) {
       if (invite.expiresAt < new Date()) return reply.status(400).send({ error: 'Invite expired' })
 
       const hashedPassword = await argon2.hash(password, ARGON2_OPTIONS)
-      const slug = slugify(name, { lower: true, strict: true })
+      const slug = await generateUniqueSlug(name, async (candidate) =>
+        Boolean(await prisma.user.findUnique({ where: { slug: candidate }, select: { id: true } })),
+      )
 
       const user = await prisma.user.create({
         data: {

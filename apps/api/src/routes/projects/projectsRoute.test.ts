@@ -20,6 +20,7 @@ vi.mock('../../lib/prisma.js', () => ({
     project: {
       findMany: vi.fn(),
       findFirst: vi.fn(),
+      findUnique: vi.fn(),
       count: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
@@ -64,6 +65,8 @@ function buildAuthApp(role: string = 'ADMIN', userId: string = 'user-1') {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // slug helper looks up the candidate slug; free unless a test says otherwise
+  mockProject.findUnique.mockResolvedValue(null)
 })
 
 const fakeProject = {

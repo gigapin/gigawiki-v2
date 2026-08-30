@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify'
-import slugify from 'slugify'
 
+import { generateSlug, generateUniqueSlug } from '../../lib/slugify.js'
 import { prisma } from '../../lib/prisma.js'
 
 const SUBJECT_SELECT = {
@@ -94,19 +94,24 @@ export async function createSubject(fastify: FastifyInstance) {
       return reply.status(403).send({ error: 'Editor or Admin role required' })
     }
 
-    const { name, description, visibility } = req.body
-    const slug = slugify(name, { lower: true, strict: true })
+    const { name, description, color, icon, visibility } = req.body
 
     const checkDuplicateSubjectName = await prisma.subject.findFirst({
       where: { name },
     })
 
     if (checkDuplicateSubjectName) {
-      return reply.status(500).send({ message: 'Name already used' })
+      return reply.status(409).send({ error: 'Name already used' })
     }
 
+    const slug = await generateUniqueSlug(name, async (candidate) =>
+      Boolean(
+        await prisma.subject.findUnique({ where: { slug: candidate }, select: { id: true } }),
+      ),
+    )
+
     const subject = await prisma.subject.create({
-      data: { userId: req.user.id, name, slug, description, visibility },
+      data: { userId: req.user.id, name, slug, description, color, icon, visibility },
       select: SUBJECT_SELECT,
     })
 
@@ -119,7 +124,7 @@ export async function updateSubject(fastify: FastifyInstance) {
     '/subjects/:slug',
     async (req, reply) => {
       const { slug } = req.params
-      const { name, description, visibility, imageId } = req.body
+      const { name, description, color, icon, visibility, imageId } = req.body
 
       const existing = await prisma.subject.findFirst({
         where: { slug, deletedAt: null },
@@ -140,9 +145,11 @@ export async function updateSubject(fastify: FastifyInstance) {
       const data: Record<string, unknown> = {}
       if (name !== undefined) {
         data.name = name
-        data.slug = slugify(name, { lower: true, strict: true })
+        data.slug = generateSlug(name)
       }
       if (description !== undefined) data.description = description
+      if (color !== undefined) data.color = color
+      if (icon !== undefined) data.icon = icon
       if (visibility !== undefined) data.visibility = visibility
       if (imageId !== undefined) data.imageId = imageId
 

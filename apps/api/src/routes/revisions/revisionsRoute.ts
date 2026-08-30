@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify'
-import slugify from 'slugify'
 
+import { generateSlug } from '../../lib/slugify.js'
 import { prisma } from '../../lib/prisma.js'
 
 const PAGE_INDEX_SELECT = {
@@ -137,9 +137,7 @@ export async function restoreRevision(fastify: FastifyInstance) {
       })
 
       const newSlug =
-        revision.title !== pageRecord.title
-          ? slugify(revision.title, { lower: true, strict: true })
-          : pageRecord.slug
+        revision.title !== pageRecord.title ? generateSlug(revision.title) : pageRecord.slug
 
       const updated = await prisma.page.update({
         where: { id: pageRecord.id },

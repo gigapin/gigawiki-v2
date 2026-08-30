@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify'
-import slugify from 'slugify'
 
+import { generateSlug, generateUniqueSlug } from '../../lib/slugify.js'
 import { prisma } from '../../lib/prisma.js'
 
 const PROJECT_SELECT = {
@@ -117,7 +117,12 @@ export async function createProject(fastify: FastifyInstance) {
     }
 
     const { name, subjectId, description, visibility } = req.body
-    const slug = slugify(name, { lower: true, strict: true })
+
+    const slug = await generateUniqueSlug(name, async (candidate) =>
+      Boolean(
+        await prisma.project.findUnique({ where: { slug: candidate }, select: { id: true } }),
+      ),
+    )
 
     const project = await prisma.project.create({
       data: { userId: req.user.id, subjectId, name, slug, description, visibility },
@@ -154,7 +159,7 @@ export async function updateProject(fastify: FastifyInstance) {
       const data: Record<string, unknown> = {}
       if (name !== undefined) {
         data.name = name
-        data.slug = slugify(name, { lower: true, strict: true })
+        data.slug = generateSlug(name)
       }
       if (description !== undefined) data.description = description
       if (visibility !== undefined) data.visibility = visibility
