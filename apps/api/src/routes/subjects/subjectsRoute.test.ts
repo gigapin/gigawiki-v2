@@ -55,6 +55,8 @@ const fakeSubject = {
   name: 'Science',
   slug: 'science',
   description: 'All things science',
+  color: 'emerald',
+  icon: 'book',
   visibility: Visibility.PUBLIC,
   imageId: null,
   userId: 'user-1',

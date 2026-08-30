@@ -3,12 +3,16 @@ import { z } from 'zod'
 export const CreateSubjectSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().optional(),
+  color: z.string().optional(),
+  icon: z.string().optional(),
   visibility: z.enum(['PUBLIC', 'PRIVATE']).default('PUBLIC'),
 })
 
 export const UpdateSubjectSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().optional(),
+  color: z.string().optional(),
+  icon: z.string().optional(),
   visibility: z.enum(['PUBLIC', 'PRIVATE']).optional(),
   imageId: z.string().nullable().optional(),
 })

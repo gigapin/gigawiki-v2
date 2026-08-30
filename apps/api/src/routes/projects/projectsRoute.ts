@@ -59,7 +59,10 @@ export async function fetchProjectsBySubject(fastify: FastifyInstance) {
       const [projects, total] = await Promise.all([
         prisma.project.findMany({
           where,
-          include: { _count: { select: { sections: true, pages: true } } },
+          include: {
+            tags: true,
+            _count: { select: { sections: true, pages: true, views: true } },
+          },
           skip,
           take,
           orderBy: { createdAt: 'desc' },

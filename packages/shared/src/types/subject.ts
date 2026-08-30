@@ -8,6 +8,8 @@ export interface Subject {
   name: string
   slug: string
   description: string | null
+  color: string
+  icon: string
   imageId: string | null
   image?: Image | null
   visibility: Visibility

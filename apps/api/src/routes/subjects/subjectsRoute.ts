@@ -8,6 +8,8 @@ const SUBJECT_SELECT = {
   name: true,
   slug: true,
   description: true,
+  color: true,
+  icon: true,
   visibility: true,
   imageId: true,
   userId: true,
@@ -27,12 +29,16 @@ type FetchSubjectsQuery = {
 type CreateSubjectBody = {
   name: string
   description?: string
+  color?: string
+  icon?: string
   visibility?: 'PUBLIC' | 'PRIVATE'
 }
 
 type PatchSubjectBody = {
   name?: string
   description?: string
+  color?: string
+  icon?: string
   visibility?: 'PUBLIC' | 'PRIVATE'
   imageId?: string
 }
@@ -69,10 +75,8 @@ export async function fetchSubject(fastify: FastifyInstance) {
       where: { slug, deletedAt: null },
       select: {
         ...SUBJECT_SELECT,
-        projects: {
-          where: { deletedAt: null },
-          include: { _count: { select: { sections: true } } },
-        },
+        user: { select: { id: true, name: true } },
+        _count: { select: { projects: true } },
       },
     })
 

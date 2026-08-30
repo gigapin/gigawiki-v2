@@ -114,6 +114,8 @@ model Subject {
     name        String     @unique @db.VarChar(100)
     slug        String     @unique
     description String?
+    color       String     @default("emerald")
+    icon        String     @default("book")
     imageId     String?
     image       Image?     @relation(fields: [imageId], references: [id], onDelete: SetNull)
     visibility  Visibility @default(PUBLIC)
