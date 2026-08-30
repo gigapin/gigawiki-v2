@@ -4,7 +4,14 @@ import { fileURLToPath } from 'url'
 import { z } from 'zod'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-process.loadEnvFile(path.resolve(__dirname, '../../../../.env'))
+
+// Local development reads the repo-root .env. In a container there is no such file
+// and the environment is injected directly, so a missing .env must not abort startup.
+try {
+  process.loadEnvFile(path.resolve(__dirname, '../../../../.env'))
+} catch {
+  // no .env on disk — fall back to the ambient environment
+}
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),

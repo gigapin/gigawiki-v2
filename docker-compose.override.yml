@@ -1,0 +1,31 @@
+# Production-like local run of the API alongside the infrastructure services.
+#
+# NOTE: `docker compose up -d` merges this file automatically, so the usual
+# "start the infra" command will also build and run the API. To start only the
+# backing services, use:
+#
+#   docker compose -f docker-compose.yml up -d
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    ports:
+      - '3001:3001'
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      # Service names, not localhost — these resolve on the compose network.
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/gigawiki
+      REDIS_URL: redis://redis:6379
+      AWS_ENDPOINT: http://minio:9000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started

@@ -35,6 +35,9 @@ cd apps/api && pnpm prisma migrate dev
 cd apps/api && pnpm prisma db seed
 
 # Start infrastructure services (PostgreSQL on 5433, Redis on 6379, MinIO on 9002)
+# NOTE: this also builds and runs the API, because docker-compose.override.yml
+# is merged automatically. For the backing services only:
+#   docker compose -f docker-compose.yml up -d
 docker compose up -d
 ```
 
