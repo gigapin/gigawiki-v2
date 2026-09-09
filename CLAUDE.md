@@ -4,7 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Task workflow
 
+**Start every session by reading `/docs/SESSION_LOG.md`** — it records what each session did, what is in progress, and where the code deviates from the task specs. It is the starting point; the task list is the reference.
+
 When asked to complete a specific numbered task (e.g. "complete task 12"), **always read `/docs/GIGAWIKI_V2_TASKS.md` first** to get the full specification before writing any code.
+
+At the end of a session, add an entry at the top of the "Log delle sessioni" section in `/docs/SESSION_LOG.md` and update its status table if any task advanced.
 
 ## Commands
 

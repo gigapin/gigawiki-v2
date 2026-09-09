@@ -43,7 +43,7 @@ export function LoginPage() {
     return true
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SubmitEvent) {
     e.preventDefault()
     setServerError(false)
     const okEmail = validateEmail(email)

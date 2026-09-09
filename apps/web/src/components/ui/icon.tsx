@@ -1,5 +1,6 @@
 export type IconName =
   | 'chev-right'
+  | 'chev-left'
   | 'chev-down'
   | 'search'
   | 'star'
@@ -29,6 +30,10 @@ export type IconName =
   | 'user'
   | 'settings'
   | 'menu'
+  | 'lock'
+  | 'clock'
+  | 'dots-h'
+  | 'pencil'
 
 export function Icon({
   name,
@@ -54,6 +59,12 @@ export function Icon({
       return (
         <svg {...p}>
           <polyline points="9 6 15 12 9 18" />
+        </svg>
+      )
+    case 'chev-left':
+      return (
+        <svg {...p}>
+          <polyline points="15 6 9 12 15 18" />
         </svg>
       )
     case 'chev-down':
@@ -264,6 +275,34 @@ export function Icon({
           <line x1="3" y1="6" x2="21" y2="6" />
           <line x1="3" y1="12" x2="21" y2="12" />
           <line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+      )
+    case 'lock':
+      return (
+        <svg {...p}>
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+      )
+    case 'clock':
+      return (
+        <svg {...p}>
+          <circle cx="12" cy="12" r="9" />
+          <polyline points="12 7 12 12 15 15" />
+        </svg>
+      )
+    case 'dots-h':
+      return (
+        <svg {...p}>
+          <circle cx="5" cy="12" r="1.4" />
+          <circle cx="12" cy="12" r="1.4" />
+          <circle cx="19" cy="12" r="1.4" />
+        </svg>
+      )
+    case 'pencil':
+      return (
+        <svg {...p}>
+          <path d="M17 3a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
         </svg>
       )
     default:

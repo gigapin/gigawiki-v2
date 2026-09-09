@@ -4,9 +4,14 @@ import { AppInit } from '@/components/AppInit'
 import { AppShell } from '@/components/layout/AppShell'
 import { LoginPage } from '@/pages/LoginPage'
 import { DashboardPage } from '@/pages/DashboardPage'
+import { SubjectsPage } from '@/pages/subjects/SubjectsPage'
+import { SubjectDetailPage } from '@/pages/subjects/SubjectDetailPage'
 import { useAuthStore } from '@/stores/auth.store'
 
 const rootRoute = createRootRoute({
+  beforeLoad: async () => {
+    await useAuthStore.getState().initAuth()
+  },
   component: AppInit,
 })
 
@@ -41,7 +46,24 @@ const indexRoute = createRoute({
   component: DashboardPage,
 })
 
-const routeTree = rootRoute.addChildren([loginRoute, authLayout.addChildren([indexRoute])])
+const subjectsRoute = createRoute({
+  getParentRoute: () => authLayout,
+  path: '/subjects',
+  staticData: { title: 'Subjects' },
+  component: SubjectsPage,
+})
+
+const subjectDetailRoute = createRoute({
+  getParentRoute: () => authLayout,
+  path: '/subjects/$slug',
+  staticData: { title: 'Subject' },
+  component: SubjectDetailPage,
+})
+
+const routeTree = rootRoute.addChildren([
+  loginRoute,
+  authLayout.addChildren([indexRoute, subjectsRoute, subjectDetailRoute]),
+])
 
 export const router = createRouter({ routeTree })
 
