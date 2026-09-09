@@ -11,3 +11,11 @@ interface SubjectsResponse {
 
 export const fetchSubjects = (params?: { page?: number; limit?: number; visibility?: string }) =>
   apiClient.get<SubjectsResponse>('/api/v2/subjects', { params }).then((r) => r.data)
+
+export const createSubject = (body: {
+  name: string
+  description?: string
+  color?: string
+  icon?: string
+  visibility?: 'PUBLIC' | 'PRIVATE'
+}) => apiClient.post<Subject>('/api/v2/subjects', body).then((r) => r.data)

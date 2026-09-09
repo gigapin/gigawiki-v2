@@ -21,10 +21,11 @@ function initials(name: string) {
 type SubjectNode = Subject & { _count: { projects: number } }
 
 function SubjectItem({ subject }: { subject: SubjectNode }) {
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   return (
     <div
-      onClick={() => setOpen((v) => !v)}
+      onClick={() => navigate({ to: '/subjects/$slug', params: { slug: subject.slug } })}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -32,7 +33,7 @@ function SubjectItem({ subject }: { subject: SubjectNode }) {
         padding: '6px 8px',
         borderRadius: 6,
         cursor: 'pointer',
-        color: 'var(--db-ink-2)',
+        color: 'var(--db-muted)',
         fontSize: 13.5,
         userSelect: 'none',
       }}
@@ -40,6 +41,10 @@ function SubjectItem({ subject }: { subject: SubjectNode }) {
       onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
     >
       <span
+        onClick={(e) => {
+          e.stopPropagation()
+          setOpen((v) => !v)
+        }}
         style={{
           width: 14,
           height: 14,
@@ -175,8 +180,10 @@ interface SidebarProps {
 }
 
 export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
+  const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [subjectsOpen, setSubjectsOpen] = useState(true)
   const pathname = useRouterState({ select: (s) => s.location.pathname })
 
   const { data: subjectsData } = useQuery({
@@ -408,26 +415,58 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
           <>
             <div
               style={{
-                fontSize: 10.5,
-                textTransform: 'uppercase',
-                letterSpacing: '0.12em',
-                color: 'var(--db-muted-2)',
-                padding: '12px 10px 6px',
-                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                padding: '12px 4px 6px',
+                gap: 2,
               }}
             >
-              Subjects
+              <span
+                onClick={() => setSubjectsOpen((v) => !v)}
+                style={{
+                  width: 18,
+                  height: 18,
+                  display: 'grid',
+                  placeItems: 'center',
+                  color: 'var(--db-muted-2)',
+                  cursor: 'pointer',
+                  borderRadius: 3,
+                  flexShrink: 0,
+                  transition: 'transform 120ms',
+                  transform: subjectsOpen ? 'rotate(90deg)' : 'none',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--db-bg-2)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+              >
+                <Icon name="chev-right" size={10} />
+              </span>
+              <span
+                onClick={() => navigate({ to: '/subjects' })}
+                style={{
+                  fontSize: 13.5,
+                  color: 'var(--db-ink-2)',
+                  fontWeight: 400,
+                  cursor: 'pointer',
+                  flex: 1,
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--db-ink)')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--db-ink-2)')}
+              >
+                Subjects
+              </span>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {subjectsData?.subjects.map((s) => (
-                <SubjectItem key={s.id} subject={s as SubjectNode} />
-              ))}
-              {subjectsData?.subjects.length === 0 && (
-                <div style={{ padding: '8px 10px', fontSize: 12.5, color: 'var(--db-muted-2)' }}>
-                  No subjects yet
-                </div>
-              )}
-            </div>
+            {subjectsOpen && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {subjectsData?.subjects.map((s) => (
+                  <SubjectItem key={s.id} subject={s as SubjectNode} />
+                ))}
+                {subjectsData?.subjects.length === 0 && (
+                  <div style={{ padding: '8px 10px', fontSize: 12.5, color: 'var(--db-muted-2)' }}>
+                    No subjects yet
+                  </div>
+                )}
+              </div>
+            )}
 
             <div
               style={{
