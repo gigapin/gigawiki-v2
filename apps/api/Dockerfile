@@ -56,6 +56,6 @@ ENV NODE_ENV=production
 
 COPY --from=builder /app/deploy ./
 
-EXPOSE 3001
+EXPOSE 3002
 
 CMD ["node", "dist/server.js"]

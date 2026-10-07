@@ -1,12 +1,41 @@
-node_modules
-dist
-.env
-.turbo
-coverage
+# Dependencies and local tooling
+node_modules/
+.pnpm-store/
+.tools/
+
+# Build output and caches
+dist/
+dist-ssr/
+.turbo/
+.vite/
+coverage/
 *.tsbuildinfo
+
+# Local environment files (keep credential-free examples versionable)
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Runtime logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Editor, OS and local assistant settings
+.idea/
+.DS_Store
+.AppleDouble/
+._*
+*.swp
+*.swo
+*~
+.claude/settings.local.json
+
+# Local reference files intentionally excluded from version control
 GIGAWIKI_V2_TASKS.md
 GIGAWIKI_V2_TECH_STACK.md
-.idea
-./docs
-.tools
-.DS_Store

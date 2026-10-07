@@ -2,76 +2,13 @@ import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 
+import { CARD_TONES, toneForColor } from '@/styles/cover-colors'
 import { fetchSubjects } from '@/api/subjects'
 import { useAuthStore } from '@/stores/auth.store'
 import { Icon, type IconName } from '@/components/ui/icon'
 import { CreateSubjectModal } from '@/components/subjects/CreateSubjectModal'
 
 /* ── colour palette keyed by colorId ── */
-const CARD_TONES: Record<
-  string,
-  {
-    banner: string
-    bannerDeep: string
-    body: string
-    bodyEdge: string
-    label: string
-    glyph: string
-  }
-> = {
-  emerald: {
-    banner: 'oklch(0.42 0.13 158)',
-    bannerDeep: 'oklch(0.26 0.055 158)',
-    body: 'oklch(0.20 0.025 158)',
-    bodyEdge: 'oklch(0.32 0.04 158)',
-    label: 'oklch(0.92 0.04 158)',
-    glyph: 'oklch(0.16 0.02 158)',
-  },
-  blue: {
-    banner: 'oklch(0.45 0.14 268)',
-    bannerDeep: 'oklch(0.28 0.06 268)',
-    body: 'oklch(0.20 0.028 268)',
-    bodyEdge: 'oklch(0.32 0.045 268)',
-    label: 'oklch(0.92 0.04 268)',
-    glyph: 'oklch(0.16 0.025 268)',
-  },
-  amber: {
-    banner: 'oklch(0.55 0.13 78)',
-    bannerDeep: 'oklch(0.32 0.06 78)',
-    body: 'oklch(0.21 0.025 78)',
-    bodyEdge: 'oklch(0.33 0.04 78)',
-    label: 'oklch(0.95 0.05 78)',
-    glyph: 'oklch(0.17 0.02 78)',
-  },
-  red: {
-    banner: 'oklch(0.48 0.14 18)',
-    bannerDeep: 'oklch(0.28 0.065 18)',
-    body: 'oklch(0.20 0.028 18)',
-    bodyEdge: 'oklch(0.33 0.05 18)',
-    label: 'oklch(0.94 0.04 18)',
-    glyph: 'oklch(0.16 0.025 18)',
-  },
-  slate: {
-    banner: 'oklch(0.44 0.06 250)',
-    bannerDeep: 'oklch(0.26 0.03 250)',
-    body: 'oklch(0.20 0.018 250)',
-    bodyEdge: 'oklch(0.31 0.03 250)',
-    label: 'oklch(0.92 0.025 250)',
-    glyph: 'oklch(0.16 0.015 250)',
-  },
-  teal: {
-    banner: 'oklch(0.45 0.12 195)',
-    bannerDeep: 'oklch(0.27 0.055 195)',
-    body: 'oklch(0.20 0.022 195)',
-    bodyEdge: 'oklch(0.31 0.038 195)',
-    label: 'oklch(0.92 0.04 195)',
-    glyph: 'oklch(0.16 0.018 195)',
-  },
-}
-
-function toneForColor(colorId: string) {
-  return CARD_TONES[colorId] ?? CARD_TONES['emerald']
-}
 
 /* ── subject card ── */
 interface SubjectCardProps {
@@ -84,15 +21,7 @@ interface SubjectCardProps {
   onClick: () => void
 }
 
-function SubjectCard({
-  name,
-  slug: _slug,
-  description,
-  projectCount,
-  color,
-  icon,
-  onClick,
-}: SubjectCardProps) {
+function SubjectCard({ name, description, projectCount, color, icon, onClick }: SubjectCardProps) {
   const tone = toneForColor(color)
   const glyph = name[0]?.toUpperCase() ?? '?'
   const [hovered, setHovered] = useState(false)
@@ -136,7 +65,7 @@ function SubjectCard({
             position: 'absolute',
             right: 12,
             bottom: -16,
-            fontFamily: "'Instrument Serif', Georgia, serif",
+            fontFamily: 'var(--font-display)',
             fontStyle: 'italic',
             fontSize: 130,
             lineHeight: 1,
@@ -174,7 +103,7 @@ function SubjectCard({
             position: 'absolute',
             top: 14,
             right: 14,
-            fontFamily: "'Geist Mono', monospace",
+            fontFamily: 'var(--font-mono)',
             fontSize: 11,
             color: tone.label,
             background: 'rgba(0,0,0,0.25)',
@@ -192,7 +121,7 @@ function SubjectCard({
       <div style={{ padding: '16px 20px 20px' }}>
         <h3
           style={{
-            fontFamily: "'Instrument Serif', Georgia, serif",
+            fontFamily: 'var(--font-display)',
             fontStyle: 'italic',
             fontWeight: 400,
             fontSize: 26,
@@ -341,7 +270,7 @@ export function SubjectsPage() {
             {data && (
               <span
                 style={{
-                  fontFamily: "'Geist Mono', monospace",
+                  fontFamily: 'var(--font-mono)',
                   fontStyle: 'normal',
                   fontSize: 13,
                   color: 'var(--db-muted)',
@@ -376,7 +305,7 @@ export function SubjectsPage() {
               color: 'var(--db-em-deep)',
               fontSize: 13.5,
               fontWeight: 500,
-              fontFamily: "'Geist', system-ui, sans-serif",
+              fontFamily: 'var(--font-ui)',
               whiteSpace: 'nowrap',
             }}
             onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--db-em-soft-2)')}

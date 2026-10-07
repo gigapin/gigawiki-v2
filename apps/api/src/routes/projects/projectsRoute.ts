@@ -82,6 +82,7 @@ export async function fetchProject(fastify: FastifyInstance) {
     const project = await prisma.project.findFirst({
       where: { slug, deletedAt: null },
       include: {
+        subject: { select: { name: true, slug: true } },
         sections: { where: { deletedAt: null }, orderBy: { position: 'asc' } },
         tags: true,
         _count: { select: { favorites: true } },

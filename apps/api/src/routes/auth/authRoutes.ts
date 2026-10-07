@@ -1,12 +1,14 @@
 import { FastifyInstance, FastifyReply } from 'fastify'
 import * as argon2 from 'argon2'
 import { nanoid } from 'nanoid'
+import { z } from 'zod'
 
 import { generateUniqueSlug } from '../../lib/slugify.js'
 import { prisma } from '../../lib/prisma.js'
 import { redis } from '../../lib/redis.js'
 import { emailQueue } from '../../lib/queue.js'
 import { env } from '../../config/env.js'
+import { queueVerificationEmail } from '../../lib/verification-email.js'
 
 type LoginBody = { email: string; password: string }
 type RegisterBody = { name: string; email: string; password: string }
@@ -14,6 +16,16 @@ type ForgotPasswordBody = { email: string }
 type ResetPasswordBody = { token: string; newPassword: string }
 type VerifyEmailBody = { token: string }
 type AcceptInviteBody = { token: string; name: string; password: string }
+
+const RegisterSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  email: z.string().trim().toLowerCase().pipe(z.email()),
+  password: z.string().min(8).max(128),
+})
+const VerificationTokenSchema = z.object({ token: z.string().min(1).max(128) })
+const ResendVerificationSchema = z.object({
+  email: z.string().trim().toLowerCase().pipe(z.email()),
+})
 
 const ARGON2_OPTIONS = {
   type: argon2.argon2id,
@@ -51,6 +63,12 @@ export async function login(fastify: FastifyInstance) {
     const user = await prisma.user.findUnique({ where: { email } })
     if (!user || !(await argon2.verify(user.password, password))) {
       return reply.status(401).send({ error: 'Invalid credentials' })
+    }
+
+    if (!user.emailConfirmed) {
+      return reply
+        .status(403)
+        .send({ code: 'EMAIL_NOT_VERIFIED', error: 'Please verify your email before signing in.' })
     }
 
     const accessToken = fastify.jwt.sign({ id: user.id, email: user.email, role: user.role })
@@ -101,31 +119,72 @@ export async function register(fastify: FastifyInstance) {
     '/auth/register',
     AUTH_RATE_LIMIT,
     async (request, reply) => {
-      const { name, email, password } = request.body
-
-      const setting = await prisma.setting.findUnique({
-        where: { key: 'ALLOW_SELF_REGISTRATION' },
-      })
-      if (setting?.value === 'false') {
+      const parsed = RegisterSchema.safeParse(request.body)
+      if (!parsed.success)
+        return reply
+          .status(400)
+          .send({ error: 'Enter a name, a valid email and a password of 8–128 characters.' })
+      const { name, email, password } = parsed.data
+      const setting = await prisma.setting.findUnique({ where: { key: 'ALLOW_SELF_REGISTRATION' } })
+      if (setting?.value === 'false')
         return reply.status(403).send({ error: 'Registration is disabled' })
-      }
 
       const hashedPassword = await argon2.hash(password, ARGON2_OPTIONS)
       const slug = await generateUniqueSlug(name, async (candidate) =>
         Boolean(await prisma.user.findUnique({ where: { slug: candidate }, select: { id: true } })),
       )
-
-      const user = await prisma.user.create({
-        data: { name, email, password: hashedPassword, slug, role: 'GUEST', emailConfirmed: false },
-      })
-
-      const verifyToken = nanoid(32)
-      await redis.set(`verify:${verifyToken}`, user.id, 'EX', 86400)
-      await emailQueue.add('verify-email', { to: email, data: { name, token: verifyToken } })
-
+      let user
+      try {
+        user = await prisma.user.create({
+          data: {
+            name,
+            email,
+            password: hashedPassword,
+            slug,
+            role: 'GUEST',
+            emailConfirmed: false,
+          },
+        })
+      } catch (error) {
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+          return reply.status(409).send({
+            error:
+              'An account with this email already exists. Sign in or request a new verification email.',
+          })
+        }
+        throw error
+      }
+      try {
+        await queueVerificationEmail(user)
+      } catch (error) {
+        request.log.error({ err: error }, 'Could not queue verification email')
+        return reply.status(503).send({
+          code: 'VERIFICATION_DELIVERY_FAILED',
+          error:
+            'Your account was created, but the verification email could not be queued. Request a new verification email.',
+        })
+      }
       return reply
         .status(201)
         .send({ message: 'Registration successful. Please verify your email.' })
+    },
+  )
+}
+
+export async function resendVerification(fastify: FastifyInstance) {
+  fastify.post<{ Body: { email: string } }>(
+    '/auth/resend-verification',
+    AUTH_RATE_LIMIT,
+    async (request, reply) => {
+      const parsed = ResendVerificationSchema.safeParse(request.body)
+      if (!parsed.success) return reply.status(400).send({ error: 'Enter a valid email address.' })
+      const user = await prisma.user.findUnique({ where: { email: parsed.data.email } })
+      if (user && !user.emailConfirmed) {
+        await queueVerificationEmail(user)
+      }
+      return reply
+        .status(200)
+        .send({ message: 'If this account needs verification, a new email has been sent.' })
     },
   )
 }
@@ -177,7 +236,10 @@ export async function verifyEmail(fastify: FastifyInstance) {
     '/auth/verify-email',
     AUTH_RATE_LIMIT,
     async (request, reply) => {
-      const { token } = request.body
+      const parsed = VerificationTokenSchema.safeParse(request.body)
+      if (!parsed.success)
+        return reply.status(400).send({ error: 'Invalid or expired verification token' })
+      const { token } = parsed.data
 
       const userId = await redis.getdel(`verify:${token}`)
       if (!userId) return reply.status(400).send({ error: 'Invalid or expired verification token' })

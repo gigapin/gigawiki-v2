@@ -1,0 +1,88 @@
+.wiki-content .tiptap {
+  overflow-wrap: anywhere;
+  line-height: 1.8;
+  font-family: Georgia, serif;
+}
+.wiki-content .tiptap:focus {
+  outline: none;
+}
+.wiki-content .tiptap p {
+  margin: 0.8em 0;
+}
+.wiki-content .tiptap h1,
+.wiki-content .tiptap h2,
+.wiki-content .tiptap h3 {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  margin: 1.4em 0 0.5em;
+  line-height: 1.3;
+}
+.wiki-content .tiptap h1 {
+  font-size: 2em;
+}
+.wiki-content .tiptap h2 {
+  font-size: 1.5em;
+}
+.wiki-content .tiptap h3 {
+  font-size: 1.2em;
+}
+.wiki-content .tiptap ul,
+.wiki-content .tiptap ol {
+  padding-left: 1.8em;
+  margin: 1em 0;
+}
+.wiki-content .tiptap ul {
+  list-style: disc;
+}
+.wiki-content .tiptap ol {
+  list-style: decimal;
+}
+.wiki-content .tiptap blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 1em;
+  color: var(--muted-foreground);
+}
+.wiki-content .tiptap code,
+.wiki-content .tiptap pre {
+  font-family: var(--font-mono);
+  background: var(--muted);
+  border-radius: 0.3em;
+}
+.wiki-content .tiptap pre {
+  padding: 1em;
+  overflow-x: auto;
+}
+.wiki-content .tiptap a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+.wiki-content .tiptap img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5em;
+}
+.wiki-content .tiptap table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+}
+.wiki-content .tiptap td,
+.wiki-content .tiptap th {
+  border: 1px solid var(--border);
+  padding: 0.6em;
+  min-width: 3em;
+  vertical-align: top;
+}
+.wiki-content .tiptap th {
+  background: var(--muted);
+}
+.wiki-content .tiptap .tableWrapper {
+  overflow-x: auto;
+}
+.wiki-content .tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: var(--muted-foreground);
+  pointer-events: none;
+}

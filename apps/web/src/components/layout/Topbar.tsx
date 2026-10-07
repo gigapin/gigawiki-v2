@@ -36,7 +36,7 @@ function AvatarDropdown({ onClose }: { onClose: () => void }) {
       /* ignore */
     }
     clearAuth()
-    navigate({ to: '/login' })
+    navigate({ to: '/login', search: { redirect: '' } })
   }
 
   const itemStyle: React.CSSProperties = {
@@ -94,6 +94,8 @@ function AvatarDropdown({ onClose }: { onClose: () => void }) {
 }
 
 function CreateMenu({ onClose }: { onClose: () => void }) {
+  const navigate = useNavigate()
+  const user = useAuthStore((s) => s.user)
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -171,6 +173,25 @@ function CreateMenu({ onClose }: { onClose: () => void }) {
         ) : (
           <div
             key={item.label}
+            role={item.label === 'New page' ? 'button' : undefined}
+            tabIndex={item.label === 'New page' ? 0 : undefined}
+            onClick={() => {
+              if (item.label === 'New page' && user?.role !== 'GUEST') {
+                onClose()
+                void navigate({ to: '/new-page' })
+              }
+            }}
+            onKeyDown={(e) => {
+              if (
+                item.label === 'New page' &&
+                (e.key === 'Enter' || e.key === ' ') &&
+                user?.role !== 'GUEST'
+              ) {
+                e.preventDefault()
+                onClose()
+                void navigate({ to: '/new-page' })
+              }
+            }}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -253,7 +274,7 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
           position: 'sticky',
           top: 0,
           zIndex: 5,
-          fontFamily: "'Geist', system-ui, sans-serif",
+          fontFamily: 'var(--font-ui)',
         }}
       >
         {/* breadcrumbs */}
@@ -355,7 +376,7 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
           <span
             style={{
               flex: 1,
-              fontFamily: "'Geist', system-ui, sans-serif",
+              fontFamily: 'var(--font-ui)',
               fontSize: 13.5,
               color: 'var(--db-muted)',
               userSelect: 'none',
@@ -365,7 +386,7 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
           </span>
           <span
             style={{
-              fontFamily: "'Geist Mono', monospace",
+              fontFamily: 'var(--font-mono)',
               fontSize: 11,
               color: 'var(--db-muted)',
               background: 'var(--db-bg-2)',
@@ -444,7 +465,7 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
                 border: '1px solid color-mix(in oklch, var(--db-em-deep) 60%, transparent)',
                 boxShadow: '0 1px 0 rgba(255,255,255,0.4) inset, 0 1px 2px rgba(20,20,15,0.1)',
                 cursor: 'pointer',
-                fontFamily: "'Geist', system-ui, sans-serif",
+                fontFamily: 'var(--font-ui)',
               }}
             >
               <Icon name="plus" size={14} stroke={2.2} />
@@ -484,7 +505,7 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
                 cursor: 'pointer',
                 border: '2px solid var(--db-surface)',
                 boxShadow: '0 0 0 1px var(--db-line)',
-                fontFamily: "'Geist', system-ui, sans-serif",
+                fontFamily: 'var(--font-ui)',
               }}
               title={user?.name ?? ''}
             >

@@ -1,10 +1,17 @@
 import { createRootRoute, createRoute, createRouter, redirect } from '@tanstack/react-router'
 
+import { NewPagePage, EditPagePage } from '@/pages/pages/PageEditorPage'
+import { NewPageLocationPage } from '@/pages/pages/NewPageLocationPage'
+import { PageReaderPage } from '@/pages/pages/PageReaderPage'
 import { AppInit } from '@/components/AppInit'
 import { AppShell } from '@/components/layout/AppShell'
+import { verifyEmailToken } from '@/api/auth'
+import { RegisterPage } from '@/pages/auth/RegisterPage'
+import { VerifyEmailPage, VerifyEmailPending } from '@/pages/auth/VerifyEmailPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { SubjectsPage } from '@/pages/subjects/SubjectsPage'
+import { ProjectDetailPage } from '@/pages/projects/ProjectDetailPage'
 import { SubjectDetailPage } from '@/pages/subjects/SubjectDetailPage'
 import { useAuthStore } from '@/stores/auth.store'
 
@@ -22,6 +29,26 @@ const loginRoute = createRoute({
     redirect: (search.redirect as string) ?? '',
   }),
   component: LoginPage,
+})
+
+const registerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/register',
+  component: RegisterPage,
+})
+
+const verifyEmailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/verify-email',
+  validateSearch: (search: Record<string, unknown>) => ({
+    token: typeof search.token === 'string' ? search.token : '',
+  }),
+  loaderDeps: ({ search }) => ({ token: search.token }),
+  loader: ({ deps }) => verifyEmailToken(deps.token),
+  staleTime: Infinity,
+  pendingMs: 0,
+  pendingComponent: VerifyEmailPending,
+  component: VerifyEmailPage,
 })
 
 const authLayout = createRoute({
@@ -60,9 +87,56 @@ const subjectDetailRoute = createRoute({
   component: SubjectDetailPage,
 })
 
+const projectDetailRoute = createRoute({
+  getParentRoute: () => authLayout,
+  path: '/projects/$slug',
+  validateSearch: (search: Record<string, unknown>): { section?: string } => ({
+    section: typeof search.section === 'string' && search.section ? search.section : undefined,
+  }),
+  staticData: { title: 'Project' },
+  component: ProjectDetailPage,
+})
+
+const newPageLocationRoute = createRoute({
+  getParentRoute: () => authLayout,
+  path: '/new-page',
+  staticData: { title: 'New page' },
+  component: NewPageLocationPage,
+})
+
+const newPageRoute = createRoute({
+  getParentRoute: () => authLayout,
+  path: '/projects/$projectSlug/sections/$sectionSlug/pages/new',
+  staticData: { title: 'New page' },
+  component: NewPagePage,
+})
+const pageRoute = createRoute({
+  getParentRoute: () => authLayout,
+  path: '/pages/$slug',
+  staticData: { title: 'Page' },
+  component: PageReaderPage,
+})
+const editPageRoute = createRoute({
+  getParentRoute: () => authLayout,
+  path: '/pages/$slug/edit',
+  staticData: { title: 'Edit page' },
+  component: EditPagePage,
+})
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
-  authLayout.addChildren([indexRoute, subjectsRoute, subjectDetailRoute]),
+  registerRoute,
+  verifyEmailRoute,
+  authLayout.addChildren([
+    indexRoute,
+    subjectsRoute,
+    subjectDetailRoute,
+    projectDetailRoute,
+    newPageLocationRoute,
+    newPageRoute,
+    pageRoute,
+    editPageRoute,
+  ]),
 ])
 
 export const router = createRouter({ routeTree })

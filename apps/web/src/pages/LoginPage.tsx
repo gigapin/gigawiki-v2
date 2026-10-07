@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { useNavigate, useSearch } from '@tanstack/react-router'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import type { User } from '@shared/types/user'
 
 import apiClient from '@/api/client'
+import { apiErrorMessage } from '@/lib/api-error'
 import { useAuthStore } from '@/stores/auth.store'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -18,7 +19,7 @@ export function LoginPage() {
   const [showPw, setShowPw] = useState(false)
   const [emailError, setEmailError] = useState('')
   const [pwError, setPwError] = useState('')
-  const [serverError, setServerError] = useState(false)
+  const [serverError, setServerError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   function validateEmail(value: string) {
@@ -45,7 +46,7 @@ export function LoginPage() {
 
   async function handleSubmit(e: React.SubmitEvent) {
     e.preventDefault()
-    setServerError(false)
+    setServerError('')
     const okEmail = validateEmail(email)
     const okPw = validatePw(password)
     if (!okEmail || !okPw) return
@@ -54,16 +55,15 @@ export function LoginPage() {
     try {
       const { data: loginData } = await apiClient.post<{ accessToken: string }>(
         '/api/v2/auth/login',
-        { email: email.trim(), password },
+        { email: email.trim().toLowerCase(), password },
       )
       const { data: meData } = await apiClient.get<{ user: User }>('/api/v2/auth/me', {
         headers: { Authorization: `Bearer ${loginData.accessToken}` },
       })
       setAuth(meData.user, loginData.accessToken)
       navigate({ to: (search as { redirect?: string }).redirect || '/' })
-    } catch (err: unknown) {
-      console.error(err)
-      setServerError(true)
+    } catch (error) {
+      setServerError(apiErrorMessage(error))
     } finally {
       setSubmitting(false)
     }
@@ -77,7 +77,7 @@ export function LoginPage() {
           to   { opacity: 1; transform: translateY(0); }
         }
         .gw-login-body {
-          font-family: "Inter Tight", system-ui, sans-serif;
+          font-family: var(--font-ui);
           -webkit-font-smoothing: antialiased;
           background: var(--gw-bg-deep);
           color: var(--gw-text);
@@ -128,12 +128,12 @@ export function LoginPage() {
           box-shadow: 0 0 0 1px oklch(0.78 0.16 160 / 0.4), 0 6px 16px oklch(0.6 0.14 160 / 0.28);
         }
         .gw-mark span {
-          font-family: "Space Grotesk", sans-serif;
+          font-family: var(--font-ui);
           font-weight: 700; font-size: 16px;
           color: oklch(0.16 0.03 160); line-height: 1;
         }
         .gw-word {
-          font-family: "Space Grotesk", sans-serif;
+          font-family: var(--font-ui);
           font-weight: 600; font-size: 19px;
           letter-spacing: -0.01em; color: var(--gw-text);
         }
@@ -151,7 +151,7 @@ export function LoginPage() {
         }
         .gw-head { margin-bottom: 22px; }
         .gw-head h1 {
-          font-family: "Space Grotesk", sans-serif;
+          font-family: var(--font-ui);
           font-size: 21px; font-weight: 600;
           letter-spacing: -0.015em; margin: 0 0 6px;
           color: var(--gw-text);
@@ -182,7 +182,7 @@ export function LoginPage() {
           border: 1px solid var(--gw-field-edge);
           border-radius: 10px;
           padding: 11px 13px;
-          font-family: "Inter Tight", system-ui, sans-serif;
+          font-family: var(--font-ui);
           font-size: 14px; color: var(--gw-text);
           transition: border-color 0.16s, box-shadow 0.16s, background 0.16s;
         }
@@ -232,7 +232,7 @@ export function LoginPage() {
         .gw-submit {
           margin-top: 8px; width: 100%; border: none;
           border-radius: 10px; padding: 12px 16px;
-          font-family: "Space Grotesk", sans-serif;
+          font-family: var(--font-ui);
           font-size: 14.5px; font-weight: 600;
           letter-spacing: 0.005em;
           color: oklch(0.15 0.03 160);
@@ -292,7 +292,10 @@ export function LoginPage() {
                   <line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
                 <div>
-                  <strong>Invalid email or password.</strong> Check your details and try again.
+                  <p>{serverError}</p>
+                  <Link to="/verify-email" search={{ token: '' }} className="gw-link">
+                    Resend verification email
+                  </Link>
                 </div>
               </div>
             )}
@@ -313,7 +316,7 @@ export function LoginPage() {
                     onChange={(e) => {
                       setEmail(e.target.value)
                       if (emailError) validateEmail(e.target.value)
-                      setServerError(false)
+                      setServerError('')
                     }}
                     onBlur={(e) => {
                       if (e.target.value.trim()) validateEmail(e.target.value)
@@ -338,7 +341,7 @@ export function LoginPage() {
                     onChange={(e) => {
                       setPassword(e.target.value)
                       if (pwError) validatePw(e.target.value)
-                      setServerError(false)
+                      setServerError('')
                     }}
                   />
                   <button
@@ -399,7 +402,7 @@ export function LoginPage() {
             </form>
 
             <div className="gw-foot">
-              Don't have an account? <a href="#">Create account</a>
+              Don't have an account? <Link to="/register">Create account</Link>
             </div>
           </div>
         </div>

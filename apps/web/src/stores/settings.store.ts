@@ -1,6 +1,8 @@
 import axios from 'axios'
 import { create } from 'zustand'
 
+import { API_BASE_URL } from '@/api/config'
+
 interface SettingsState {
   settings: Record<string, string>
   fetchSettings: () => Promise<void>
@@ -11,11 +13,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   settings: {},
   fetchSettings: async () => {
     try {
-      const { data } = await axios.get<{ data: Record<string, string> }>(
-        `${import.meta.env.VITE_API_URL}/api/v2/settings`,
-        { withCredentials: true },
-      )
-      set({ settings: data.data })
+      const { data } = await axios.get<Record<string, string>>(`${API_BASE_URL}/api/v2/settings`, {
+        withCredentials: true,
+      })
+      set({ settings: data })
     } catch {
       // silently fail — settings unavailable
     }

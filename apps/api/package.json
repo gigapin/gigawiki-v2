@@ -8,7 +8,8 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "registration:enable": "node --import tsx src/scripts/enable-registration.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

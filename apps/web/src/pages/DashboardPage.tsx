@@ -181,7 +181,7 @@ function StatCards() {
             position: 'relative',
             overflow: 'hidden',
             transition: 'transform 120ms ease, box-shadow 120ms ease',
-            fontFamily: "'Geist', system-ui, sans-serif",
+            fontFamily: 'var(--font-ui)',
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-1px)'
@@ -220,7 +220,7 @@ function StatCards() {
           </div>
           <div
             style={{
-              fontFamily: "'Instrument Serif', Georgia, serif",
+              fontFamily: 'var(--font-display)',
               fontWeight: 400,
               fontSize: 40,
               lineHeight: 1,
@@ -298,7 +298,7 @@ function ActivityFeed() {
       >
         <h2
           style={{
-            fontFamily: "'Instrument Serif', Georgia, serif",
+            fontFamily: 'var(--font-display)',
             fontWeight: 400,
             fontSize: 22,
             letterSpacing: '-0.005em',
@@ -408,7 +408,7 @@ function ActivityFeed() {
               </div>
               <div
                 style={{
-                  fontFamily: "'Geist Mono', monospace",
+                  fontFamily: 'var(--font-mono)',
                   fontSize: 11,
                   color: 'var(--db-muted)',
                   whiteSpace: 'nowrap',
@@ -464,7 +464,7 @@ function FavoritesList() {
       >
         <h2
           style={{
-            fontFamily: "'Instrument Serif', Georgia, serif",
+            fontFamily: 'var(--font-display)',
             fontWeight: 400,
             fontSize: 22,
             letterSpacing: '-0.005em',
@@ -479,7 +479,7 @@ function FavoritesList() {
           {data && (
             <span
               style={{
-                fontFamily: "'Geist Mono', monospace",
+                fontFamily: 'var(--font-mono)',
                 fontSize: 11,
                 color: 'var(--db-muted)',
                 background: 'var(--db-bg-2)',
@@ -581,7 +581,7 @@ function FavoritesList() {
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div
                   style={{
-                    fontFamily: "'Geist Mono', monospace",
+                    fontFamily: 'var(--font-mono)',
                     fontSize: 10.5,
                     color: 'var(--db-muted)',
                     textTransform: 'uppercase',

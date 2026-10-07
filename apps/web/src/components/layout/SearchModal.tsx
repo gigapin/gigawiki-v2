@@ -1,3 +1,4 @@
+import { useNavigate } from '@tanstack/react-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import apiClient from '@/api/client'
@@ -6,7 +7,7 @@ import { Icon } from '@/components/ui/icon'
 interface SearchResult {
   id: string
   title: string
-  type: 'PAGE' | 'PROJECT' | 'SECTION'
+  type?: 'PAGE' | 'PROJECT' | 'SECTION'
   project?: { name: string }
   subject?: { name: string }
   slug: string
@@ -22,6 +23,11 @@ interface Props {
 }
 
 export function SearchModal({ open, onClose }: Props) {
+  return open ? <SearchDialog onClose={onClose} /> : null
+}
+
+function SearchDialog({ onClose }: Omit<Props, 'open'>) {
+  const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [focusedIndex, setFocusedIndex] = useState(0)
@@ -30,13 +36,12 @@ export function SearchModal({ open, onClose }: Props) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    if (open) {
-      setQuery('')
-      setResults([])
-      setFocusedIndex(0)
-      setTimeout(() => inputRef.current?.focus(), 30)
+    const focusTimer = setTimeout(() => inputRef.current?.focus(), 30)
+    return () => {
+      clearTimeout(focusTimer)
+      if (timerRef.current) clearTimeout(timerRef.current)
     }
-  }, [open])
+  }, [])
 
   const search = useCallback(async (q: string) => {
     if (!q.trim()) {
@@ -63,15 +68,19 @@ export function SearchModal({ open, onClose }: Props) {
   }
 
   useEffect(() => {
-    if (!open) return
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') {
         onClose()
         return
       }
+      if (e.key === 'Enter' && results[focusedIndex]) {
+        e.preventDefault()
+        onClose()
+        void navigate({ to: '/pages/$slug', params: { slug: results[focusedIndex].slug } })
+      }
       if (e.key === 'ArrowDown') {
         e.preventDefault()
-        setFocusedIndex((i) => Math.min(i + 1, results.length - 1))
+        setFocusedIndex((i) => Math.max(0, Math.min(i + 1, results.length - 1)))
       }
       if (e.key === 'ArrowUp') {
         e.preventDefault()
@@ -80,12 +89,10 @@ export function SearchModal({ open, onClose }: Props) {
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [open, results.length, onClose])
-
-  if (!open) return null
+  }, [results, focusedIndex, onClose, navigate])
 
   const typeIcon = (type: SearchResult['type']) =>
-    type === 'PAGE'
+    !type || type === 'PAGE'
       ? ('doc' as const)
       : type === 'PROJECT'
         ? ('folder' as const)
@@ -115,7 +122,7 @@ export function SearchModal({ open, onClose }: Props) {
           borderRadius: 14,
           boxShadow: '0 24px 60px -16px rgba(0,0,0,0.8), 0 4px 16px rgba(0,0,0,0.5)',
           overflow: 'hidden',
-          fontFamily: "'Geist', system-ui, sans-serif",
+          fontFamily: 'var(--font-ui)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -136,13 +143,13 @@ export function SearchModal({ open, onClose }: Props) {
             ref={inputRef}
             value={query}
             onChange={handleChange}
-            placeholder="Search pages, projects, people…"
+            placeholder="Search pages…"
             style={{
               flex: 1,
               border: 0,
               outline: 'none',
               background: 'transparent',
-              fontFamily: "'Geist', system-ui, sans-serif",
+              fontFamily: 'var(--font-ui)',
               fontSize: 15,
               color: 'var(--db-ink)',
             }}
@@ -152,7 +159,7 @@ export function SearchModal({ open, onClose }: Props) {
               style={{
                 fontSize: 11,
                 color: 'var(--db-muted)',
-                fontFamily: "'Geist Mono', monospace",
+                fontFamily: 'var(--font-mono)',
               }}
             >
               …
@@ -160,7 +167,7 @@ export function SearchModal({ open, onClose }: Props) {
           )}
           <span
             style={{
-              fontFamily: "'Geist Mono', monospace",
+              fontFamily: 'var(--font-mono)',
               fontSize: 11,
               color: 'var(--db-muted)',
               background: 'var(--db-bg-2)',
@@ -181,6 +188,12 @@ export function SearchModal({ open, onClose }: Props) {
             {results.map((r, i) => (
               <div
                 key={r.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  onClose()
+                  void navigate({ to: '/pages/$slug', params: { slug: r.slug } })
+                }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -234,13 +247,13 @@ export function SearchModal({ open, onClose }: Props) {
                     marginLeft: 'auto',
                     fontSize: 11,
                     color: 'var(--db-muted-2)',
-                    fontFamily: "'Geist Mono', monospace",
+                    fontFamily: 'var(--font-mono)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
                     flexShrink: 0,
                   }}
                 >
-                  {r.type.toLowerCase()}
+                  {(r.type ?? 'PAGE').toLowerCase()}
                 </span>
               </div>
             ))}
@@ -280,7 +293,7 @@ export function SearchModal({ open, onClose }: Props) {
               <span key={key} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 <span
                   style={{
-                    fontFamily: "'Geist Mono', monospace",
+                    fontFamily: 'var(--font-mono)',
                     fontSize: 11,
                     background: 'var(--db-bg-2)',
                     border: '1px solid var(--db-line)',

@@ -3,79 +3,16 @@ import { useParams, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import type { Subject } from '@shared/types/subject'
 
+import { CARD_TONES, toneForColor } from '@/styles/cover-colors'
 import apiClient from '@/api/client'
 import { Icon, type IconName } from '@/components/ui/icon'
 import { useAuthStore } from '@/stores/auth.store'
 import { CreateProjectModal } from '@/components/subjects/CreateProjectModal'
 import { fetchProjectsBySubject, type ProjectWithMeta } from '@/api/projects'
 
-/* ── colour palette (mirrors SubjectsPage) ── */
-const CARD_TONES: Record<
-  string,
-  {
-    banner: string
-    bannerDeep: string
-    body: string
-    bodyEdge: string
-    label: string
-    glyph: string
-  }
-> = {
-  emerald: {
-    banner: 'oklch(0.42 0.13 158)',
-    bannerDeep: 'oklch(0.26 0.055 158)',
-    body: 'oklch(0.20 0.025 158)',
-    bodyEdge: 'oklch(0.32 0.04 158)',
-    label: 'oklch(0.92 0.04 158)',
-    glyph: 'oklch(0.16 0.02 158)',
-  },
-  blue: {
-    banner: 'oklch(0.45 0.14 268)',
-    bannerDeep: 'oklch(0.28 0.06 268)',
-    body: 'oklch(0.20 0.028 268)',
-    bodyEdge: 'oklch(0.32 0.045 268)',
-    label: 'oklch(0.92 0.04 268)',
-    glyph: 'oklch(0.16 0.025 268)',
-  },
-  amber: {
-    banner: 'oklch(0.55 0.13 78)',
-    bannerDeep: 'oklch(0.32 0.06 78)',
-    body: 'oklch(0.21 0.025 78)',
-    bodyEdge: 'oklch(0.33 0.04 78)',
-    label: 'oklch(0.95 0.05 78)',
-    glyph: 'oklch(0.17 0.02 78)',
-  },
-  red: {
-    banner: 'oklch(0.48 0.14 18)',
-    bannerDeep: 'oklch(0.28 0.065 18)',
-    body: 'oklch(0.20 0.028 18)',
-    bodyEdge: 'oklch(0.33 0.05 18)',
-    label: 'oklch(0.94 0.04 18)',
-    glyph: 'oklch(0.16 0.025 18)',
-  },
-  slate: {
-    banner: 'oklch(0.44 0.06 250)',
-    bannerDeep: 'oklch(0.26 0.03 250)',
-    body: 'oklch(0.20 0.018 250)',
-    bodyEdge: 'oklch(0.31 0.03 250)',
-    label: 'oklch(0.92 0.025 250)',
-    glyph: 'oklch(0.16 0.015 250)',
-  },
-  teal: {
-    banner: 'oklch(0.45 0.12 195)',
-    bannerDeep: 'oklch(0.27 0.055 195)',
-    body: 'oklch(0.20 0.022 195)',
-    bodyEdge: 'oklch(0.31 0.038 195)',
-    label: 'oklch(0.92 0.04 195)',
-    glyph: 'oklch(0.16 0.018 195)',
-  },
-}
-
 const TONE_KEYS = Object.keys(CARD_TONES)
 
-function toneForColor(colorId: string) {
-  return CARD_TONES[colorId] ?? CARD_TONES['emerald']
-}
+/* ── colour palette (mirrors SubjectsPage) ── */
 
 /* ── helpers ── */
 function timeAgo(date: string | Date): string {
@@ -160,7 +97,7 @@ function ProjectCard({ project, toneIndex, onClick }: ProjectCardProps) {
             position: 'absolute',
             right: 10,
             bottom: -18,
-            fontFamily: "'Instrument Serif', Georgia, serif",
+            fontFamily: 'var(--font-display)',
             fontStyle: 'italic',
             fontSize: 110,
             lineHeight: 1,
@@ -182,7 +119,7 @@ function ProjectCard({ project, toneIndex, onClick }: ProjectCardProps) {
             display: 'flex',
             alignItems: 'center',
             gap: 4,
-            fontFamily: "'Geist Mono', monospace",
+            fontFamily: 'var(--font-mono)',
             fontSize: 10,
             color: tone.label,
             background: 'rgba(0,0,0,0.28)',
@@ -240,7 +177,7 @@ function ProjectCard({ project, toneIndex, onClick }: ProjectCardProps) {
               <span
                 key={tag.id}
                 style={{
-                  fontFamily: "'Geist Mono', monospace",
+                  fontFamily: 'var(--font-mono)',
                   fontSize: 10,
                   color: tone.label,
                   background: 'rgba(255,255,255,0.1)',
@@ -309,7 +246,7 @@ function Pagination({ page, total, limit, onChange }: PaginationProps) {
     background: active ? 'var(--db-em-soft)' : 'transparent',
     color: active ? 'var(--db-em-deep)' : disabled ? 'var(--db-muted-2)' : 'var(--db-muted)',
     fontSize: 13,
-    fontFamily: "'Geist Mono', monospace",
+    fontFamily: 'var(--font-mono)',
     cursor: disabled ? 'not-allowed' : 'pointer',
     display: 'flex',
     alignItems: 'center',
@@ -331,9 +268,7 @@ function Pagination({ page, total, limit, onChange }: PaginationProps) {
         gap: 12,
       }}
     >
-      <span
-        style={{ fontSize: 13, color: 'var(--db-muted)', fontFamily: "'Geist Mono', monospace" }}
-      >
+      <span style={{ fontSize: 13, color: 'var(--db-muted)', fontFamily: 'var(--font-mono)' }}>
         Showing {from}–{to} of {total} projects
       </span>
 
@@ -500,7 +435,7 @@ export function SubjectDetailPage() {
             display: 'flex',
             alignItems: 'center',
             gap: 5,
-            fontFamily: "'Geist Mono', monospace",
+            fontFamily: 'var(--font-mono)',
             fontSize: 11,
             color: tone.label,
             background: 'rgba(0,0,0,0.3)',
@@ -517,7 +452,7 @@ export function SubjectDetailPage() {
         {/* three-dot menu */}
         {canManage && (
           <div style={{ position: 'absolute', top: 14, right: 16 }}>
-            <ThreeDotMenu subjectSlug={slug} />
+            <ThreeDotMenu />
           </div>
         )}
 
@@ -548,7 +483,7 @@ export function SubjectDetailPage() {
       <div style={{ padding: '48px 36px 24px' }}>
         <h1
           style={{
-            fontFamily: "'Instrument Serif', Georgia, serif",
+            fontFamily: 'var(--font-display)',
             fontWeight: 400,
             fontStyle: 'italic',
             fontSize: 48,
@@ -566,7 +501,7 @@ export function SubjectDetailPage() {
           {projectsData && (
             <span
               style={{
-                fontFamily: "'Geist Mono', monospace",
+                fontFamily: 'var(--font-mono)',
                 fontStyle: 'normal',
                 fontSize: 12,
                 color: 'var(--db-muted)',
@@ -609,7 +544,7 @@ export function SubjectDetailPage() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontFamily: "'Geist', system-ui, sans-serif",
+              fontFamily: 'var(--font-ui)',
               fontSize: 11,
               fontWeight: 600,
               color: tone.label,
@@ -671,7 +606,7 @@ export function SubjectDetailPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <h2
               style={{
-                fontFamily: "'Geist', system-ui, sans-serif",
+                fontFamily: 'var(--font-ui)',
                 fontSize: 17,
                 fontWeight: 600,
                 color: 'var(--db-ink)',
@@ -684,7 +619,7 @@ export function SubjectDetailPage() {
             {projectsData && (
               <span
                 style={{
-                  fontFamily: "'Geist Mono', monospace",
+                  fontFamily: 'var(--font-mono)',
                   fontSize: 11,
                   color: 'var(--db-muted)',
                   background: 'var(--db-bg-2)',
@@ -714,7 +649,7 @@ export function SubjectDetailPage() {
                 color: 'var(--db-em-deep)',
                 fontSize: 13.5,
                 fontWeight: 500,
-                fontFamily: "'Geist', system-ui, sans-serif",
+                fontFamily: 'var(--font-ui)',
               }}
               onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--db-em-soft-2)')}
               onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--db-em-soft)')}
@@ -814,7 +749,7 @@ export function SubjectDetailPage() {
 }
 
 /* ── three-dot menu ── */
-function ThreeDotMenu({ subjectSlug: _subjectSlug }: { subjectSlug: string }) {
+function ThreeDotMenu() {
   const [open, setOpen] = useState(false)
 
   return (
@@ -875,7 +810,7 @@ function ThreeDotMenu({ subjectSlug: _subjectSlug }: { subjectSlug: string }) {
                   color: 'var(--db-ink-2)',
                   fontSize: 13.5,
                   cursor: 'pointer',
-                  fontFamily: "'Geist', system-ui, sans-serif",
+                  fontFamily: 'var(--font-ui)',
                   textAlign: 'left',
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--db-bg-2)')}
