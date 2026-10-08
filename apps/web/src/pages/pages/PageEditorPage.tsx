@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useBlocker, useNavigate, useParams } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -130,7 +130,7 @@ export function EditPagePage() {
   )
 }
 
-function PageForm({
+export function PageForm({
   context,
   initial,
   slug,
@@ -146,29 +146,62 @@ function PageForm({
   const [editorStatus, setEditorStatus] = useState({ uploading: false, invalid: false })
   const editorBusy = editorStatus.uploading || editorStatus.invalid
   const [saved, setSaved] = useState(false)
-  const dirty = !saved && JSON.stringify(input) !== JSON.stringify(initial)
+  const [baseline, setBaseline] = useState(initial)
+  const [activeSlug, setActiveSlug] = useState(slug)
+  const [lastSaved, setLastSaved] = useState<Date | null>(null)
+  const dirty = !saved && JSON.stringify(input) !== JSON.stringify(baseline)
   const mutation = useMutation({
-    mutationFn: (isDraft: boolean) =>
-      savePage(
-        { ...input, title: input.title.trim(), isDraft },
-        slug ? { slug } : { sectionId: context.sectionId },
-      ),
-    onSuccess: async (page) => {
+    mutationFn: ({ payload }: { payload: PageInput; automatic: boolean }) =>
+      savePage(payload, activeSlug ? { slug: activeSlug } : { sectionId: context.sectionId }),
+    onSuccess: async (page, { payload, automatic }) => {
+      setBaseline(payload)
+      setInput(payload)
+      setLastSaved(new Date())
       setSaved(true)
+      setActiveSlug(page.slug)
+      if (automatic && activeSlug) {
+        const previous = client.getQueryData(['page', activeSlug])
+        if (previous) client.setQueryData(['page', page.slug], { ...previous, ...payload, ...page })
+      }
       // A title change can change the URL: do not refetch the old slug.
-      client.removeQueries({ queryKey: ['page', slug], exact: true, type: 'inactive' })
+      client.removeQueries({ queryKey: ['page', activeSlug], exact: true, type: 'inactive' })
       await Promise.all(
-        ['page', 'pages', 'sections', 'project', 'subject', 'subjects', 'stats', 'activities'].map(
-          (key) => client.invalidateQueries({ queryKey: [key], refetchType: 'none' }),
-        ),
+        [
+          'page',
+          'pages',
+          'revisions',
+          'revision',
+          'sections',
+          'project',
+          'subject',
+          'subjects',
+          'stats',
+          'activities',
+        ].map((key) => client.invalidateQueries({ queryKey: [key], refetchType: 'none' })),
       )
-      toast.success(page.isDraft ? 'Draft saved' : 'Page published')
-      await navigate({ to: '/pages/$slug', params: { slug: page.slug } })
+      if (automatic) {
+        if (page.slug !== activeSlug)
+          await navigate({ to: '/pages/$slug/edit', params: { slug: page.slug }, replace: true })
+      } else {
+        toast.success(page.isDraft ? 'Draft saved' : 'Page published')
+        await navigate({ to: '/pages/$slug', params: { slug: page.slug } })
+      }
     },
   })
+  const { mutate, isPending } = mutation
+  const allowed = user?.role === 'EDITOR' || user?.role === 'ADMIN'
+  useEffect(() => {
+    if (!activeSlug || !allowed || !dirty || editorBusy || isPending || !input.title.trim()) return
+    const timer = window.setTimeout(() => {
+      mutate({ payload: { ...input, title: input.title.trim() }, automatic: true })
+    }, 30_000)
+    return () => window.clearTimeout(timer)
+  }, [activeSlug, allowed, dirty, editorBusy, input, isPending, mutate])
+  const save = (isDraft: boolean) =>
+    mutation.mutate({ payload: { ...input, title: input.title.trim(), isDraft }, automatic: false })
   const blocker = useBlocker({
-    shouldBlockFn: () => (dirty || editorStatus.uploading) && !mutation.isPending,
-    enableBeforeUnload: (dirty || editorStatus.uploading) && !mutation.isPending,
+    shouldBlockFn: () => editorStatus.uploading || (!saved && (dirty || mutation.isPending)),
+    enableBeforeUnload: editorStatus.uploading || (!saved && (dirty || mutation.isPending)),
     withResolver: true,
   })
   if (!user || user.role === 'GUEST')
@@ -199,13 +232,13 @@ function PageForm({
           <Button
             variant="outline"
             disabled={mutation.isPending || editorBusy || !input.title.trim()}
-            onClick={() => mutation.mutate(true)}
+            onClick={() => save(true)}
           >
             Save draft
           </Button>
           <Button
             disabled={mutation.isPending || editorBusy || !input.title.trim()}
-            onClick={() => mutation.mutate(false)}
+            onClick={() => save(false)}
           >
             {mutation.isPending ? 'Saving…' : 'Publish'}
           </Button>
@@ -250,8 +283,19 @@ function PageForm({
         onStatusChange={setEditorStatus}
       />
       <p className="text-xs text-muted-foreground">
-        {dirty ? 'Unsaved changes' : 'No unsaved changes'} · Save a draft to continue later, or
-        publish when ready.
+        <span role="status">
+          {mutation.isPending
+            ? 'Saving…'
+            : dirty
+              ? 'Unsaved changes'
+              : lastSaved
+                ? `Saved at ${lastSaved.toLocaleTimeString()}`
+                : 'No unsaved changes'}
+        </span>
+        {' · '}
+        {activeSlug
+          ? 'Changes save automatically after 30 seconds of inactivity.'
+          : 'Save a draft to enable autosave, or publish when ready.'}
       </p>
       <Dialog
         open={blocker.status === 'blocked'}

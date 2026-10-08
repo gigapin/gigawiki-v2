@@ -28,7 +28,7 @@
 
 **Codice della sessione committato dall’utente in `c12f73a`** (`feat: add first implementation of frontend`), su branch `dev`. Il working tree era pulito prima di questo aggiornamento documentale; questa modifica non è stata committata. `.claude/settings.local.json` è ancora tracciato, anche se ora escluso da `.gitignore`.
 
-**Ultime verifiche eseguite:** build e lint frontend, typecheck API, 240 test backend e 83 test frontend superati. Test frontend in ambiente Node e jsdom: non equivalgono a una prova delle interazioni nel browser. Registrazione con Mailtrap confermata funzionante dall’utente; ruolo di un utente cambiato manualmente in Prisma Studio per provare creazione/modifica.
+**Ultime verifiche eseguite:** build e lint frontend, typecheck API, 240 test backend e 88 test frontend superati. Test frontend in ambiente Node e jsdom: non equivalgono a una prova delle interazioni nel browser. Registrazione con Mailtrap confermata funzionante dall’utente; ruolo di un utente cambiato manualmente in Prisma Studio per provare creazione/modifica.
 
 ---
 
@@ -85,7 +85,7 @@ Legenda: ✅ fatto · 🟡 parziale · ⬜ non iniziato
 | 28 | Pagine auth | 🟡 | Login, Register, VerifyEmail, AuthLayout e reinvio verifica implementati. Restano ForgotPassword, ResetPassword e AcceptInvite |
 | 29 | Dashboard | 🟡 | Attività recenti, preferiti e statistiche ci sono. Manca la sezione «Recently visited» (`GET /views`) |
 | 30 | Pagine Subjects / Projects / Sections | 🟡 | Prima implementazione in `c12f73a`. Fatti: Subjects/Subject detail, Project detail, ProjectFormDialog riusato in creazione/modifica, SectionFormDialog, eliminazione admin con conferma, riordino nativo + pulsanti accessibili, lista pagine paginata. Collegamenti a reader/editor e breadcrumb completati. Restano CRUD completo Subject e upload cover |
-| 31 | Page view + editor Tiptap | 🟡 | Reader, creazione/modifica, toolbar, tabelle, visibilità, bozza/pubblicazione, guardia modifiche non salvate. Fatti anche upload immagini, link, syntax highlighting e contenuti legacy JSON. Restano autosave 30s, mentions, bubble menu, tag/preferiti e integrazione commenti |
+| 31 | Page view + editor Tiptap | 🟡 | Reader, creazione/modifica, toolbar, tabelle, visibilità, bozza/pubblicazione, guardia modifiche non salvate. Fatti anche upload immagini, link, syntax highlighting e contenuti legacy JSON. Autosave dopo 30s di inattività sulle pagine esistenti. Restano mentions, bubble menu, tag/preferiti e integrazione commenti |
 | 32 | Drawer revisioni | ✅ | Cronologia paginata, anteprima, ripristino con conferma Editor/Admin e navigazione allo slug ripristinato |
 | 33 | Componente commenti | ⬜ | |
 | 34 | Pagine settings | ⬜ | |
@@ -120,7 +120,7 @@ Punti in cui il codice si discosta da `GIGAWIKI_V2_TASKS.md`. Vanno **letti prim
 ## Prossimi passi
 
 1. Provare nel browser il ciclo pagina completo: scelta sezione, creazione bozza, pubblicazione, modifica, avviso di uscita e ritorno tramite breadcrumb. Registrazione già confermata dall’utente; per creare/editare pagine occorre EDITOR/ADMIN e, dopo un cambio ruolo da Prisma Studio, aggiornare la sessione.
-2. Completare task 31: autosave, mentions, menu contestuale e tag/preferiti. Reader/editor ora condividono lo schema e supportano HTML, testo semplice e documenti Tiptap JSON; upload immagini, link e syntax highlighting sono implementati. Il prossimo incremento è autosave; il drawer revisioni è implementato.
+2. Completare task 31: autosave, mentions, menu contestuale e tag/preferiti. Reader/editor ora condividono lo schema e supportano HTML, testo semplice e documenti Tiptap JSON; upload immagini, link e syntax highlighting sono implementati. Autosave e drawer revisioni sono implementati; procedere con mentions e menu contestuale.
 3. Completare auth restante (ForgotPassword, ResetPassword, AcceptInvite), Dashboard (recently visited) e CRUD Subject/upload cover.
 4. Commenti riusabili; provare nel browser il drawer revisioni e il ripristino.
 5. Favorites e Settings sulla stessa base shadcn. Allineare prima i contratti inviti (elenco/reinvio/cancellazione) e cambio password, non completi nel backend.
@@ -153,6 +153,15 @@ Chi clona il repo su una macchina nuova deve ricreare `init.sh` (o avere Node su
 ---
 
 ## Log delle sessioni
+
+### 2026-10-08 — Autosave editor
+
+- Pagine esistenti salvate dopo 30 secondi di inattività, mantenendo bozza/pubblicazione e visibilità; l’editor resta aperto. La prima creazione è manuale.
+- Indicatore salvataggio/orario; modifiche non salvate ed errore conservati in caso di fallimento. Upload, contenuto invalido e titolo vuoto sospendono l’autosave.
+- Cambio titolo: aggiornamento dello slug nell’editor e uso del nuovo indirizzo per le richieste successive. Salvataggio manuale annulla il timer; protezione uscita durante modifiche e richieste pendenti.
+- Verifiche: 88 test frontend, build e lint. Test autosave con timer controllati in jsdom; verifica browser reale da eseguire.
+- Prossimi interventi del task 31: mentions e menu contestuale.
+
 
 ### 2026-10-08 — Drawer revisioni
 
