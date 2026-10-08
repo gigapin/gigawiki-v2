@@ -53,7 +53,7 @@ export async function fetchSectionsByProject(fastify: FastifyInstance) {
 
       const sections = await prisma.section.findMany({
         where: { projectId: project.id, deletedAt: null },
-        include: { _count: { select: { pages: true } } },
+        include: { _count: { select: { pages: { where: { deletedAt: null } } } } },
         orderBy: { position: 'asc' },
       })
 

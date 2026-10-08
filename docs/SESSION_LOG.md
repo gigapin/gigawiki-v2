@@ -14,31 +14,21 @@
 
 ## Stato attuale
 
-**Aggiornato al:** 2026-09-09
+**Aggiornato al:** 2026-10-08
 
 | | |
 |---|---|
 | Branch di lavoro | `dev` (il default remoto è `main`) |
 | Remote | `git@github.com:gigapin/gigawiki-v2.git` |
-| Task completati | 32 / 40 |
-| Fase corrente | **Fase 4 — Frontend**, task 30 in corso |
-| Backend | Completo (task 5–23). 15 file di test, 212 test verdi |
-| Frontend | Impalcatura, auth di base, dashboard e sezione Subjects. Editor, commenti, revisioni e settings non iniziati |
+| Task completati | 28 / 40 completati; 8 parziali; 4 non iniziati (conteggio dalla tabella sotto) |
+| Fase corrente | **Fase 4 — Frontend**, task 28–31 e 35 parziali. Base shadcn, Project detail, registrazione e primo flusso reader/editor implementati |
+| Backend | Completo (task 5–23). 17 file di test, 234 test verdi |
+| Frontend | Login, Register, Verify email, Dashboard, Subjects, Project detail, scelta destinazione nuova pagina, reader ed editor Tiptap. Bozza/pubblicazione e breadcrumb navigabili. Restano le funzionalità avanzate del task 31, revisioni, commenti e settings |
 | CI/CD | Non iniziata (task 39) |
 
-**Lavoro non committato su `dev`** — 14 file, ~2.470 righe, tutte in staging. È l'implementazione in corso del task 30 (Subjects/Projects):
+**Codice della sessione committato dall’utente in `c12f73a`** (`feat: add first implementation of frontend`), su branch `dev`. Il working tree era pulito prima di questo aggiornamento documentale; questa modifica non è stata committata. `.claude/settings.local.json` è ancora tracciato, anche se ora escluso da `.gitignore`.
 
-```
-apps/web/src/pages/subjects/SubjectsPage.tsx          (nuovo, 402 righe)
-apps/web/src/pages/subjects/SubjectDetailPage.tsx     (nuovo, 751 righe)
-apps/web/src/components/subjects/CreateSubjectModal.tsx (nuovo, 898 righe)
-apps/web/src/components/subjects/CreateProjectModal.tsx (nuovo, 256 righe)
-apps/web/src/api/projects.ts                          (nuovo)
-apps/web/src/components/ui/icon.tsx                   (nuovo)
-apps/web/src/{api/subjects,components/AppInit,components/layout/Sidebar,
-              pages/LoginPage,router,stores/auth.store}.ts(x)  (modificati)
-.DS_Store, .claude/settings.local.json                (da valutare: non dovrebbero stare in staging)
-```
+**Ultime verifiche eseguite:** build e lint frontend, typecheck API, 234 test backend e 35 test frontend superati. Test frontend in ambiente Node: non equivalgono a una prova delle interazioni nel browser. Registrazione con Mailtrap confermata funzionante dall’utente; ruolo di un utente cambiato manualmente in Prisma Studio per provare creazione/modifica.
 
 ---
 
@@ -88,25 +78,25 @@ Legenda: ✅ fatto · 🟡 parziale · ⬜ non iniziato
 
 | # | Task | Stato | Note |
 |---|---|---|---|
-| 24 | Bootstrap React + Vite + Tailwind + shadcn | ✅ | 15 componenti shadcn + `icon.tsx` custom |
-| 25 | TanStack Router + Query + client axios | ✅ | Rotte attive: `/login`, `/`, `/subjects`, `/subjects/$slug` |
+| 24 | Bootstrap React + Vite + Tailwind + shadcn | ✅ | shadcn usato nei nuovi form Project/Section, Project detail e primitive condivise; tema dark unico con alias per i vecchi componenti. Migrazione del resto incrementale |
+| 25 | TanStack Router + Query + client axios | ✅ | Rotte auth, dashboard, subject/project, `/new-page`, `/projects/$projectSlug/sections/$sectionSlug/pages/new`, `/pages/$slug`, `/pages/$slug/edit`. Query `section` per ripristinare la sezione nel Project |
 | 26 | Store Zustand | ✅ | `auth.store.ts`, `settings.store.ts` |
 | 27 | Componenti di layout | ✅ | AppShell, Sidebar, Topbar, SearchModal |
-| 28 | Pagine auth | 🟡 | **Solo `LoginPage`.** Mancano Register, ForgotPassword, ResetPassword, VerifyEmail, AcceptInvite e `AuthLayout` — anche se i relativi endpoint API esistono già |
+| 28 | Pagine auth | 🟡 | Login, Register, VerifyEmail, AuthLayout e reinvio verifica implementati. Restano ForgotPassword, ResetPassword e AcceptInvite |
 | 29 | Dashboard | 🟡 | Attività recenti, preferiti e statistiche ci sono. Manca la sezione «Recently visited» (`GET /views`) |
-| 30 | Pagine Subjects / Projects / Sections | 🟡 | **In corso, non committato.** Fatti: SubjectsPage, SubjectDetailPage, CreateSubjectModal, CreateProjectModal. Mancano: ProjectDetailPage, ProjectFormDialog, SectionFormDialog e il riordino drag-and-drop con `@dnd-kit/core` |
-| 31 | Page view + editor Tiptap | ⬜ | |
+| 30 | Pagine Subjects / Projects / Sections | 🟡 | Prima implementazione in `c12f73a`. Fatti: Subjects/Subject detail, Project detail, ProjectFormDialog riusato in creazione/modifica, SectionFormDialog, eliminazione admin con conferma, riordino nativo + pulsanti accessibili, lista pagine paginata. Collegamenti a reader/editor e breadcrumb completati. Restano CRUD completo Subject e upload cover |
+| 31 | Page view + editor Tiptap | 🟡 | Reader, creazione/modifica, toolbar, tabelle, visibilità, bozza/pubblicazione, guardia modifiche non salvate. Restano autosave 30s, upload immagini, mentions, syntax highlighting, bubble menu, gestione link, tag/preferiti e integrazione revisioni/commenti |
 | 32 | Drawer revisioni | ⬜ | |
 | 33 | Componente commenti | ⬜ | |
 | 34 | Pagine settings | ⬜ | |
-| 35 | Hook TanStack Query | 🟡 | `src/api/` contiene funzioni fetch semplici (`fetchSubjects`, `createSubject`, `fetchProjectsBySubject`, `fetchActivities`, `fetchFavorites`), non gli hook `useX` previsti. Le `useQuery` stanno nei componenti |
+| 35 | Hook TanStack Query | 🟡 | Adapter tipizzati per auth/project/page; hook `usePages`, `useSections` e `useSectionMutations`. Restano hook uniformi per gli altri moduli; diverse `useQuery` sono ancora nei componenti |
 
 ### Fase 5 — Test, CI/CD, GitHub
 
 | # | Task | Stato | Note |
 |---|---|---|---|
-| 36 | Test backend | 🟡 | 212 test verdi su 15 file, ma con un approccio diverso dalla specifica (vedi sotto) |
-| 37 | Test componenti frontend | ⬜ | Nessun test nel frontend, nessuna config Vitest in `apps/web` |
+| 36 | Test backend | 🟡 | 234 test verdi su 17 file, ma con un approccio diverso dalla specifica (vedi sotto) |
+| 37 | Test componenti frontend | 🟡 | 35 test Vitest Node su registrazione/verifica, contratti API, sessione/settings, riordino, contenuto legacy, breadcrumb e rendering UI per ruoli. Restano i test browser/Testing Library per le interazioni |
 | 38 | Dockerfile per l'API | ✅ | Implementato meglio della specifica: `pnpm deploy --prod` + rimozione mirata di dipendenze non raggiungibili a runtime |
 | 39 | GitHub Actions CI | ⬜ | `.github/` non esiste |
 | 40 | Init repo GitHub | 🟡 | Repo e remote esistono. Manca `CONTRIBUTING.md`; il branch di sviluppo si chiama `dev`, non `develop` come da specifica; la branch protection su `main` è da verificare |
@@ -122,18 +112,22 @@ Punti in cui il codice si discosta da `GIGAWIKI_V2_TASKS.md`. Vanno **letti prim
 3. **Rotte pubbliche disabilitate.** In `src/routes/index.ts` il blocco delle rotte pubbliche è commentato: letture di subjects, projects, sections, pages, revisioni, commenti, tag e view sono tutte dietro autenticazione. Va deciso se `Visibility.PUBLIC` deve essere davvero raggiungibile senza login — al momento non lo è.
 4. **Meilisearch nel compose ma inutilizzato.** La ricerca è implementata con la full-text search di Postgres (task 8). Il servizio `meilisearch` in `docker-compose.yml` non è previsto dalla specifica e non è referenziato da alcun codice: o si usa o si rimuove.
 5. **Dockerfile più elaborato della specifica (task 38).** La versione reale usa `pnpm deploy --prod --legacy`, ricopia a mano `.prisma/client` e rimuove sottoalberi non raggiungibili a runtime per dimezzare l'immagine. I commenti nel file spiegano il perché di ogni passaggio: non semplificarlo senza rileggerli.
-6. **`bin/pnpm` invece di corepack.** Il Dockerfile usa `corepack enable`, che funziona su `node:22-alpine` ma si romperà quando si alzerà la base image: corepack non è più incluso nelle versioni recenti di Node. In locale il problema è già stato aggirato con il wrapper `bin/pnpm` (vedi sessione del 2026-09-09).
+6. **Design system — migrazione avviata.** Tema e font unificati il 2026-10-07 in `styles/tokens.css`, con alias per il codice esistente e palette cover condivisa. shadcn è usato nelle nuove schermate; restano stili inline e icone custom nelle vecchie pagine. L'audit del 14 settembre fotografa lo stato precedente.
+7. **`bin/pnpm` invece di corepack.** Il Dockerfile usa `corepack enable`, che funziona su `node:22-alpine` ma si romperà quando si alzerà la base image: corepack non è più incluso nelle versioni recenti di Node. In locale il problema è già stato aggirato con il wrapper `bin/pnpm` (vedi sessione del 2026-09-09).
 
 ---
 
 ## Prossimi passi
 
-In ordine di priorità.
+1. Provare nel browser il ciclo pagina completo: scelta sezione, creazione bozza, pubblicazione, modifica, avviso di uscita e ritorno tramite breadcrumb. Registrazione già confermata dall’utente; per creare/editare pagine occorre EDITOR/ADMIN e, dopo un cambio ruolo da Prisma Studio, aggiornare la sessione.
+2. Completare task 31: autosave, upload immagini, mentions, syntax highlighting, menu contestuale, gestione link, tag/preferiti. Verificare compatibilità con eventuale contenuto Tiptap JSON preesistente: il nuovo flusso salva HTML e converte il testo semplice in nodi di testo.
+3. Completare auth restante (ForgotPassword, ResetPassword, AcceptInvite), Dashboard (recently visited) e CRUD Subject/upload cover.
+4. Revisioni come drawer anteprima/ripristino; commenti riusabili.
+5. Favorites e Settings sulla stessa base shadcn. Allineare prima i contratti inviti (elenco/reinvio/cancellazione) e cambio password, non completi nel backend.
+6. Completare test delle interazioni frontend e CI. Valutare caricamento differito dell’editor: la build passa, ma segnala un bundle superiore a 500 kB.
+7. A fine prove riportare `ALLOW_SELF_REGISTRATION` a `false` se non si vuole consentire la registrazione libera; valutare rimozione dal tracking di `.claude/settings.local.json`.
 
-1. **Chiudere il task 30.** Committare il lavoro in staging (escludendo `.DS_Store`), poi ProjectDetailPage, ProjectFormDialog, SectionFormDialog e il riordino drag-and-drop.
-2. **Completare il task 28.** Le pagine auth mancanti sono a basso rischio: gli endpoint esistono già e sono testati.
-3. **Task 39 — CI.** Non serve aspettare che il frontend sia finito: il job `quality` e `test-api` sono già utili così come sono, e proteggono il resto del lavoro.
-4. **Task 31 (editor Tiptap)** è il blocco più grosso che resta e sblocca 32 e 33.
+Scelte adottate: dark iniziale e light selezionabile; sezioni inline nel Project; revisioni drawer, diff opzionale; settings secondo task 34; nuove icone Lucide, empty state con icona/testo. Non sono necessari nuovi template Claude Design.
 
 ### Toolchain — come i git hook trovano Node
 
@@ -160,7 +154,106 @@ Chi clona il repo su una macchina nuova deve ricreare `init.sh` (o avere Node su
 
 ## Log delle sessioni
 
-Voce più recente in cima.
+### 2026-10-08 — Eliminazione pagine dal reader
+
+- Aggiunto pulsante Delete page solo ADMIN, conferma con titolo pagina, blocco durante la richiesta ed errore inline con possibilità di riprovare. Annullare non invia DELETE.
+- Successo: ritorno a `/projects/:slug?section=:sectionSlug`, invalidazione liste/contatori e rimozione cache della pagina. Il backend continua a usare soft delete e a rifiutare utenti non Admin.
+- Corretti i conteggi pagine di sezioni e progetti per escludere `deletedAt` valorizzato.
+- Verifiche: 46 test frontend, 234 API, lint/build frontend e typecheck API superati. Nuovi test su permessi reader, contratto DELETE/errori e navigazione/cache dopo successo. Prova delle interazioni nel browser ancora da eseguire: annullamento, conferma, errore e intero ciclo CRUD.
+
+
+### 2026-10-08 — Login: conflitto porta PostgreSQL
+
+- Riprodotto 500 al login; log Prisma P1000 anche su refresh/settings. La porta 5433 era occupata da `postgres_db`, mentre `gigawiki-v2-postgres-1` era fermo.
+- Porta Compose parametrizzata con `POSTGRES_PORT` (default 5433). Configurazione locale impostata a 5434 e DATABASE_URL allineata; riavviato solo PostgreSQL GigaWiki conservando `gigawiki-v2_postgres_data`. Verifica lettura riuscita: 3 utenti, 2 pagine.
+- Corretto il percorso del cookie refresh a `/api/v2/auth` per includere logout; rimozione del vecchio cookie su login/refresh/logout. 234 test API e typecheck superati. Trigger riavvio nodemon per caricare il nuovo ambiente.
+
+
+### 2026-10-08 — Tema light e selettore
+
+- Aggiunti token light, bottone sole/luna nella Topbar e nelle schermate auth, preferenza locale persistente e applicazione prima del caricamento React. Anche i toast seguono il tema.
+- Adattati login, corpi delle card Subject/Project, tag, skeleton e ombre ai token. I banner colorati restano invariati. Corretti i colori del contenuto wiki che usavano direttamente i canali OKLCH invece di `oklch(var(...))`.
+- Verifiche: 41 test frontend (inclusi 6 nuovi sul tema), lint e build. Restano verifica visiva nel browser e warning bundle già presente. La preferenza non viene sincronizzata con il profilo utente.
+- Prossimo incremento: eliminazione pagine nell'interfaccia (solo Admin) e verifica browser del ciclo CRUD, poi compatibilità contenuti, funzioni editor, revisioni e autosave.
+
+
+### 2026-10-07 — Riepilogo completo della sessione frontend
+
+- **Specifiche e template:** esaminati documenti, prompt, schermate e contratti backend. I template esistenti non coprono da soli l’intera app, ma le schermate mancanti possono essere costruite con shadcn e il tema comune. Non sono stati creati nuovi template Claude Design; l’audit resta una fotografia storica, con nota sullo stato attuale.
+- **Fondazione UI e Project:** unificati token dark, font e palette cover; introdotti form e stati condivisi, dettaglio progetto, sezioni inline con CRUD secondo i permessi, riordino drag/pulsanti e lista pagine paginata. Corretti contratti auth/settings, errori API e proxy Vite.
+- **Ambiente locale:** diagnosticato `EADDRINUSE` sulla porta 3001 in presenza di API Docker e processo locale. Documentato che `docker compose up` carica anche l’override API, mentre `docker compose -f docker-compose.yml up -d` avvia l’infrastruttura. Chiarito l’uso di Prisma Studio per consultare il database; nessun reset o migrazione distruttiva effettuati.
+- **Registrazione Mailtrap:** aggiunti Register, Verify email e reinvio, validazione e gestione errori; corretti template/job/URL di verifica e configurazione SMTP. Creato comando mirato `registration:enable` con invalidazione cache. La registrazione è stata confermata dall’utente; il ruolo EDITOR/ADMIN è stato assegnato manualmente da Prisma Studio.
+- **Pagine wiki:** implementati scelta subject/progetto/sezione, creazione, reader e modifica Tiptap, formattazione, tabelle, bozza/pubblicazione, visibilità e protezione delle modifiche non salvate. Collegati lista e ricerca; validate POST/PATCH; corretti slug invariato e collisioni alla rinomina. Nessuna nuova migrazione Prisma necessaria.
+- **Navigazione:** breadcrumb condivisi e accessibili; sezione selezionata conservata nell’URL. Le API includono i dati degli antenati per evitare richieste aggiuntive.
+- **Git:** ampliato `.gitignore` per env/log/cache/file locali, mantenendo esempi e documentazione; verificati 20 percorsi. Nessun `.env` con credenziali tracciato. `.claude/settings.local.json` resta nell’indice. Codice incluso nel commit utente `c12f73a`; questo aggiornamento riguarda solo documentazione.
+- **Verifiche finali:** 234 test API (17 file), 35 test frontend (7 file), typecheck API, lint e build frontend superati. Tiptap 3.31.4 installato dall’utente dopo il blocco npm dell’ambiente agente. Prova browser del ciclo pagine non eseguita dall’agente; warning bundle Vite non bloccante.
+
+**Restano aperti:** dettagli avanzati del task 31 e test browser; recupero password/inviti; CRUD Subject e cover; revisioni/commenti/favorites/settings; CI. Nessun task parziale è dichiarato completo solo per la presenza del flusso base.
+
+### 2026-10-07 — Creazione, modifica e lettura delle pagine
+
+- Aggiunte rotte di creazione nella sezione, lettura e modifica; collegati lista del progetto, ricerca e azioni globali “New page”. Le azioni globali permettono di scegliere subject, progetto e sezione con paginazione.
+- Preparato editor Tiptap con formattazione, titoli, liste, citazioni, codice e tabelle; form shadcn per titolo e visibilità, bozza/pubblicazione e avviso per modifiche non salvate. Il contenuto viene salvato come HTML e letto tramite lo schema Tiptap; i contenuti legacy di testo restano nodi di testo.
+- GET pagina include progetto e sezione per la navigazione. POST/PATCH validano i campi. PATCH conserva lo slug quando il titolo è invariato e risolve collisioni quando viene rinominato.
+- Verificati backend (234 test e typecheck) e test frontend; lint frontend superato. Non eseguita prova nel browser.
+
+**Aggiornamento:** pacchetti Tiptap installati dall’utente; build frontend verificata con successo durante il successivo incremento sui breadcrumb. Upload immagini, autosalvataggio, commenti e cronologia UI non fanno parte di questo incremento.
+
+---
+
+### 2026-10-07 — Breadcrumb navigabili
+
+- Breadcrumb condivisi per progetto, lettura pagina e editor: Home → Subjects → subject → progetto → sezione → pagina. La posizione corrente è testo con `aria-current="page"`; gli antenati sono link con focus visibile.
+- Il link alla sezione usa `/projects/:slug?section=:sectionSlug`. La selezione delle sezioni aggiorna l’URL e si ripristina aprendo un link o tornando indietro.
+- Le API di dettaglio progetto/pagina includono nome e slug del subject per costruire la gerarchia senza richieste aggiuntive.
+- Verificata build frontend dopo l’installazione Tiptap; aggiunti controlli sui link ai livelli superiori e sul ritorno alla sezione.
+
+---
+
+
+### 2026-10-07 — Revisione .gitignore
+
+- Aggiunte esclusioni globali per varianti `.env`, log, cache pnpm/Vite, artefatti locali ed editor; mantenuti versionabili gli esempi `.env`.
+- Rimossa la regola inefficace `./docs`: la documentazione resta versionabile. Conservate le esclusioni preesistenti dei due file di riferimento.
+- Verificate le regole con `git check-ignore --no-index` su 20 percorsi, compresi migrazioni Prisma, asset, lockfile e documentazione. Nessun `.env` con credenziali risulta tracciato.
+- `.claude/settings.local.json` è già tracciato: la nuova regola non lo rimuove dall’indice; nessun file è stato rimosso o modificato nello staging.
+
+### 2026-10-07 — Registrazione e verifica email con Mailtrap
+
+- Aggiunte pagine `/register` e `/verify-email`, AuthLayout shadcn, form validati, conferma registrazione e reinvio verifica. Il link Create account del Login è attivo e gli errori API sono leggibili.
+- Corretto il contratto email: template `verify` e URL completo con token nel job BullMQ. SMTP usa le credenziali del `.env`, TLS implicito su porta 465 e timeout di connessione. Il worker è verificato con rendering reale del messaggio e mailer mockato.
+- Registrazione valida i dati, normalizza l’email e gestisce duplicati; account GUEST con email non confermata. Login bloccato finché la verifica non è completata. Token monouso con scadenza 24 ore; nuova rotta per reinvio con conferma neutra.
+- Gestito il caso parziale in cui l’account viene creato ma il job non può essere accodato: il frontend propone reinvio senza una seconda registrazione.
+- Creato `registration:enable`: upsert mirato `ALLOW_SELF_REGISTRATION=true` e invalidazione cache Redis. Tentativo di esecuzione bloccato dall’ambiente con EPERM sulla connessione locale a PostgreSQL, pur attivo; **valore live non verificato né aggiornato da questa sessione**.
+- Test: 228 backend e 29 frontend verdi; typecheck API e lint frontend verdi. Verifica reale SMTP e browser non eseguita da questo ambiente.
+
+**Aggiornamento finale:** l’utente ha confermato che la registrazione funziona dopo la configurazione Mailtrap e ha cambiato il ruolo tramite Prisma Studio per provare le pagine. L’ambiente dell’agente non ha verificato direttamente il valore live di `ALLOW_SELF_REGISTRATION` né l’invio SMTP; il precedente EPERM non è un blocco attuale per il test locale confermato. Restano le altre pagine auth.
+
+### 2026-10-07 — Base shadcn e dettaglio Project
+
+- Tema dark unificato in `styles/tokens.css`, alias `--db-*`/`--gw-*`, font condivisi e palette cover estratta. Componenti shadcn ora usati dalla UI.
+- Aggiunte primitive condivise per form risorse, stati vuoti/errore/caricamento, paginazione e conferme di eliminazione. Il dialog di creazione Project riusa quello di modifica.
+- Nuova rotta `/projects/$slug`, sezioni inline, creazione/modifica/eliminazione secondo i permessi API, riordino e lista pagine paginata. Sidebar con caricamento progetti su espansione.
+- Impossibile scaricare `@dnd-kit` e Testing Library (registro npm non raggiungibile). Riordino implementato con drag nativo e pulsanti per tastiera/touch; Vitest già presente nel workspace riutilizzato come dipendenza frontend, senza download.
+- Corretti contratti sessione/settings (refresh `{ accessToken }`, me `{ user }`, settings dizionario diretto), errore API strutturato, retry 401 del login e due errori TypeScript preesistenti. Proxy Vite `/api` per sviluppo senza URL configurato.
+- Build frontend e lint verdi; 17 test passati su contratti, sessione/settings, ordine e visibilità azioni per Guest/Editor/Owner/Admin. Nessuna modifica agli handler backend. Dettagli e limiti in `apps/web/README.md`.
+
+**Lasciato aperto:** reader/editor (le righe pagina mostrano solo metadati), upload cover, CRUD completo Subject, auth restante, revisioni/commenti e settings. Verifica browser delle interazioni ancora da eseguire.
+
+### 2026-09-14 — Audit del materiale grafico prima di riprendere il frontend
+
+Nessuna modifica al codice. Sessione di sola analisi, su richiesta: capire se il materiale di design basta a completare la Fase 4. Esito completo in [`FRONTEND_DESIGN_AUDIT.md`](./FRONTEND_DESIGN_AUDIT.md).
+
+- **Cosa è stato analizzato:** `DESIGN_PROMPTS.md` (20 prompt + header di design system) contro il codice reale di `apps/web` (5.362 righe di pagine e layout), `index.css`, `tailwind.config.ts`, `index.html`, le dipendenze di `apps/web/package.json`, gli asset in `public/` e `src/assets/`, lo schema Prisma per i campi che le schermate richiedono (cover, `color`/`icon`, `Activity.ip`) e le specifiche dei task 24–35.
+- **Copertura:** 2 schermate su 20 hanno un design generato (Dashboard ×2, Login); 5 su 20 sono implementate. Subjects e Subject detail sono state improvvisate senza design file — regge finché sono griglie di card, non reggerà su editor, diff e tabelle.
+- **Il problema non sono le schermate mancanti, è che il design system non è codice.** Quattro palette (`--gw-*` solo per Login, `--db-*` per tutto il resto, `COVER_COLORS` hardcoded nel modal, i token shadcn slate ancora ai default light-mode) e tre combinazioni tipografiche, nessuna uguale a quella scritta nell'header dei prompt. `--gw-*` e `--db-*` sono però quasi identici come valori: consolidarli è a rischio quasi zero.
+- **shadcn è installato e inutilizzato:** 15 componenti, zero import dalle pagine; anche `App.tsx` è codice morto. Il codice applicativo ha 310 `style={{…}}` inline e ripete `initials()` in 4 file, `timeAgo()` in 2, `toneForColor()` in 2.
+- **Otto decisioni da prendere prima di generare altro design** (audit §3b): tipografia long-form, colori del diff, tema chiaro sì/no, cover o tinta per i progetti, logo/brand (oggi il favicon è ancora quello viola del template di partenza), illustrazioni per gli empty state, set di icone (lucide è già in dipendenza ma inutilizzato), densità delle tabelle dati.
+- **Librerie mancanti** per i task 30–34: tiptap e estensioni, lowlight, `@dnd-kit/*`, `@tanstack/react-table`, `dayjs`.
+- **Conflitti fra `DESIGN_PROMPTS.md` e `GIGAWIKI_V2_TASKS.md`** su Project detail, Section detail e Settings (audit §4): vanno sciolti prima di generare quelle schermate, altrimenti si progetta due volte.
+- Verificato di passaggio che il lavoro sul task 30 dato per «in staging» nella voce precedente è in realtà committato (`2b2373d`). `.claude/settings.local.json` è finito nel commit.
+
+**Lasciato aperto:** le 8 decisioni di §3b, in particolare tipografia long-form e tema chiaro, che bloccano i task 31–33. Il percorso a basso attrito, se si vuole avanzare subito senza nuovo materiale grafico, è il task 28 (pagine auth, ricalcabili dal Login) e la schermata Favorites.
 
 ### 2026-09-09 — Ambiente di sviluppo: pnpm locale + fnm
 
@@ -197,7 +290,7 @@ Nessuna modifica al codice applicativo. Sessione dedicata a rendere il progetto 
 | 2026-05-03 | `f8c225b` | Fix TypeScript nelle rotte projects | — |
 | 2026-04-18 | `0d8a6c9` → `8a32505` | Scaffold del monorepo, porta MinIO, pulizia del tracking | 1, 2, 3 |
 
-Materiale di riferimento non ancora incorporato qui: [`API_TEST_RESULTS.md`](./API_TEST_RESULTS.md) (esiti dei test API, 2026-05-27) e [`DESIGN_PROMPTS.md`](./DESIGN_PROMPTS.md) (prompt di design per il frontend, 2026-05-31).
+Materiale di riferimento non ancora incorporato qui: [`API_TEST_RESULTS.md`](./API_TEST_RESULTS.md) (esiti dei test API, 2026-05-27). I prompt di design stanno in [`DESIGN_PROMPTS.md`](./DESIGN_PROMPTS.md), il loro stato di copertura in [`FRONTEND_DESIGN_AUDIT.md`](./FRONTEND_DESIGN_AUDIT.md).
 
 ---
 

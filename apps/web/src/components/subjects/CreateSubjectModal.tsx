@@ -2,74 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
+import { COVER_COLORS } from '@/styles/cover-colors'
 import { createSubject } from '@/api/subjects'
 import { useAuthStore } from '@/stores/auth.store'
 import { Icon, type IconName } from '@/components/ui/icon'
 
 /* ── constants ── */
-
-const COVER_COLORS = [
-  {
-    id: 'emerald',
-    banner: 'oklch(0.42 0.13 158)',
-    bannerDeep: 'oklch(0.26 0.055 158)',
-    body: 'oklch(0.20 0.025 158)',
-    bodyEdge: 'oklch(0.32 0.04 158)',
-    label: 'oklch(0.92 0.04 158)',
-    glyph: 'oklch(0.16 0.02 158)',
-    swatch: '#2d7a57',
-  },
-  {
-    id: 'blue',
-    banner: 'oklch(0.45 0.14 268)',
-    bannerDeep: 'oklch(0.28 0.06 268)',
-    body: 'oklch(0.20 0.028 268)',
-    bodyEdge: 'oklch(0.32 0.045 268)',
-    label: 'oklch(0.92 0.04 268)',
-    glyph: 'oklch(0.16 0.025 268)',
-    swatch: '#3b5bbf',
-  },
-  {
-    id: 'amber',
-    banner: 'oklch(0.55 0.13 78)',
-    bannerDeep: 'oklch(0.32 0.06 78)',
-    body: 'oklch(0.21 0.025 78)',
-    bodyEdge: 'oklch(0.33 0.04 78)',
-    label: 'oklch(0.95 0.05 78)',
-    glyph: 'oklch(0.17 0.02 78)',
-    swatch: '#b05a12',
-  },
-  {
-    id: 'red',
-    banner: 'oklch(0.48 0.14 18)',
-    bannerDeep: 'oklch(0.28 0.065 18)',
-    body: 'oklch(0.20 0.028 18)',
-    bodyEdge: 'oklch(0.33 0.05 18)',
-    label: 'oklch(0.94 0.04 18)',
-    glyph: 'oklch(0.16 0.025 18)',
-    swatch: '#a63228',
-  },
-  {
-    id: 'slate',
-    banner: 'oklch(0.44 0.06 250)',
-    bannerDeep: 'oklch(0.26 0.03 250)',
-    body: 'oklch(0.20 0.018 250)',
-    bodyEdge: 'oklch(0.31 0.03 250)',
-    label: 'oklch(0.92 0.025 250)',
-    glyph: 'oklch(0.16 0.015 250)',
-    swatch: '#37415a',
-  },
-  {
-    id: 'teal',
-    banner: 'oklch(0.45 0.12 195)',
-    bannerDeep: 'oklch(0.27 0.055 195)',
-    body: 'oklch(0.20 0.022 195)',
-    bodyEdge: 'oklch(0.31 0.038 195)',
-    label: 'oklch(0.92 0.04 195)',
-    glyph: 'oklch(0.16 0.018 195)',
-    swatch: '#1a6b72',
-  },
-]
 
 const ICON_PICKS: IconName[] = [
   'book',
@@ -146,7 +84,7 @@ function PreviewCard({
               position: 'absolute',
               right: 8,
               bottom: -12,
-              fontFamily: "'Instrument Serif', Georgia, serif",
+              fontFamily: 'var(--font-display)',
               fontStyle: 'italic',
               fontSize: 100,
               lineHeight: 1,
@@ -183,7 +121,7 @@ function PreviewCard({
               position: 'absolute',
               top: 10,
               right: 10,
-              fontFamily: "'Geist Mono', monospace",
+              fontFamily: 'var(--font-mono)',
               fontSize: 10,
               color: tone.label,
               background: 'rgba(0,0,0,0.25)',
@@ -202,7 +140,7 @@ function PreviewCard({
               position: 'absolute',
               top: 10,
               left: 10,
-              fontFamily: "'Geist Mono', monospace",
+              fontFamily: 'var(--font-mono)',
               fontSize: 10,
               color: visibility === 'PUBLIC' ? 'oklch(0.88 0.14 158)' : tone.label,
               background: visibility === 'PUBLIC' ? 'oklch(0.25 0.07 158)' : 'rgba(0,0,0,0.3)',
@@ -233,12 +171,12 @@ function PreviewCard({
         <div style={{ padding: '12px 16px 16px' }}>
           <h3
             style={{
-              fontFamily: "'Instrument Serif', Georgia, serif",
+              fontFamily: 'var(--font-display)',
               fontStyle: 'italic',
               fontWeight: 400,
               fontSize: 20,
               lineHeight: 1.2,
-              color: tone.label,
+              color: 'var(--db-ink)',
               margin: '0 0 6px',
             }}
           >
@@ -311,7 +249,7 @@ function PreviewCard({
               style={{
                 fontSize: 12,
                 color: 'var(--db-ink-2)',
-                fontFamily: "'Geist Mono', monospace",
+                fontFamily: 'var(--font-mono)',
               }}
             >
               {row.value}
@@ -424,7 +362,7 @@ export function CreateSubjectModal({ open, onClose }: CreateSubjectModalProps) {
           borderRadius: 20,
           overflow: 'hidden',
           border: '1px solid var(--db-line-2)',
-          boxShadow: '0 32px 80px rgba(0,0,0,0.8), 0 8px 20px rgba(0,0,0,0.6)',
+          boxShadow: 'var(--shadow-dialog)',
         }}
       >
         {/* ── left: form ── */}
@@ -474,7 +412,7 @@ export function CreateSubjectModal({ open, onClose }: CreateSubjectModalProps) {
               <div>
                 <div
                   style={{
-                    fontFamily: "'Geist Mono', monospace",
+                    fontFamily: 'var(--font-mono)',
                     fontSize: 10,
                     letterSpacing: '0.08em',
                     color: 'var(--db-em)',
@@ -485,7 +423,7 @@ export function CreateSubjectModal({ open, onClose }: CreateSubjectModalProps) {
                 </div>
                 <h2
                   style={{
-                    fontFamily: "'Instrument Serif', Georgia, serif",
+                    fontFamily: 'var(--font-display)',
                     fontStyle: 'italic',
                     fontWeight: 400,
                     fontSize: 24,
@@ -554,7 +492,7 @@ export function CreateSubjectModal({ open, onClose }: CreateSubjectModalProps) {
                 <span
                   style={{
                     fontSize: 11,
-                    fontFamily: "'Geist Mono', monospace",
+                    fontFamily: 'var(--font-mono)',
                     color: 'var(--db-muted-2)',
                   }}
                 >
@@ -576,7 +514,7 @@ export function CreateSubjectModal({ open, onClose }: CreateSubjectModalProps) {
                   background: 'var(--db-surface)',
                   color: 'var(--db-ink)',
                   fontSize: 14,
-                  fontFamily: "'Geist', system-ui, sans-serif",
+                  fontFamily: 'var(--font-ui)',
                   outline: 'none',
                   boxSizing: 'border-box',
                   transition: 'border-color 150ms',
@@ -626,7 +564,7 @@ export function CreateSubjectModal({ open, onClose }: CreateSubjectModalProps) {
                     padding: '9px 10px 9px 12px',
                     fontSize: 13,
                     color: 'var(--db-muted)',
-                    fontFamily: "'Geist Mono', monospace",
+                    fontFamily: 'var(--font-mono)',
                     borderRight: '1px solid var(--db-line)',
                     whiteSpace: 'nowrap',
                     background: 'var(--db-bg)',
@@ -646,7 +584,7 @@ export function CreateSubjectModal({ open, onClose }: CreateSubjectModalProps) {
                     background: 'transparent',
                     color: 'var(--db-ink)',
                     fontSize: 13,
-                    fontFamily: "'Geist Mono', monospace",
+                    fontFamily: 'var(--font-mono)',
                     outline: 'none',
                   }}
                 />
@@ -679,7 +617,7 @@ export function CreateSubjectModal({ open, onClose }: CreateSubjectModalProps) {
                 <span
                   style={{
                     fontSize: 11,
-                    fontFamily: "'Geist Mono', monospace",
+                    fontFamily: 'var(--font-mono)',
                     color: 'var(--db-muted-2)',
                   }}
                 >
@@ -700,7 +638,7 @@ export function CreateSubjectModal({ open, onClose }: CreateSubjectModalProps) {
                   background: 'var(--db-surface)',
                   color: 'var(--db-ink)',
                   fontSize: 13.5,
-                  fontFamily: "'Geist', system-ui, sans-serif",
+                  fontFamily: 'var(--font-ui)',
                   outline: 'none',
                   resize: 'vertical',
                   lineHeight: 1.55,
@@ -954,7 +892,7 @@ export function CreateSubjectModal({ open, onClose }: CreateSubjectModalProps) {
               style={{
                 fontSize: 12,
                 color: 'var(--db-muted-2)',
-                fontFamily: "'Geist Mono', monospace",
+                fontFamily: 'var(--font-mono)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 5,
@@ -987,7 +925,7 @@ export function CreateSubjectModal({ open, onClose }: CreateSubjectModalProps) {
                   fontSize: 13.5,
                   fontWeight: 500,
                   cursor: 'pointer',
-                  fontFamily: "'Geist', system-ui, sans-serif",
+                  fontFamily: 'var(--font-ui)',
                 }}
               >
                 Cancel
@@ -1004,7 +942,7 @@ export function CreateSubjectModal({ open, onClose }: CreateSubjectModalProps) {
                   fontSize: 13.5,
                   fontWeight: 500,
                   cursor: canSubmit ? 'pointer' : 'default',
-                  fontFamily: "'Geist', system-ui, sans-serif",
+                  fontFamily: 'var(--font-ui)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 7,
@@ -1058,7 +996,7 @@ export function CreateSubjectModal({ open, onClose }: CreateSubjectModalProps) {
               alignItems: 'center',
               gap: 7,
               marginBottom: 18,
-              fontFamily: "'Geist Mono', monospace",
+              fontFamily: 'var(--font-mono)',
               fontSize: 11,
               color: 'var(--db-muted)',
               letterSpacing: '0.07em',

@@ -15,6 +15,13 @@ export default defineConfig([
       reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
     ],
+    rules: {
+      // shadcn exports its variant helpers alongside these two components.
+      'react-refresh/only-export-components': [
+        'error',
+        { allowExportNames: ['buttonVariants', 'badgeVariants'] },
+      ],
+    },
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,

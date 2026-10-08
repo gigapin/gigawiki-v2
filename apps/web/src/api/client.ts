@@ -1,5 +1,7 @@
 import axios from 'axios'
 
+import { API_BASE_URL } from './config'
+
 import { useAuthStore } from '@/stores/auth.store'
 
 interface PendingRequest {
@@ -19,7 +21,7 @@ const processQueue = (error: unknown, token: string | null = null) => {
 }
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: API_BASE_URL,
   withCredentials: true,
 })
 
@@ -36,9 +38,16 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
-    if (error.response?.status !== 401 || originalRequest._retry) {
+    if (
+      error.response?.status !== 401 ||
+      !originalRequest ||
+      originalRequest._retry ||
+      originalRequest.url?.startsWith('/api/v2/auth/login')
+    ) {
       return Promise.reject(error)
     }
+
+    originalRequest._retry = true
 
     if (isRefreshing) {
       return new Promise<string>((resolve, reject) => {
@@ -49,16 +58,15 @@ apiClient.interceptors.response.use(
       })
     }
 
-    originalRequest._retry = true
     isRefreshing = true
 
     try {
-      const { data } = await axios.post<{ data: { accessToken: string } }>(
-        `${import.meta.env.VITE_API_URL}/api/v2/auth/refresh`,
+      const { data } = await axios.post<{ accessToken: string }>(
+        `${API_BASE_URL}/api/v2/auth/refresh`,
         {},
         { withCredentials: true },
       )
-      const { accessToken } = data.data
+      const { accessToken } = data
       const { user, setAuth } = useAuthStore.getState()
       if (user) setAuth(user, accessToken)
       processQueue(null, accessToken)

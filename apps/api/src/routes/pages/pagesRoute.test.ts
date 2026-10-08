@@ -534,3 +534,90 @@ describe('GET /search', () => {
     expect(res.json().limit).toBe(5)
   })
 })
+
+describe('Page editor save contract', () => {
+  it.each(['', '   ', 'x'.repeat(191)])(
+    'rejects an invalid title before querying the database',
+    async (title) => {
+      const app = buildAuthApp('EDITOR')
+      const res = await app.inject({
+        method: 'POST',
+        url: '/pages',
+        payload: { title, sectionId: 'sec-1', content: '' },
+      })
+      expect(res.statusCode).toBe(400)
+      expect(mockPage.create).not.toHaveBeenCalled()
+      await app.close()
+    },
+  )
+
+  it('saves an empty draft without a publication timestamp', async () => {
+    mockSection.findFirst.mockResolvedValue({ projectId: 'proj-1' } as never)
+    mockPage.aggregate.mockResolvedValue({ _max: { position: null } } as never)
+    mockPage.create.mockResolvedValue({ ...fakePage, isDraft: true } as never)
+    const app = buildAuthApp('EDITOR')
+    const res = await app.inject({
+      method: 'POST',
+      url: '/pages',
+      payload: { title: ' Draft ', sectionId: 'sec-1', isDraft: true },
+    })
+    expect(res.statusCode).toBe(201)
+    expect(mockPage.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          title: 'Draft',
+          content: '',
+          isDraft: true,
+          publishedAt: null,
+        }),
+      }),
+    )
+    await app.close()
+  })
+
+  it('preserves a collision-suffixed slug when saving unchanged title and publishes a draft', async () => {
+    mockPage.findFirst.mockResolvedValue({
+      ...fakePage,
+      slug: 'introduction-2',
+      isDraft: true,
+    } as never)
+    mockPage.update.mockResolvedValue(fakePage as never)
+    const app = buildAuthApp('EDITOR')
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/pages/introduction-2',
+      payload: { title: 'Introduction', content: '<p>Updated</p>', isDraft: false },
+    })
+    expect(res.statusCode).toBe(200)
+    const data = mockPage.update.mock.calls[0][0].data
+    expect(data).not.toHaveProperty('slug')
+    expect(data).toMatchObject({
+      isDraft: false,
+      publishedAt: expect.any(Date),
+      currentRevision: 1,
+    })
+    expect(mockRevision.create).toHaveBeenCalledTimes(1)
+    await app.close()
+  })
+
+  it('uses a free slug when renaming to an existing title', async () => {
+    mockPage.findFirst.mockResolvedValue(fakePage as never)
+    mockPage.findUnique
+      .mockResolvedValueOnce({ id: 'other-page' } as never)
+      .mockResolvedValueOnce(null)
+    mockPage.update.mockResolvedValue(fakePage as never)
+    const app = buildAuthApp('EDITOR')
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/pages/introduction',
+      payload: { title: 'Existing title' },
+    })
+    expect(res.statusCode).toBe(200)
+    expect(mockPage.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ slug: expect.stringMatching(/^existing-title-.+$/) }),
+      }),
+    )
+    await app.close()
+  })
+})

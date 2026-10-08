@@ -4,6 +4,8 @@ Dark, modern UI templates for the GigaWiki frontend, generated with **Claude Des
 This file contains a shared **Design System Header** plus **20 screen prompts** that cover the
 entire application (derived from the `apps/api` backend).
 
+> **Implementation decision — 2026-10-07:** the UI is now built directly with shadcn/ui and the Dashboard theme. New Claude Design templates are optional. The canonical tokens are in `apps/web/src/styles/tokens.css`; tasks 30–34 take precedence over the historical prompts below: inline Sections in Project detail, revision drawer with preview/restore, and Settings with Profile/Password/Appearance plus admin Users/Invites/App Settings. See `apps/web/README.md` for current scope and remaining work.
+
 ## How to use
 
 1. Open Claude Design.

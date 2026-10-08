@@ -61,7 +61,9 @@ export async function fetchProjectsBySubject(fastify: FastifyInstance) {
           where,
           include: {
             tags: true,
-            _count: { select: { sections: true, pages: true, views: true } },
+            _count: {
+              select: { sections: true, pages: { where: { deletedAt: null } }, views: true },
+            },
           },
           skip,
           take,
@@ -82,6 +84,7 @@ export async function fetchProject(fastify: FastifyInstance) {
     const project = await prisma.project.findFirst({
       where: { slug, deletedAt: null },
       include: {
+        subject: { select: { name: true, slug: true } },
         sections: { where: { deletedAt: null }, orderBy: { position: 'asc' } },
         tags: true,
         _count: { select: { favorites: true } },

@@ -60,6 +60,7 @@ import {
   logout,
   refresh,
   register,
+  resendVerification,
   forgotPassword,
   resetPassword,
   verifyEmail,
@@ -75,6 +76,7 @@ export function registerRoutes(app: FastifyInstance) {
       instance.register(logout)
       instance.register(refresh)
       instance.register(register)
+      instance.register(resendVerification)
       instance.register(forgotPassword)
       instance.register(resetPassword)
       instance.register(verifyEmail)

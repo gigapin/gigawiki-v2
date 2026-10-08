@@ -1,8 +1,30 @@
 import { FastifyInstance } from 'fastify'
 import { Prisma } from '@prisma/client'
+import { z } from 'zod'
 
 import { generateSlug, generateUniqueSlug } from '../../lib/slugify.js'
 import { prisma } from '../../lib/prisma.js'
+
+const pageFields = {
+  title: z.string().trim().min(1).max(190),
+  content: z.string(),
+  isDraft: z.boolean(),
+  visibility: z.enum(['PUBLIC', 'PRIVATE']),
+}
+const createPageSchema = z.object({
+  ...pageFields,
+  content: pageFields.content.default(''),
+  sectionId: z.string().min(1),
+  isDraft: pageFields.isDraft.default(false),
+  visibility: pageFields.visibility.optional(),
+})
+const updatePageSchema = z
+  .object({
+    ...pageFields,
+    restricted: z.boolean(),
+    ownedById: z.string().min(1),
+  })
+  .partial()
 
 const PAGE_INDEX_SELECT = {
   id: true,
@@ -99,6 +121,15 @@ export async function fetchPage(fastify: FastifyInstance) {
       include: {
         createdBy: { select: { id: true, name: true, slug: true } },
         updatedBy: { select: { id: true, name: true, slug: true } },
+        project: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            subject: { select: { name: true, slug: true } },
+          },
+        },
+        section: { select: { id: true, title: true, slug: true } },
         tags: true,
         _count: { select: { comments: true, favorites: true } },
       },
@@ -131,7 +162,12 @@ export async function createPage(fastify: FastifyInstance) {
       return reply.status(403).send({ error: 'Editor or Admin role required' })
     }
 
-    const { title, content, sectionId, isDraft = false, visibility } = req.body
+    const parsed = createPageSchema.safeParse(req.body)
+    if (!parsed.success)
+      return reply.status(400).send({
+        error: 'Invalid page: a title of 1–190 characters and a valid section are required',
+      })
+    const { title, content, sectionId, isDraft, visibility } = parsed.data
 
     const section = await prisma.section.findFirst({
       where: { id: sectionId, deletedAt: null },
@@ -232,7 +268,9 @@ export async function updatePage(fastify: FastifyInstance) {
       }
 
       const { slug } = req.params
-      const { title, content, isDraft, visibility, restricted, ownedById } = req.body
+      const parsed = updatePageSchema.safeParse(req.body)
+      if (!parsed.success) return reply.status(400).send({ error: 'Invalid page fields' })
+      const { title, content, isDraft, visibility, restricted, ownedById } = parsed.data
 
       const existing = await prisma.page.findFirst({
         where: { slug, deletedAt: null },
@@ -264,7 +302,14 @@ export async function updatePage(fastify: FastifyInstance) {
 
       if (title !== undefined) {
         data.title = title
-        data.slug = generateSlug(title)
+        if (titleChanged)
+          data.slug = await generateUniqueSlug(title, async (candidate) => {
+            const match = await prisma.page.findUnique({
+              where: { slug: candidate },
+              select: { id: true },
+            })
+            return Boolean(match && match.id !== existing.id)
+          })
       }
       if (content !== undefined) data.content = content
       if (isDraft !== undefined) {

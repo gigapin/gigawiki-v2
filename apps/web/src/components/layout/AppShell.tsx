@@ -17,7 +17,7 @@ export function AppShell() {
           min-height: 100vh;
           background: var(--db-bg);
           color: var(--db-ink);
-          font-family: 'Geist', system-ui, -apple-system, sans-serif;
+          font-family: var(--font-ui);
           -webkit-font-smoothing: antialiased;
         }
         .db-app::before {

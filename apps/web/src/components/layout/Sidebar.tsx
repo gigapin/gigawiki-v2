@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useRouterState } from '@tanstack/react-router'
+import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import type { Subject } from '@shared/types/subject'
+import { BookOpen, ChevronRight, Folder } from 'lucide-react'
 
 import apiClient from '@/api/client'
+import { Button } from '@/components/ui/button'
+import { fetchProjectsBySubject } from '@/api/projects'
 import { fetchSubjects } from '@/api/subjects'
 import { fetchFavorites } from '@/api/favorites'
 import { useAuthStore } from '@/stores/auth.store'
@@ -21,76 +24,75 @@ function initials(name: string) {
 type SubjectNode = Subject & { _count: { projects: number } }
 
 function SubjectItem({ subject }: { subject: SubjectNode }) {
-  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const projects = useQuery({
+    queryKey: ['subject', subject.slug, 'projects', 'navigation'],
+    queryFn: () => fetchProjectsBySubject(subject.slug, { limit: 20 }),
+    enabled: open,
+  })
   return (
-    <div
-      onClick={() => navigate({ to: '/subjects/$slug', params: { slug: subject.slug } })}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-        padding: '6px 8px',
-        borderRadius: 6,
-        cursor: 'pointer',
-        color: 'var(--db-muted)',
-        fontSize: 13.5,
-        userSelect: 'none',
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--db-bg-2)')}
-      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-    >
-      <span
-        onClick={(e) => {
-          e.stopPropagation()
-          setOpen((v) => !v)
-        }}
-        style={{
-          width: 14,
-          height: 14,
-          display: 'grid',
-          placeItems: 'center',
-          color: 'var(--db-muted)',
-          transition: 'transform 120ms',
-          transform: open ? 'rotate(90deg)' : 'none',
-          flexShrink: 0,
-        }}
-      >
-        <Icon name="chev-right" size={12} stroke={2} />
-      </span>
-      <span
-        style={{
-          color: 'var(--db-muted)',
-          display: 'grid',
-          placeItems: 'center',
-          width: 16,
-          height: 16,
-          flexShrink: 0,
-        }}
-      >
-        <Icon name="book" size={14} />
-      </span>
-      <span
-        style={{
-          flex: 1,
-          minWidth: 0,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {subject.name}
-      </span>
-      {subject._count.projects > 0 && (
-        <span
-          style={{
-            fontFamily: "'Geist Mono', monospace",
-            fontSize: 11,
-            color: 'var(--db-muted-2)',
-          }}
+    <div>
+      <div className="flex items-center gap-1 rounded-md">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-6 shrink-0"
+          aria-label={`Toggle projects in ${subject.name}`}
+          aria-expanded={open}
+          aria-controls={`nav-subject-${subject.id}`}
+          onClick={() => setOpen((value) => !value)}
         >
-          {subject._count.projects}
-        </span>
+          <ChevronRight
+            className={open ? 'rotate-90 transition-transform' : 'transition-transform'}
+          />
+        </Button>
+        <Link
+          to="/subjects/$slug"
+          params={{ slug: subject.slug }}
+          className="flex min-w-0 flex-1 items-center gap-2 rounded-md py-2 text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <BookOpen className="size-4 shrink-0" />
+          <span className="truncate">{subject.name}</span>
+          <span className="ml-auto text-xs">{subject._count.projects}</span>
+        </Link>
+      </div>
+      {open && (
+        <div id={`nav-subject-${subject.id}`} className="ml-3 space-y-1 border-l py-1 pl-3">
+          {projects.isPending ? (
+            <p role="status" className="p-2 text-xs text-muted-foreground">
+              Loading projects…
+            </p>
+          ) : projects.isError ? (
+            <Button variant="ghost" size="sm" onClick={() => void projects.refetch()}>
+              Retry loading projects
+            </Button>
+          ) : projects.data?.projects.length === 0 ? (
+            <p className="p-2 text-xs text-muted-foreground">No projects yet.</p>
+          ) : (
+            projects.data?.projects.map((project) => (
+              <Link
+                key={project.id}
+                to="/projects/$slug"
+                params={{ slug: project.slug }}
+                aria-current={pathname === `/projects/${project.slug}` ? 'page' : undefined}
+                className={`flex items-center gap-2 rounded-md p-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${pathname === `/projects/${project.slug}` ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-secondary'}`}
+              >
+                <Folder className="size-4 shrink-0" />
+                <span className="truncate">{project.name}</span>
+              </Link>
+            ))
+          )}
+          {projects.data && projects.data.total > projects.data.projects.length && (
+            <Link
+              to="/subjects/$slug"
+              params={{ slug: subject.slug }}
+              className="block p-2 text-xs text-primary"
+            >
+              View all projects
+            </Link>
+          )}
+        </div>
       )}
     </div>
   )
@@ -116,7 +118,7 @@ function UserMenu({ onClose }: { onClose: () => void }) {
       /* ignore */
     }
     clearAuth()
-    navigate({ to: '/login' })
+    navigate({ to: '/login', search: { redirect: '' } })
   }
 
   const itemStyle = {
@@ -141,7 +143,7 @@ function UserMenu({ onClose }: { onClose: () => void }) {
         background: 'var(--db-surface)',
         border: '1px solid var(--db-line)',
         borderRadius: 10,
-        boxShadow: '0 16px 40px -14px rgba(0,0,0,0.65), 0 2px 8px rgba(0,0,0,0.4)',
+        boxShadow: 'var(--shadow-dialog)',
         padding: 6,
         zIndex: 40,
       }}
@@ -225,7 +227,7 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
         position: 'sticky',
         top: 0,
         height: '100vh',
-        fontFamily: "'Geist', system-ui, sans-serif",
+        fontFamily: 'var(--font-ui)',
         transition: 'width 180ms ease, min-width 180ms ease, max-width 180ms ease',
         overflow: 'hidden',
       }}
@@ -341,7 +343,7 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
                 <span
                   style={{
                     marginLeft: 'auto',
-                    fontFamily: "'Geist Mono', monospace",
+                    fontFamily: 'var(--font-mono)',
                     fontSize: 11,
                     color: 'var(--db-muted)',
                     background: 'var(--db-surface)',
@@ -357,7 +359,7 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
                 <span
                   style={{
                     marginLeft: 'auto',
-                    fontFamily: "'Geist Mono', monospace",
+                    fontFamily: 'var(--font-mono)',
                     fontSize: 11,
                     color: 'var(--db-muted)',
                   }}
@@ -371,10 +373,10 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
       </div>
 
       {/* new page quick-action */}
-      {!collapsed && (
+      {!collapsed && user && user.role !== 'GUEST' && (
         <div style={{ padding: '6px 10px 4px', flexShrink: 0 }}>
           <button
-            onClick={() => {}}
+            onClick={() => void navigate({ to: '/new-page' })}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -388,7 +390,7 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
               color: 'var(--db-em-deep)',
               fontSize: 13,
               fontWeight: 500,
-              fontFamily: "'Geist', system-ui, sans-serif",
+              fontFamily: 'var(--font-ui)',
             }}
             onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--db-em-soft-2)')}
             onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--db-em-soft)')}

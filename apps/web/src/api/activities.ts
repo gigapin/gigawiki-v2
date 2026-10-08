@@ -2,7 +2,7 @@ import type { Activity } from '@shared/types/activity'
 
 import apiClient from './client'
 
-interface ActivityWithRelations extends Activity {
+type ActivityWithRelations = Omit<Activity, 'user' | 'page' | 'project' | 'section'> & {
   user: { id: string; name: string }
   page: { title: string } | null
   project: { name: string } | null

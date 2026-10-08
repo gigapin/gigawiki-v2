@@ -83,7 +83,10 @@ describe('GET /projects/:projectSlug/sections', () => {
     expect(res.statusCode).toBe(200)
     expect(res.json().sections).toHaveLength(1)
     expect(mockSection.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ orderBy: { position: 'asc' } }),
+      expect.objectContaining({
+        orderBy: { position: 'asc' },
+        include: { _count: { select: { pages: { where: { deletedAt: null } } } } },
+      }),
     )
   })
 
