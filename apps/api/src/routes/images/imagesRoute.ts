@@ -4,13 +4,38 @@ import sharp from 'sharp'
 import { nanoid } from 'nanoid'
 
 import { prisma } from '../../lib/prisma.js'
-import { uploadFile, deleteFile } from '../../lib/storage.js'
+import { uploadFile, deleteFile, readFile } from '../../lib/storage.js'
 import { env } from '../../config/env.js'
 
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
 type ImageIdParams = { id: string }
 type UploadQuery = { type?: string }
+
+// Uploaded assets follow the existing public-read storage policy. Resolve only
+// paths recorded in the database rather than exposing arbitrary bucket keys.
+export async function serveUploadedImage(fastify: FastifyInstance) {
+  fastify.get<{ Params: { '*': string } }>('/uploads/*', async (req, reply) => {
+    const image = await prisma.image.findFirst({
+      where: { path: req.params['*'] },
+      select: { path: true },
+    })
+    if (!image) return reply.status(404).send({ error: 'Image not found' })
+    try {
+      const file = await readFile(image.path)
+      if (!file.Body) return reply.status(404).send({ error: 'Image not found' })
+      return reply
+        .type('image/webp')
+        .header('X-Content-Type-Options', 'nosniff')
+        .header('Cross-Origin-Resource-Policy', 'cross-origin')
+        .send(file.Body)
+    } catch (error) {
+      if (error instanceof Error && error.name === 'NoSuchKey')
+        return reply.status(404).send({ error: 'Image not found' })
+      throw error
+    }
+  })
+}
 
 export async function uploadImage(fastify: FastifyInstance) {
   fastify.post<{ Querystring: UploadQuery }>('/images', async (req, reply) => {

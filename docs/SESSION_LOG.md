@@ -85,7 +85,7 @@ Legenda: ✅ fatto · 🟡 parziale · ⬜ non iniziato
 | 28 | Pagine auth | 🟡 | Login, Register, VerifyEmail, AuthLayout e reinvio verifica implementati. Restano ForgotPassword, ResetPassword e AcceptInvite |
 | 29 | Dashboard | 🟡 | Attività recenti, preferiti e statistiche ci sono. Manca la sezione «Recently visited» (`GET /views`) |
 | 30 | Pagine Subjects / Projects / Sections | 🟡 | Prima implementazione in `c12f73a`. Fatti: Subjects/Subject detail, Project detail, ProjectFormDialog riusato in creazione/modifica, SectionFormDialog, eliminazione admin con conferma, riordino nativo + pulsanti accessibili, lista pagine paginata. Collegamenti a reader/editor e breadcrumb completati. Restano CRUD completo Subject e upload cover |
-| 31 | Page view + editor Tiptap | 🟡 | Reader, creazione/modifica, toolbar, tabelle, visibilità, bozza/pubblicazione, guardia modifiche non salvate. Restano autosave 30s, upload immagini, mentions, syntax highlighting, bubble menu, gestione link, tag/preferiti e integrazione revisioni/commenti |
+| 31 | Page view + editor Tiptap | 🟡 | Reader, creazione/modifica, toolbar, tabelle, visibilità, bozza/pubblicazione, guardia modifiche non salvate. Fatti anche upload immagini, link, syntax highlighting e contenuti legacy JSON. Restano autosave 30s, mentions, bubble menu, tag/preferiti e integrazione revisioni/commenti |
 | 32 | Drawer revisioni | ⬜ | |
 | 33 | Componente commenti | ⬜ | |
 | 34 | Pagine settings | ⬜ | |
@@ -120,7 +120,7 @@ Punti in cui il codice si discosta da `GIGAWIKI_V2_TASKS.md`. Vanno **letti prim
 ## Prossimi passi
 
 1. Provare nel browser il ciclo pagina completo: scelta sezione, creazione bozza, pubblicazione, modifica, avviso di uscita e ritorno tramite breadcrumb. Registrazione già confermata dall’utente; per creare/editare pagine occorre EDITOR/ADMIN e, dopo un cambio ruolo da Prisma Studio, aggiornare la sessione.
-2. Completare task 31: autosave, upload immagini, mentions, syntax highlighting, menu contestuale, gestione link, tag/preferiti. Verificare compatibilità con eventuale contenuto Tiptap JSON preesistente: il nuovo flusso salva HTML e converte il testo semplice in nodi di testo.
+2. Completare task 31: autosave, mentions, menu contestuale e tag/preferiti. Reader/editor ora condividono lo schema e supportano HTML, testo semplice e documenti Tiptap JSON; upload immagini, link e syntax highlighting sono implementati. Seguire il piano aggiornato: revisioni prima di autosave.
 3. Completare auth restante (ForgotPassword, ResetPassword, AcceptInvite), Dashboard (recently visited) e CRUD Subject/upload cover.
 4. Revisioni come drawer anteprima/ripristino; commenti riusabili.
 5. Favorites e Settings sulla stessa base shadcn. Allineare prima i contratti inviti (elenco/reinvio/cancellazione) e cambio password, non completi nel backend.
@@ -153,6 +153,25 @@ Chi clona il repo su una macchina nuova deve ricreare `init.sh` (o avere Node su
 ---
 
 ## Log delle sessioni
+
+### 2026-10-08 — Ridimensionamento immagini nell'editor
+
+- Ripristinata su richiesta la visibilità originale delle maniglie (hover/selezione): la segnalazione riguardava il reader, che correttamente non le mostra.
+
+- Attivato il resize nativo Tiptap Image: quattro maniglie agli angoli, proporzioni conservate e dimensioni minime. Width/height persistono nel contenuto HTML/JSON e sono rispettate nel reader, che non mostra maniglie.
+- Stili condivisi per tema light/dark; larghezza massima limitata al contenitore e altezza automatica per schermi piccoli. Maniglie visibili su hover/selezione e sui dispositivi senza hover.
+- Verifiche: 76 test frontend, lint e build. Test di trascinamento da 400×200 a 600×300 e riapertura nel reader. Nessuna modifica backend o migrazione necessaria; verifica visiva in browser reale ancora da eseguire.
+
+
+### 2026-10-08 — Reader/editor: immagini, link, codice e contenuti legacy
+
+- Schema condiviso reader/editor con supporto a documenti Tiptap JSON, HTML e testo semplice. JSON non documentale resta testo; nodi/mark non supportati vengono segnalati, bloccando il salvataggio invece di perdere il contenuto originale.
+- Upload immagini via pulsante, incolla e drop (JPEG/PNG/WebP/GIF, massimo 10 MB), errori e stato di attesa. Salvataggio sospeso durante upload, inserimento dell'URL persistente e protezione navigazione. Aggiunta rotta pubblica `/uploads/*` che legge da storage solo percorsi registrati in DB, coerente con bucket public-read; header CORP adatto a frontend/API su origini diverse.
+- Dialog link: aggiunta/modifica/rimozione, selezione preservata, URL web/email/locali e rifiuto protocolli eseguibili. Lowlight condiviso per codice, selettore linguaggio e colori adattati al tema.
+- Invalidata anche la query del dettaglio pagina dopo salvataggio, per mostrare subito il contenuto aggiornato nel reader.
+- Verifiche: 75 test frontend (inclusi test interazione Testing Library/jsdom), 237 API, lint/build frontend e typecheck API. Prova MinIO reale: upload 201, lettura 200 di WebP valido e pulizia 200. Nessuna pagina esistente modificata dalla prova. Browser reale ancora da verificare; warning dimensione bundle resta aperto.
+- Prossimo incremento: drawer revisioni con anteprima/ripristino, poi autosave.
+
 
 ### 2026-10-08 — Eliminazione pagine dal reader
 
