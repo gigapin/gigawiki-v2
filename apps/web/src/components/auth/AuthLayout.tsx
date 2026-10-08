@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ThemeToggle } from '@/components/shared/ThemeToggle'
 
 export function AuthLayout({
   title,
@@ -14,6 +15,9 @@ export function AuthLayout({
 }) {
   return (
     <main className="flex min-h-dvh items-center justify-center bg-background px-4 py-12">
+      <div className="absolute right-4 top-4">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-md space-y-6">
         <Link
           to="/login"

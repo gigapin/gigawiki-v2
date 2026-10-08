@@ -1,5 +1,10 @@
-/* Canonical dark theme. Semantic tokens also drive shadcn/ui. */
+/* Canonical themes. Semantic tokens also drive shadcn/ui and legacy aliases. */
 :root {
+  color-scheme: dark;
+  --shadow-card: 0 2px 4px rgb(0 0 0 / 0.3);
+  --shadow-card-hover: 0 4px 12px rgb(0 0 0 / 0.5), 0 20px 40px -16px rgb(0 0 0 / 0.6);
+  --shadow-dialog: 0 16px 40px -14px rgb(0 0 0 / 0.65), 0 2px 8px rgb(0 0 0 / 0.4);
+  --skeleton-fill: color-mix(in oklch, var(--db-ink) 7%, var(--db-surface));
   --background: 0.155 0.004 160;
   --foreground: 0.965 0.004 160;
   --card: 0.185 0.005 160;
@@ -19,6 +24,18 @@
   --border: 0.285 0.006 160;
   --input: 0.355 0.008 160;
   --ring: 0.72 0.15 158;
+  --cover-emerald-body: oklch(0.20 0.025 158);
+  --cover-emerald-bodyEdge: oklch(0.32 0.04 158);
+  --cover-blue-body: oklch(0.20 0.028 268);
+  --cover-blue-bodyEdge: oklch(0.32 0.045 268);
+  --cover-amber-body: oklch(0.21 0.025 78);
+  --cover-amber-bodyEdge: oklch(0.33 0.04 78);
+  --cover-red-body: oklch(0.20 0.028 18);
+  --cover-red-bodyEdge: oklch(0.33 0.05 18);
+  --cover-slate-body: oklch(0.20 0.018 250);
+  --cover-slate-bodyEdge: oklch(0.31 0.03 250);
+  --cover-teal-body: oklch(0.20 0.022 195);
+  --cover-teal-bodyEdge: oklch(0.31 0.038 195);
   --radius: 0.625rem;
   --font-ui: 'Geist', system-ui, -apple-system, sans-serif;
   --font-display: 'Instrument Serif', Georgia, serif;
@@ -60,4 +77,53 @@
   --gw-danger: var(--db-rose);
   --gw-danger-bg: var(--db-surface-2);
   --gw-danger-edge: var(--db-rose);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --background: 0.975 0.004 160;
+  --foreground: 0.24 0.012 160;
+  --card: 1 0 0;
+  --card-foreground: 0.24 0.012 160;
+  --popover: 1 0 0;
+  --popover-foreground: 0.24 0.012 160;
+  --primary: 0.48 0.105 158;
+  --primary-foreground: 1 0 0;
+  --secondary: 0.94 0.008 160;
+  --secondary-foreground: 0.34 0.012 160;
+  --muted: 0.945 0.006 160;
+  --muted-foreground: 0.46 0.014 160;
+  --accent: 0.91 0.035 158;
+  --accent-foreground: 0.28 0.035 158;
+  --destructive: 0.5 0.17 25;
+  --destructive-foreground: 1 0 0;
+  --border: 0.86 0.01 160;
+  --input: 0.68 0.014 160;
+  --ring: 0.48 0.105 158;
+  --db-muted-2: oklch(0.49 0.014 160);
+  --db-em-deep: oklch(0.4 0.09 158);
+  --db-em-soft-2: oklch(0.86 0.05 158);
+  --db-amber: oklch(0.51 0.11 65);
+  --db-amber-t: oklch(0.43 0.09 65);
+  --db-rose: oklch(var(--destructive));
+  --db-rose-t: oklch(0.46 0.15 25);
+  --db-indigo: oklch(0.49 0.16 268);
+  --db-indigo-t: oklch(0.43 0.14 268);
+  --db-slate: oklch(0.47 0.035 250);
+  --db-slate-t: oklch(0.4 0.035 250);
+  --shadow-card: 0 2px 4px rgb(20 45 35 / 0.06);
+  --shadow-card-hover: 0 4px 12px rgb(20 45 35 / 0.1), 0 20px 40px -16px rgb(20 45 35 / 0.15);
+  --shadow-dialog: 0 16px 40px -14px rgb(20 45 35 / 0.18), 0 2px 8px rgb(20 45 35 / 0.08);
+  --cover-emerald-body: oklch(0.97 0.012 158);
+  --cover-emerald-bodyEdge: oklch(0.86 0.025 158);
+  --cover-blue-body: oklch(0.97 0.012 268);
+  --cover-blue-bodyEdge: oklch(0.86 0.025 268);
+  --cover-amber-body: oklch(0.97 0.012 78);
+  --cover-amber-bodyEdge: oklch(0.86 0.025 78);
+  --cover-red-body: oklch(0.97 0.012 18);
+  --cover-red-bodyEdge: oklch(0.86 0.025 18);
+  --cover-slate-body: oklch(0.97 0.012 250);
+  --cover-slate-bodyEdge: oklch(0.86 0.025 250);
+  --cover-teal-body: oklch(0.97 0.012 195);
+  --cover-teal-bodyEdge: oklch(0.86 0.025 195);
 }

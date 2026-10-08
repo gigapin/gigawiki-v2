@@ -38,14 +38,14 @@
   list-style: decimal;
 }
 .wiki-content .tiptap blockquote {
-  border-left: 3px solid var(--border);
+  border-left: 3px solid oklch(var(--border));
   padding-left: 1em;
-  color: var(--muted-foreground);
+  color: oklch(var(--muted-foreground));
 }
 .wiki-content .tiptap code,
 .wiki-content .tiptap pre {
   font-family: var(--font-mono);
-  background: var(--muted);
+  background: oklch(var(--muted));
   border-radius: 0.3em;
 }
 .wiki-content .tiptap pre {
@@ -53,7 +53,7 @@
   overflow-x: auto;
 }
 .wiki-content .tiptap a {
-  color: var(--primary);
+  color: oklch(var(--primary));
   text-decoration: underline;
 }
 .wiki-content .tiptap img {
@@ -68,13 +68,13 @@
 }
 .wiki-content .tiptap td,
 .wiki-content .tiptap th {
-  border: 1px solid var(--border);
+  border: 1px solid oklch(var(--border));
   padding: 0.6em;
   min-width: 3em;
   vertical-align: top;
 }
 .wiki-content .tiptap th {
-  background: var(--muted);
+  background: oklch(var(--muted));
 }
 .wiki-content .tiptap .tableWrapper {
   overflow-x: auto;
@@ -83,6 +83,6 @@
   content: attr(data-placeholder);
   float: left;
   height: 0;
-  color: var(--muted-foreground);
+  color: oklch(var(--muted-foreground));
   pointer-events: none;
 }

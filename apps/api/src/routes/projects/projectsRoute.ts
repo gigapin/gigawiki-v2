@@ -61,7 +61,9 @@ export async function fetchProjectsBySubject(fastify: FastifyInstance) {
           where,
           include: {
             tags: true,
-            _count: { select: { sections: true, pages: true, views: true } },
+            _count: {
+              select: { sections: true, pages: { where: { deletedAt: null } }, views: true },
+            },
           },
           skip,
           take,

@@ -12,7 +12,7 @@ In development, Vite proxies `/api` to `http://localhost:3001`. Start the API se
 
 ## UI foundation
 
-- `src/styles/tokens.css` is the canonical dark theme. shadcn uses semantic OKLCH tokens; legacy `--db-*` and `--gw-*` variables are compatibility aliases.
+- `src/styles/tokens.css` contains the canonical dark and light themes. shadcn uses semantic OKLCH tokens; legacy `--db-*` and `--gw-*` variables are compatibility aliases.
 - UI typography: Geist; display headings: Instrument Serif; code: Geist Mono. Fonts are loaded in `index.html`.
 - `src/styles/cover-colors.ts` holds the six subject cover tones shared by cards and the creation preview.
 - Reuse components in `src/components/ui/` for controls, dialogs and surfaces. Shared resource forms, states, pagination and delete confirmations live in `src/components/shared/`.
@@ -49,13 +49,25 @@ The implementation follows tasks 30–34 when older design prompts conflict:
 - Sections are inline in Project detail; no Section detail route.
 - Project starts with sections and pages; Activity/Comments tabs are not part of this first iteration.
 - Revision history will use a drawer with preview/restore. A side-by-side diff is an optional later extension.
-- Settings will use Profile, Password, Appearance and the admin Users, Invites, App Settings areas. The first theme is dark; light mode is not implemented.
+- Settings will use Profile, Password, Appearance and the admin Users, Invites, App Settings areas. Dark is the default; a sun/moon button in the topbar and auth screens switches to light. The choice is stored locally in the browser and applied before React loads, including toast notifications.
 - Use Lucide for new icons and icon/typography based empty states. Existing custom icons remain during migration.
 
-Page rows currently display metadata; opening, creating and editing page content belong to the next reader/Tiptap iteration. Cover uploads and subject reassignment are not implemented by these project forms. The backend does not currently support project reassignment in its update contract.
+Page rows open `/pages/:slug`; `/new-page` selects a subject, project and section before creating a page. Contextual creation uses `/projects/:projectSlug/sections/:sectionSlug/pages/new`; editing uses `/pages/:slug/edit`. Tiptap supports formatting, headings, lists, quotes, code and tables, with draft/publish actions, visibility and an unsaved-changes guard. Content is saved as HTML; plain text is converted to text nodes. Reader/editor share `styles/wiki-content.css` (Georgia for prose, Geist for headings, Geist Mono for code).
 
-Reader/editor, password recovery, invitation acceptance, revisions, comments, favorites and settings remain to be implemented. Existing Dashboard/Subject markup is migrated incrementally; it still includes inline layout styles.
+Breadcrumb ancestors are links; a section links to `/projects/:slug?section=:sectionSlug`, restoring the originating section. Editing also links back to the reader. Cover uploads and subject reassignment are not implemented by these project forms. The backend does not currently support project reassignment in its update contract.
+
+Advanced editor features (30-second autosave, image uploads, mentions, syntax highlighting, bubble menu and link controls), password recovery, invitation acceptance, revisions, comments, favorites and settings remain to be implemented. Tags/favorite controls are also pending in the reader. Saving uses POST for creation and PATCH for content/title/publication settings in one request; title changes preserve unique slugs. Validate any pre-existing Tiptap JSON content separately: current normalization handles HTML and plain text. Existing Dashboard/Subject markup is migrated incrementally; it still includes inline layout styles.
 
 ## Verification
 
-`test` runs Vitest in Node: registration validation and API contracts, registration/verification UI states, project API contracts, section ordering, API error formats, session/settings response shapes, and server-rendered role-dependent project controls. It does not exercise browser interactions or replace future Testing Library/end-to-end coverage for dialogs, dragging and navigation.
+The latest checks passed: 35 frontend tests in 7 files, frontend lint/build, 234 API tests in 17 files and API typecheck. Vite reports a bundle-size warning; code splitting is pending. Registration with Mailtrap was confirmed by the user.
+
+`test` runs Vitest in Node: registration validation and API contracts, registration/verification UI states, project API contracts, section ordering, API error formats, session/settings response shapes, legacy page-content conversion, breadcrumb destinations and server-rendered role-dependent project controls. It does not exercise browser interactions or replace future Testing Library/end-to-end coverage for dialogs, dragging and navigation.
+
+## Theme verification — 2026-10-08
+
+Dark/light tokens also cover legacy aliases, card bodies, skeletons, shadows and wiki content. Colored cover banners retain their artwork colors. The preference key is `gigawiki-theme`; blocked storage does not prevent toggling. The theme is local to the browser, not an account setting. Six tests cover startup, invalid preferences, switching, persistence and unavailable storage. Frontend lint, build and all 41 tests pass; visual browser verification remains pending.
+
+## Page deletion — 2026-10-08
+
+Admins can delete a page from the reader after confirmation. The dialog stays open on API errors and blocks duplicate submissions while pending. Success returns to the originating project section, invalidates resource lists and counts, and removes the cached page. Backend section/project page counts exclude soft-deleted pages. Editors retain creation/editing; guests can read. Frontend tests cover roles, DELETE failures and navigation/cache updates; browser interaction verification remains pending.

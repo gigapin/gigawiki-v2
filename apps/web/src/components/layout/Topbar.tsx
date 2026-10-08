@@ -3,6 +3,7 @@ import { useNavigate, useMatches } from '@tanstack/react-router'
 
 import { SearchModal } from './SearchModal'
 
+import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import apiClient from '@/api/client'
 import { useAuthStore } from '@/stores/auth.store'
 import { Icon, type IconName } from '@/components/ui/icon'
@@ -59,7 +60,7 @@ function AvatarDropdown({ onClose }: { onClose: () => void }) {
         background: 'var(--db-surface)',
         border: '1px solid var(--db-line)',
         borderRadius: 10,
-        boxShadow: '0 16px 40px -14px rgba(0,0,0,0.65), 0 2px 8px rgba(0,0,0,0.4)',
+        boxShadow: 'var(--shadow-dialog)',
         padding: 6,
         minWidth: 180,
         zIndex: 30,
@@ -161,7 +162,7 @@ function CreateMenu({ onClose }: { onClose: () => void }) {
         background: 'var(--db-surface)',
         border: '1px solid var(--db-line)',
         borderRadius: 10,
-        boxShadow: '0 16px 40px -14px rgba(0,0,0,0.65), 0 2px 8px rgba(0,0,0,0.4)',
+        boxShadow: 'var(--shadow-dialog)',
         padding: 6,
         minWidth: 240,
         zIndex: 30,
@@ -410,6 +411,7 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
             minWidth: 0,
           }}
         >
+          <ThemeToggle />
           <button
             style={{
               width: 32,
@@ -457,7 +459,7 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
                 background: 'var(--db-em)',
                 backgroundImage:
                   'linear-gradient(180deg, color-mix(in oklch, var(--db-em) 88%, white), var(--db-em))',
-                color: 'oklch(0.20 0.03 160)',
+                color: 'oklch(var(--primary-foreground))',
                 fontWeight: 500,
                 fontSize: 13.5,
                 padding: '7px 8px 7px 12px',

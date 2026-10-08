@@ -2,7 +2,7 @@
 
 **Data:** 2026-09-14 · **Scopo:** stabilire se il materiale di design disponibile basta a completare la Fase 4, e cosa manca da preparare.
 
-> **Aggiornamento 2026-10-07:** questo audit descrive lo stato del 14 settembre. Il tema e le primitive shadcn sono ora unificati, Project detail e gestione sezioni sono implementati senza nuovi template Claude Design. Stato corrente in `SESSION_LOG.md` e `apps/web/README.md`.
+> **Aggiornamento 2026-10-07:** questo audit descrive lo stato del 14 settembre. Il tema e le primitive shadcn sono ora unificati, Project detail, gestione sezioni, registrazione/verifica email e primo reader/editor Tiptap con bozza/pubblicazione e breadcrumb sono implementati senza nuovi template Claude Design. Stato corrente in `SESSION_LOG.md` e `apps/web/README.md`.
 
 ---
 

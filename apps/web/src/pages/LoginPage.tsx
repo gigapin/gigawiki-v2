@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import type { User } from '@shared/types/user'
 
+import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import apiClient from '@/api/client'
 import { apiErrorMessage } from '@/lib/api-error'
 import { useAuthStore } from '@/stores/auth.store'
@@ -71,6 +72,9 @@ export function LoginPage() {
 
   return (
     <>
+      <div className="fixed right-4 top-4 z-20">
+        <ThemeToggle />
+      </div>
       <style>{`
         @keyframes gw-banner-in {
           from { opacity: 0; transform: translateY(-4px); }
@@ -108,7 +112,7 @@ export function LoginPage() {
         .gw-login-body::after {
           content: "";
           position: fixed; inset: 0;
-          background: radial-gradient(circle at 50% 42%, transparent 40%, oklch(0.10 0.005 160 / 0.55) 100%);
+          background: radial-gradient(circle at 50% 42%, transparent 40%, color-mix(in oklch, var(--gw-bg) 55%, transparent) 100%);
           pointer-events: none;
           z-index: 0;
         }
@@ -130,7 +134,7 @@ export function LoginPage() {
         .gw-mark span {
           font-family: var(--font-ui);
           font-weight: 700; font-size: 16px;
-          color: oklch(0.16 0.03 160); line-height: 1;
+          color: oklch(var(--primary-foreground)); line-height: 1;
         }
         .gw-word {
           font-family: var(--font-ui);
@@ -140,13 +144,13 @@ export function LoginPage() {
         .gw-word b { font-weight: 600; color: var(--gw-emerald-bright); }
         .gw-card {
           width: 100%;
-          background: linear-gradient(180deg, var(--gw-card), oklch(0.19 0.008 165));
+          background: linear-gradient(180deg, var(--gw-card), var(--db-bg-2));
           border: 1px solid var(--gw-card-edge);
           border-radius: 14px;
           padding: 30px 30px 28px;
           box-shadow:
             0 1px 0 oklch(1 0 0 / 0.04) inset,
-            0 24px 60px -20px oklch(0.05 0.01 160 / 0.8),
+            var(--shadow-dialog),
             0 0 0 1px oklch(0 0 0 / 0.2);
         }
         .gw-head { margin-bottom: 22px; }
@@ -159,16 +163,16 @@ export function LoginPage() {
         .gw-head p { margin: 0; font-size: 13.5px; color: var(--gw-faint); }
         .gw-banner {
           display: flex; align-items: flex-start; gap: 10px;
-          background: oklch(0.30 0.08 22 / 0.55);
+          background: color-mix(in oklch, var(--gw-danger) 12%, var(--gw-card));
           border: 1px solid var(--gw-danger-edge);
           border-radius: 10px;
           padding: 11px 13px; margin-bottom: 18px;
           font-size: 13px; line-height: 1.45;
-          color: oklch(0.92 0.05 22);
+          color: var(--gw-danger);
           animation: gw-banner-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
         .gw-banner svg { flex: none; margin-top: 1px; color: var(--gw-danger); }
-        .gw-banner strong { color: oklch(0.95 0.04 22); font-weight: 600; }
+        .gw-banner strong { color: var(--gw-danger); font-weight: 600; }
         .gw-form { display: flex; flex-direction: column; gap: 16px; }
         .gw-field { display: flex; flex-direction: column; gap: 7px; }
         .gw-label {
@@ -186,12 +190,12 @@ export function LoginPage() {
           font-size: 14px; color: var(--gw-text);
           transition: border-color 0.16s, box-shadow 0.16s, background 0.16s;
         }
-        .gw-input::placeholder { color: oklch(0.50 0.01 165); }
-        .gw-input:hover { border-color: oklch(0.40 0.014 165); }
+        .gw-input::placeholder { color: var(--gw-faint); }
+        .gw-input:hover { border-color: var(--gw-field-edge); }
         .gw-input:focus {
           outline: none;
           border-color: var(--gw-emerald);
-          background: oklch(0.19 0.012 165);
+          background: var(--gw-field);
           box-shadow: 0 0 0 3px oklch(0.72 0.15 160 / 0.16);
         }
         .gw-input-pw { padding-right: 46px; }
@@ -206,7 +210,7 @@ export function LoginPage() {
           display: grid; place-items: center;
           transition: color 0.14s, background 0.14s;
         }
-        .gw-toggle:hover { color: var(--gw-muted); background: oklch(0.28 0.01 165); }
+        .gw-toggle:hover { color: var(--gw-muted); background: var(--db-surface-2); }
         .gw-row {
           display: flex; align-items: center;
           justify-content: space-between; margin-top: 2px;
@@ -228,14 +232,14 @@ export function LoginPage() {
           text-decoration: none; font-weight: 500;
           transition: color 0.14s;
         }
-        .gw-link:hover { color: oklch(0.85 0.14 160); }
+        .gw-link:hover { color: var(--gw-emerald-bright); }
         .gw-submit {
           margin-top: 8px; width: 100%; border: none;
           border-radius: 10px; padding: 12px 16px;
           font-family: var(--font-ui);
           font-size: 14.5px; font-weight: 600;
           letter-spacing: 0.005em;
-          color: oklch(0.15 0.03 160);
+          color: oklch(var(--primary-foreground));
           background: linear-gradient(180deg, var(--gw-emerald-bright), var(--gw-emerald-deep));
           cursor: pointer;
           box-shadow: 0 1px 0 oklch(1 0 0 / 0.18) inset, 0 8px 22px -8px oklch(0.6 0.14 160 / 0.55);
@@ -251,7 +255,7 @@ export function LoginPage() {
         .gw-foot a {
           color: var(--gw-text); text-decoration: none;
           font-weight: 500;
-          border-bottom: 1px solid oklch(0.45 0.01 165);
+          border-bottom: 1px solid var(--gw-field-edge);
           padding-bottom: 1px;
           transition: border-color 0.14s, color 0.14s;
         }

@@ -41,6 +41,9 @@ export type PageInput = {
 export function fetchPage(slug: string): Promise<PageDetail> {
   return apiClient.get<PageDetail>(`/api/v2/pages/${slug}`).then((r) => r.data)
 }
+export function deletePage(slug: string): Promise<void> {
+  return apiClient.delete(`/api/v2/pages/${slug}`).then(() => undefined)
+}
 export function savePage(
   input: PageInput,
   location: { slug: string } | { sectionId: string },

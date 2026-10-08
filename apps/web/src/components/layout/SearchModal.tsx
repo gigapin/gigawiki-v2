@@ -120,7 +120,7 @@ function SearchDialog({ onClose }: Omit<Props, 'open'>) {
           background: 'var(--db-surface)',
           border: '1px solid var(--db-line)',
           borderRadius: 14,
-          boxShadow: '0 24px 60px -16px rgba(0,0,0,0.8), 0 4px 16px rgba(0,0,0,0.5)',
+          boxShadow: 'var(--shadow-dialog)',
           overflow: 'hidden',
           fontFamily: 'var(--font-ui)',
         }}

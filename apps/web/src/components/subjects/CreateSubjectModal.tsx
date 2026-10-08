@@ -176,7 +176,7 @@ function PreviewCard({
               fontWeight: 400,
               fontSize: 20,
               lineHeight: 1.2,
-              color: tone.label,
+              color: 'var(--db-ink)',
               margin: '0 0 6px',
             }}
           >
@@ -362,7 +362,7 @@ export function CreateSubjectModal({ open, onClose }: CreateSubjectModalProps) {
           borderRadius: 20,
           overflow: 'hidden',
           border: '1px solid var(--db-line-2)',
-          boxShadow: '0 32px 80px rgba(0,0,0,0.8), 0 8px 20px rgba(0,0,0,0.6)',
+          boxShadow: 'var(--shadow-dialog)',
         }}
       >
         {/* ── left: form ── */}

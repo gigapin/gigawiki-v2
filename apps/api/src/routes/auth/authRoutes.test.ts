@@ -143,6 +143,16 @@ describe('POST /auth/login', () => {
 
     expect(res.statusCode).toBe(200)
     expect(res.json()).toHaveProperty('accessToken')
+    expect(res.cookies).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'refreshToken',
+          path: '/api/v2/auth',
+          httpOnly: true,
+          sameSite: 'Strict',
+        }),
+      ]),
+    )
   })
 
   it('returns 401 when user is not found', async () => {
@@ -186,6 +196,9 @@ describe('POST /auth/logout', () => {
     })
 
     expect(res.statusCode).toBe(204)
+    expect(res.cookies.map((cookie) => cookie.path)).toEqual(
+      expect.arrayContaining(['/api/v2/auth', '/api/v2/auth/refresh']),
+    )
     expect(mockRefreshToken.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { token: 'some-token' } }),
     )
@@ -208,6 +221,16 @@ describe('POST /auth/refresh', () => {
 
     expect(res.statusCode).toBe(200)
     expect(res.json()).toHaveProperty('accessToken')
+    expect(res.cookies).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'refreshToken',
+          path: '/api/v2/auth',
+          httpOnly: true,
+          sameSite: 'Strict',
+        }),
+      ]),
+    )
   })
 
   it('returns 401 when refresh cookie is missing', async () => {

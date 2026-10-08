@@ -35,6 +35,7 @@ const ARGON2_OPTIONS = {
 } as const
 
 const REFRESH_COOKIE = 'refreshToken'
+const REFRESH_COOKIE_PATH = '/api/v2/auth'
 const AUTH_RATE_LIMIT = { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }
 
 function setRefreshCookie(reply: FastifyReply, token: string, expiresAt: Date) {
@@ -42,7 +43,7 @@ function setRefreshCookie(reply: FastifyReply, token: string, expiresAt: Date) {
     httpOnly: true,
     secure: env.NODE_ENV === 'production',
     sameSite: 'strict',
-    path: '/api/v2/auth/refresh',
+    path: REFRESH_COOKIE_PATH,
     expires: expiresAt,
   })
 }
@@ -72,6 +73,7 @@ export async function login(fastify: FastifyInstance) {
     }
 
     const accessToken = fastify.jwt.sign({ id: user.id, email: user.email, role: user.role })
+    reply.clearCookie(REFRESH_COOKIE, { path: '/api/v2/auth/refresh' })
     await createRefreshToken(reply, user.id)
 
     return reply.status(200).send({ accessToken })
@@ -87,6 +89,8 @@ export async function logout(fastify: FastifyInstance) {
         data: { revokedAt: new Date() },
       })
     }
+    reply.clearCookie(REFRESH_COOKIE, { path: REFRESH_COOKIE_PATH })
+    // Remove cookies issued before the path also included logout.
     reply.clearCookie(REFRESH_COOKIE, { path: '/api/v2/auth/refresh' })
     return reply.status(204).send()
   })
@@ -108,6 +112,7 @@ export async function refresh(fastify: FastifyInstance) {
     await prisma.refreshToken.delete({ where: { id: stored.id } })
 
     const accessToken = fastify.jwt.sign({ id: user.id, email: user.email, role: user.role })
+    reply.clearCookie(REFRESH_COOKIE, { path: '/api/v2/auth/refresh' })
     await createRefreshToken(reply, user.id)
 
     return reply.status(200).send({ accessToken })

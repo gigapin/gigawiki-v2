@@ -96,6 +96,15 @@ describe('GET /subjects/:subjectSlug/projects', () => {
     expect(res.statusCode).toBe(200)
     expect(res.json().projects).toHaveLength(1)
     expect(res.json().total).toBe(1)
+    expect(mockProject.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          _count: {
+            select: { sections: true, pages: { where: { deletedAt: null } }, views: true },
+          },
+        }),
+      }),
+    )
   })
 
   it('returns 404 when subject does not exist', async () => {

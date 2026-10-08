@@ -76,9 +76,7 @@ function ProjectCard({ project, toneIndex, onClick }: ProjectCardProps) {
         background: tone.body,
         cursor: 'pointer',
         transform: hovered ? 'translateY(-3px)' : 'none',
-        boxShadow: hovered
-          ? '0 4px 12px rgba(0,0,0,0.5), 0 20px 40px -16px rgba(0,0,0,0.6)'
-          : '0 2px 4px rgba(0,0,0,0.3)',
+        boxShadow: hovered ? 'var(--shadow-card-hover)' : 'var(--shadow-card)',
         transition: 'transform 160ms ease, box-shadow 160ms ease',
       }}
     >
@@ -140,7 +138,7 @@ function ProjectCard({ project, toneIndex, onClick }: ProjectCardProps) {
           style={{
             fontSize: 15,
             fontWeight: 500,
-            color: tone.label,
+            color: 'var(--db-ink)',
             margin: '0 0 5px',
             letterSpacing: '-0.005em',
             whiteSpace: 'nowrap',
@@ -179,9 +177,9 @@ function ProjectCard({ project, toneIndex, onClick }: ProjectCardProps) {
                 style={{
                   fontFamily: 'var(--font-mono)',
                   fontSize: 10,
-                  color: tone.label,
-                  background: 'rgba(255,255,255,0.1)',
-                  border: '1px solid rgba(255,255,255,0.12)',
+                  color: 'var(--db-ink)',
+                  background: 'var(--db-surface-2)',
+                  border: '1px solid var(--db-line)',
                   borderRadius: 4,
                   padding: '2px 6px',
                 }}
@@ -358,7 +356,7 @@ export function SubjectDetailPage() {
               height: 52,
               width: 320,
               borderRadius: 8,
-              background: 'rgba(255,255,255,0.06)',
+              background: 'var(--skeleton-fill)',
               marginBottom: 10,
             }}
           />
@@ -367,7 +365,7 @@ export function SubjectDetailPage() {
               height: 16,
               width: 240,
               borderRadius: 4,
-              background: 'rgba(255,255,255,0.04)',
+              background: 'var(--skeleton-fill)',
             }}
           />
         </div>

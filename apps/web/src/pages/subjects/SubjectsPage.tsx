@@ -40,9 +40,7 @@ function SubjectCard({ name, description, projectCount, color, icon, onClick }: 
         border: `1px solid ${tone.bodyEdge}`,
         cursor: 'pointer',
         transform: hovered ? 'translateY(-3px)' : 'none',
-        boxShadow: hovered
-          ? `0 4px 12px rgba(0,0,0,0.5), 0 20px 40px -16px rgba(0,0,0,0.6)`
-          : '0 2px 4px rgba(0,0,0,0.3)',
+        boxShadow: hovered ? `var(--shadow-card-hover)` : 'var(--shadow-card)',
         transition: 'transform 160ms ease, box-shadow 160ms ease',
         background: tone.body,
       }}
@@ -127,7 +125,7 @@ function SubjectCard({ name, description, projectCount, color, icon, onClick }: 
             fontSize: 26,
             lineHeight: 1.15,
             letterSpacing: '-0.01em',
-            color: tone.label,
+            color: 'var(--db-ink)',
             margin: '0 0 8px',
           }}
         >
@@ -187,7 +185,7 @@ function SubjectCardSkeleton({ index }: { index: number }) {
             width: 72,
             height: 20,
             borderRadius: 999,
-            background: 'rgba(255,255,255,0.07)',
+            background: 'var(--skeleton-fill)',
           }}
         />
       </div>
@@ -197,7 +195,7 @@ function SubjectCardSkeleton({ index }: { index: number }) {
             height: 28,
             width: '60%',
             borderRadius: 6,
-            background: 'rgba(255,255,255,0.06)',
+            background: 'var(--skeleton-fill)',
             marginBottom: 10,
           }}
         />
@@ -206,7 +204,7 @@ function SubjectCardSkeleton({ index }: { index: number }) {
             height: 13,
             width: '90%',
             borderRadius: 4,
-            background: 'rgba(255,255,255,0.04)',
+            background: 'var(--skeleton-fill)',
           }}
         />
         <div
@@ -214,7 +212,7 @@ function SubjectCardSkeleton({ index }: { index: number }) {
             height: 13,
             width: '70%',
             borderRadius: 4,
-            background: 'rgba(255,255,255,0.04)',
+            background: 'var(--skeleton-fill)',
             marginTop: 5,
           }}
         />

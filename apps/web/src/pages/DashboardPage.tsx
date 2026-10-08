@@ -185,8 +185,7 @@ function StatCards() {
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-1px)'
-            e.currentTarget.style.boxShadow =
-              '0 2px 6px rgba(0,0,0,0.35), 0 12px 28px -10px rgba(0,0,0,0.5)'
+            e.currentTarget.style.boxShadow = 'var(--shadow-card-hover)'
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = ''
@@ -553,8 +552,7 @@ function FavoritesList() {
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-1px)'
-                e.currentTarget.style.boxShadow =
-                  '0 2px 6px rgba(0,0,0,0.35), 0 12px 28px -10px rgba(0,0,0,0.5)'
+                e.currentTarget.style.boxShadow = 'var(--shadow-card-hover)'
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = ''

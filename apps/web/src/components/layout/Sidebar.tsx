@@ -143,7 +143,7 @@ function UserMenu({ onClose }: { onClose: () => void }) {
         background: 'var(--db-surface)',
         border: '1px solid var(--db-line)',
         borderRadius: 10,
-        boxShadow: '0 16px 40px -14px rgba(0,0,0,0.65), 0 2px 8px rgba(0,0,0,0.4)',
+        boxShadow: 'var(--shadow-dialog)',
         padding: 6,
         zIndex: 40,
       }}
