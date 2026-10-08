@@ -52,11 +52,11 @@ The implementation follows tasks 30–34 when older design prompts conflict:
 - Settings will use Profile, Password, Appearance and the admin Users, Invites, App Settings areas. Dark is the default; a sun/moon button in the topbar and auth screens switches to light. The choice is stored locally in the browser and applied before React loads, including toast notifications.
 - Use Lucide for new icons and icon/typography based empty states. Existing custom icons remain during migration.
 
-Page rows open `/pages/:slug`; `/new-page` selects a subject, project and section before creating a page. Contextual creation uses `/projects/:projectSlug/sections/:sectionSlug/pages/new`; editing uses `/pages/:slug/edit`. Tiptap supports formatting, headings, lists, quotes, code and tables, with draft/publish actions, visibility and an unsaved-changes guard. Content is saved as HTML; plain text is converted to text nodes. Reader/editor share `styles/wiki-content.css` (Georgia for prose, Geist for headings, Geist Mono for code).
+Page rows open `/pages/:slug`; `/new-page` selects a subject, project and section before creating a page. Contextual creation uses `/projects/:projectSlug/sections/:sectionSlug/pages/new`; editing uses `/pages/:slug/edit`. Tiptap supports formatting, headings, lists, quotes, code and tables, with draft/publish actions, visibility and an unsaved-changes guard. Content is saved as HTML; reader/editor also recognize serialized Tiptap JSON documents and preserve plain text as text nodes. Unsupported JSON nodes/marks show an error and disable saving. Reader/editor share `styles/wiki-content.css` (Georgia for prose, Geist for headings, Geist Mono for code).
 
 Breadcrumb ancestors are links; a section links to `/projects/:slug?section=:sectionSlug`, restoring the originating section. Editing also links back to the reader. Cover uploads and subject reassignment are not implemented by these project forms. The backend does not currently support project reassignment in its update contract.
 
-Advanced editor features (30-second autosave, image uploads, mentions, syntax highlighting, bubble menu and link controls), password recovery, invitation acceptance, revisions, comments, favorites and settings remain to be implemented. Tags/favorite controls are also pending in the reader. Saving uses POST for creation and PATCH for content/title/publication settings in one request; title changes preserve unique slugs. Validate any pre-existing Tiptap JSON content separately: current normalization handles HTML and plain text. Existing Dashboard/Subject markup is migrated incrementally; it still includes inline layout styles.
+Advanced editor features (30-second autosave, mentions and bubble menu), password recovery, invitation acceptance, revisions, comments, favorites and settings remain to be implemented. Tags/favorite controls are also pending in the reader. Saving uses POST for creation and PATCH for content/title/publication settings in one request; title changes preserve unique slugs. The shared schema validates legacy JSON before editing; supported documents retain their formatting. Existing Dashboard/Subject markup is migrated incrementally; it still includes inline layout styles.
 
 ## Verification
 
@@ -71,3 +71,13 @@ Dark/light tokens also cover legacy aliases, card bodies, skeletons, shadows and
 ## Page deletion — 2026-10-08
 
 Admins can delete a page from the reader after confirmation. The dialog stays open on API errors and blocks duplicate submissions while pending. Success returns to the originating project section, invalidates resource lists and counts, and removes the cached page. Backend section/project page counts exclude soft-deleted pages. Editors retain creation/editing; guests can read. Frontend tests cover roles, DELETE failures and navigation/cache updates; browser interaction verification remains pending.
+
+## Editor enhancements — 2026-10-08
+
+The toolbar uploads inline images (also paste/drop), adds/edits/removes links with a selection-preserving dialog, and selects code language. CodeBlockLowlight powers highlighting in editor and reader, with theme-aware colors. Image files are validated before multipart POST `/api/v2/images?type=INLINE`; only persistent URLs are inserted. The parent form disables saving during upload or unsupported content, and warns before leaving an upload in progress.
+
+The API serves recorded asset paths through `/uploads/*`, streaming WebP from MinIO/S3; the existing public-read policy applies. Real MinIO upload/read/delete was verified with a temporary fixture. Editor interaction tests now use Testing Library with jsdom (links, upload states/errors, paste/drop, language, legacy content); they do not replace real browser verification. All 75 frontend tests and 237 API tests pass, as do frontend lint/build and API typecheck. Bundle code splitting remains pending.
+
+## Image sizing
+
+Hover or select an image in the editor to reveal four corner resize handles. Drag a corner to change size while preserving proportions. Width and height are saved with the page and retained in the reader; images remain constrained to the available width on narrow screens. The reader has no resize handles. This uses the existing Tiptap Image extension, with no new dependency or database migration. The resize and reader persistence test brings the frontend total to 76 passing tests.

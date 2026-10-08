@@ -1,10 +1,13 @@
+import { Readable } from 'node:stream'
+
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import Fastify from 'fastify'
 import multipart from '@fastify/multipart'
 
 import { prisma } from '../../lib/prisma.js'
+import { readFile } from '../../lib/storage.js'
 
-import { uploadImage, deleteImage } from './imagesRoute.js'
+import { uploadImage, deleteImage, serveUploadedImage } from './imagesRoute.js'
 
 vi.mock('../../lib/prisma.js', () => ({
   prisma: {
@@ -27,6 +30,7 @@ vi.mock('sharp', () => ({
 vi.mock('../../lib/storage.js', () => ({
   uploadFile: vi.fn().mockResolvedValue(undefined),
   deleteFile: vi.fn().mockResolvedValue(undefined),
+  readFile: vi.fn(),
 }))
 
 vi.mock('../../config/env.js', () => ({
@@ -69,6 +73,47 @@ const fakeImage = {
   createdAt: new Date(),
   updatedAt: new Date(),
 }
+
+describe('GET /uploads/*', () => {
+  it('streams only an image path recorded in the database', async () => {
+    mockImage.findFirst.mockResolvedValue({ path: fakeImage.path } as never)
+    vi.mocked(readFile).mockResolvedValue({
+      Body: Readable.from(Buffer.from('image-bytes')),
+    } as never)
+    const app = Fastify()
+    app.register(serveUploadedImage)
+    const res = await app.inject({ method: 'GET', url: `/uploads/${fakeImage.path}` })
+    expect(res.statusCode).toBe(200)
+    expect(res.headers['content-type']).toBe('image/webp')
+    expect(res.headers['cross-origin-resource-policy']).toBe('cross-origin')
+    expect(res.body).toBe('image-bytes')
+    expect(readFile).toHaveBeenCalledWith(fakeImage.path)
+    await app.close()
+  })
+
+  it('does not read storage for an unknown path', async () => {
+    mockImage.findFirst.mockResolvedValue(null)
+    const app = Fastify()
+    app.register(serveUploadedImage)
+    const res = await app.inject({ method: 'GET', url: '/uploads/unknown.webp' })
+    expect(res.statusCode).toBe(404)
+    expect(readFile).not.toHaveBeenCalled()
+    await app.close()
+  })
+
+  it('returns 404 when the object no longer exists', async () => {
+    mockImage.findFirst.mockResolvedValue({ path: fakeImage.path } as never)
+    vi.mocked(readFile).mockRejectedValue(
+      Object.assign(new Error('missing'), { name: 'NoSuchKey' }),
+    )
+    const app = Fastify()
+    app.register(serveUploadedImage)
+    expect(
+      (await app.inject({ method: 'GET', url: `/uploads/${fakeImage.path}` })).statusCode,
+    ).toBe(404)
+    await app.close()
+  })
+})
 
 describe('POST /images', () => {
   it('returns 403 for GUEST', async () => {

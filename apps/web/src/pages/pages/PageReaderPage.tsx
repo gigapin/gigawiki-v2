@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Trash2 } from 'lucide-react'
+import { History, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { deletePage, fetchPage } from '@/api/pages'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { ProjectBreadcrumb } from '@/components/shared/ProjectBreadcrumb'
 import { PageContent } from '@/components/pages/PageContent'
+import { RevisionsDrawer } from '@/components/revisions/RevisionsDrawer'
 import { ErrorState, ListSkeleton } from '@/components/shared/ResourceState'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -22,6 +23,7 @@ export function PageReaderPage() {
   const navigate = useNavigate()
   const client = useQueryClient()
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const deletion = useMutation({
     mutationFn: () => deletePage(slug),
     onSuccess: async () => {
@@ -76,6 +78,13 @@ export function PageReaderPage() {
             <div className="flex flex-wrap items-start justify-between gap-4">
               <h1 className="min-w-0 break-words text-3xl font-semibold">{page.title}</h1>
               <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  disabled={deletion.isPending}
+                  onClick={() => setHistoryOpen(true)}
+                >
+                  <History /> View history
+                </Button>
                 {(user?.role === 'EDITOR' || user?.role === 'ADMIN') && (
                   <Button variant="outline" disabled={deletion.isPending} asChild>
                     <Link to="/pages/$slug/edit" params={{ slug }}>
@@ -107,6 +116,9 @@ export function PageReaderPage() {
             </p>
           </header>
           <PageContent key={`${page.id}:${page.currentRevision}`} content={page.content} />
+          {historyOpen && (
+            <RevisionsDrawer key={page.slug} page={page} onClose={() => setHistoryOpen(false)} />
+          )}
           {user?.role === 'ADMIN' && (
             <ConfirmDialog
               open={deleteOpen}

@@ -1,14 +1,24 @@
 import { EditorContent, useEditor } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
-import Image from '@tiptap/extension-image'
-import { Table, TableRow, TableHeader, TableCell } from '@tiptap/extension-table'
 
-import { editorContent } from '@/lib/page-content'
+import { prepareWikiContent, wikiExtensions } from '@/lib/wiki-extensions'
 
 export function PageContent({ content }: { content: string }) {
+  try {
+    prepareWikiContent(content)
+  } catch {
+    return (
+      <p role="alert" className="text-destructive">
+        This page contains an unsupported content format.
+      </p>
+    )
+  }
+  return <WikiReader content={content} />
+}
+
+function WikiReader({ content }: { content: string }) {
   const editor = useEditor({
-    extensions: [StarterKit, Image, Table, TableRow, TableHeader, TableCell],
-    content: editorContent(content),
+    extensions: wikiExtensions(false),
+    content: prepareWikiContent(content),
     editable: false,
     immediatelyRender: false,
   })

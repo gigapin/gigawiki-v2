@@ -143,6 +143,8 @@ function PageForm({
   const navigate = useNavigate()
   const client = useQueryClient()
   const [input, setInput] = useState(initial)
+  const [editorStatus, setEditorStatus] = useState({ uploading: false, invalid: false })
+  const editorBusy = editorStatus.uploading || editorStatus.invalid
   const [saved, setSaved] = useState(false)
   const dirty = !saved && JSON.stringify(input) !== JSON.stringify(initial)
   const mutation = useMutation({
@@ -156,8 +158,8 @@ function PageForm({
       // A title change can change the URL: do not refetch the old slug.
       client.removeQueries({ queryKey: ['page', slug], exact: true, type: 'inactive' })
       await Promise.all(
-        ['pages', 'sections', 'project', 'subject', 'subjects', 'stats', 'activities'].map((key) =>
-          client.invalidateQueries({ queryKey: [key], refetchType: 'none' }),
+        ['page', 'pages', 'sections', 'project', 'subject', 'subjects', 'stats', 'activities'].map(
+          (key) => client.invalidateQueries({ queryKey: [key], refetchType: 'none' }),
         ),
       )
       toast.success(page.isDraft ? 'Draft saved' : 'Page published')
@@ -165,8 +167,8 @@ function PageForm({
     },
   })
   const blocker = useBlocker({
-    shouldBlockFn: () => dirty && !mutation.isPending,
-    enableBeforeUnload: dirty && !mutation.isPending,
+    shouldBlockFn: () => (dirty || editorStatus.uploading) && !mutation.isPending,
+    enableBeforeUnload: (dirty || editorStatus.uploading) && !mutation.isPending,
     withResolver: true,
   })
   if (!user || user.role === 'GUEST')
@@ -196,13 +198,13 @@ function PageForm({
         <div className="flex gap-2">
           <Button
             variant="outline"
-            disabled={mutation.isPending || !input.title.trim()}
+            disabled={mutation.isPending || editorBusy || !input.title.trim()}
             onClick={() => mutation.mutate(true)}
           >
             Save draft
           </Button>
           <Button
-            disabled={mutation.isPending || !input.title.trim()}
+            disabled={mutation.isPending || editorBusy || !input.title.trim()}
             onClick={() => mutation.mutate(false)}
           >
             {mutation.isPending ? 'Saving…' : 'Publish'}
@@ -245,6 +247,7 @@ function PageForm({
         content={initial.content}
         onChange={(content) => change({ content })}
         disabled={mutation.isPending}
+        onStatusChange={setEditorStatus}
       />
       <p className="text-xs text-muted-foreground">
         {dirty ? 'Unsaved changes' : 'No unsaved changes'} · Save a draft to continue later, or

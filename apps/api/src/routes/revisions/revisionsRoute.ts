@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify'
 
-import { generateSlug } from '../../lib/slugify.js'
+import { generateUniqueSlug } from '../../lib/slugify.js'
 import { prisma } from '../../lib/prisma.js'
 
 const PAGE_INDEX_SELECT = {
@@ -73,6 +73,8 @@ export async function fetchRevision(fastify: FastifyInstance) {
     '/pages/:pageSlug/revisions/:revisionNumber',
     async (req, reply) => {
       const { pageSlug, revisionNumber } = req.params
+      if (!/^\d+$/.test(revisionNumber) || !Number.isSafeInteger(Number(revisionNumber)))
+        return reply.status(400).send({ error: 'Invalid revision number' })
 
       const pageRecord = await prisma.page.findFirst({
         where: { slug: pageSlug, deletedAt: null },
@@ -106,6 +108,8 @@ export async function restoreRevision(fastify: FastifyInstance) {
       }
 
       const { pageSlug, revisionNumber } = req.params
+      if (!/^\d+$/.test(revisionNumber) || !Number.isSafeInteger(Number(revisionNumber)))
+        return reply.status(400).send({ error: 'Invalid revision number' })
 
       const pageRecord = await prisma.page.findFirst({
         where: { slug: pageSlug, deletedAt: null },
@@ -123,33 +127,59 @@ export async function restoreRevision(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Revision not found' })
       }
 
-      await prisma.revision.create({
-        data: {
-          pageId: pageRecord.id,
-          projectId: pageRecord.projectId,
-          sectionId: pageRecord.sectionId,
-          createdById: req.user.id,
-          title: pageRecord.title,
-          content: pageRecord.content,
-          slug: pageRecord.slug,
-          revisionNumber: pageRecord.currentRevision,
-        },
-      })
+      const updated = await prisma
+        .$transaction(async (transaction) => {
+          const newSlug =
+            revision.title !== pageRecord.title
+              ? await generateUniqueSlug(revision.title, async (candidate) => {
+                  const match = await transaction.page.findUnique({
+                    where: { slug: candidate },
+                    select: { id: true },
+                  })
+                  return Boolean(match && match.id !== pageRecord.id)
+                })
+              : pageRecord.slug
 
-      const newSlug =
-        revision.title !== pageRecord.title ? generateSlug(revision.title) : pageRecord.slug
+          await transaction.revision.create({
+            data: {
+              pageId: pageRecord.id,
+              projectId: pageRecord.projectId,
+              sectionId: pageRecord.sectionId,
+              createdById: req.user.id,
+              title: pageRecord.title,
+              content: pageRecord.content,
+              slug: pageRecord.slug,
+              revisionNumber: pageRecord.currentRevision,
+            },
+          })
 
-      const updated = await prisma.page.update({
-        where: { id: pageRecord.id },
-        data: {
-          title: revision.title,
-          content: revision.content,
-          slug: newSlug,
-          updatedById: req.user.id,
-          currentRevision: pageRecord.currentRevision + 1,
-        },
-        select: PAGE_INDEX_SELECT,
-      })
+          return transaction.page.update({
+            // If another edit won the race, the transaction rolls back its snapshot.
+            where: {
+              id: pageRecord.id,
+              currentRevision: pageRecord.currentRevision,
+              deletedAt: null,
+            },
+            data: {
+              title: revision.title,
+              content: revision.content,
+              slug: newSlug,
+              updatedById: req.user.id,
+              currentRevision: pageRecord.currentRevision + 1,
+            },
+            select: PAGE_INDEX_SELECT,
+          })
+        })
+        .catch((error: unknown) => {
+          if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
+            reply
+              .status(409)
+              .send({ error: 'The page changed while restoring. Reload the page and try again.' })
+            return null
+          }
+          throw error
+        })
+      if (!updated) return
 
       return reply.status(200).send(updated)
     },

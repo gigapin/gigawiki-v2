@@ -53,7 +53,7 @@ import { fetchTags, createTag, deleteTag } from './tags/tagsRoute.js'
 import { fetchFavorites, toggleFavorite } from './favorites/favoritesRoute.js'
 import { fetchPageViews } from './views/viewsRoute.js'
 import { fetchActivities, fetchUserActivities } from './activities/activitiesRoute.js'
-import { uploadImage, deleteImage } from './images/imagesRoute.js'
+import { uploadImage, deleteImage, serveUploadedImage } from './images/imagesRoute.js'
 import { fetchSettings, updateSetting } from './settings/settingsRoute.js'
 import {
   login,
@@ -69,6 +69,7 @@ import {
 } from './auth/authRoutes.js'
 
 export function registerRoutes(app: FastifyInstance) {
+  app.register(serveUploadedImage)
   // Auth routes (unprotected, under /api/v2)
   app.register(
     (instance, _, done) => {

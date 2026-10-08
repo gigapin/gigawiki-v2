@@ -7,7 +7,8 @@ import { fetchRevisions, fetchRevision, restoreRevision } from './revisionsRoute
 
 vi.mock('../../lib/prisma.js', () => ({
   prisma: {
-    page: { findFirst: vi.fn(), update: vi.fn() },
+    page: { findFirst: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
+    $transaction: vi.fn(),
     revision: { findMany: vi.fn(), findFirst: vi.fn(), count: vi.fn(), create: vi.fn() },
   },
 }))
@@ -35,6 +36,11 @@ function buildAuthApp(role: string = 'ADMIN', userId: string = 'user-1') {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockPage.findUnique.mockReset().mockResolvedValue(null)
+  vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
+    if (typeof callback !== 'function') throw new Error('Expected interactive transaction')
+    return callback(prisma)
+  })
 })
 
 const fakePage = {
@@ -166,6 +172,45 @@ describe('GET /pages/:pageSlug/revisions/:revisionNumber', () => {
 })
 
 describe('POST /pages/:pageSlug/revisions/:revisionNumber/restore', () => {
+  it('uses a transaction and chooses a different slug if another page owns the historical title', async () => {
+    mockPage.findFirst.mockResolvedValue(fakePage as never)
+    mockRevision.findFirst.mockResolvedValue({
+      ...fakeRevision,
+      title: 'Historical title',
+    } as never)
+    mockPage.findUnique.mockResolvedValue({ id: 'another-page' } as never)
+    mockPage.update.mockResolvedValue(fakePage as never)
+    const app = buildAuthApp('EDITOR')
+    const res = await app.inject({ method: 'POST', url: '/pages/introduction/revisions/0/restore' })
+    expect(res.statusCode).toBe(200)
+    expect(prisma.$transaction).toHaveBeenCalled()
+    expect(mockPage.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: fakePage.id, currentRevision: 2, deletedAt: null },
+        data: expect.objectContaining({ slug: expect.stringMatching(/^historical-title-.+/) }),
+      }),
+    )
+  })
+
+  it('reports a concurrent update as a conflict', async () => {
+    mockPage.findFirst.mockResolvedValue(fakePage as never)
+    mockRevision.findFirst.mockResolvedValue(fakeRevision as never)
+    mockPage.update.mockRejectedValueOnce({ code: 'P2025' })
+    const app = buildAuthApp('EDITOR')
+    const res = await app.inject({ method: 'POST', url: '/pages/introduction/revisions/0/restore' })
+    expect(res.statusCode).toBe(409)
+    expect(res.json().error).toContain('page changed')
+  })
+
+  it('rejects invalid revision numbers before querying the database', async () => {
+    const app = buildAuthApp('EDITOR')
+    const res = await app.inject({
+      method: 'POST',
+      url: '/pages/introduction/revisions/invalid/restore',
+    })
+    expect(res.statusCode).toBe(400)
+    expect(mockPage.findFirst).not.toHaveBeenCalled()
+  })
   it('snapshots current page state and restores revision content', async () => {
     mockPage.findFirst.mockResolvedValue(fakePage as never)
     mockRevision.findFirst.mockResolvedValue(fakeRevision as never)

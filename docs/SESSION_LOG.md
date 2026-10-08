@@ -20,15 +20,15 @@
 |---|---|
 | Branch di lavoro | `dev` (il default remoto è `main`) |
 | Remote | `git@github.com:gigapin/gigawiki-v2.git` |
-| Task completati | 28 / 40 completati; 8 parziali; 4 non iniziati (conteggio dalla tabella sotto) |
+| Task completati | 29 / 40 completati; 8 parziali; 3 non iniziati (conteggio dalla tabella sotto) |
 | Fase corrente | **Fase 4 — Frontend**, task 28–31 e 35 parziali. Base shadcn, Project detail, registrazione e primo flusso reader/editor implementati |
-| Backend | Completo (task 5–23). 17 file di test, 234 test verdi |
-| Frontend | Login, Register, Verify email, Dashboard, Subjects, Project detail, scelta destinazione nuova pagina, reader ed editor Tiptap. Bozza/pubblicazione e breadcrumb navigabili. Restano le funzionalità avanzate del task 31, revisioni, commenti e settings |
+| Backend | Completo (task 5–23). 17 file di test, 240 test verdi |
+| Frontend | Login, Register, Verify email, Dashboard, Subjects, Project detail, scelta destinazione nuova pagina, reader ed editor Tiptap. Bozza/pubblicazione e breadcrumb navigabili. Restano le funzionalità avanzate del task 31, commenti e settings |
 | CI/CD | Non iniziata (task 39) |
 
 **Codice della sessione committato dall’utente in `c12f73a`** (`feat: add first implementation of frontend`), su branch `dev`. Il working tree era pulito prima di questo aggiornamento documentale; questa modifica non è stata committata. `.claude/settings.local.json` è ancora tracciato, anche se ora escluso da `.gitignore`.
 
-**Ultime verifiche eseguite:** build e lint frontend, typecheck API, 234 test backend e 35 test frontend superati. Test frontend in ambiente Node: non equivalgono a una prova delle interazioni nel browser. Registrazione con Mailtrap confermata funzionante dall’utente; ruolo di un utente cambiato manualmente in Prisma Studio per provare creazione/modifica.
+**Ultime verifiche eseguite:** build e lint frontend, typecheck API, 240 test backend e 83 test frontend superati. Test frontend in ambiente Node e jsdom: non equivalgono a una prova delle interazioni nel browser. Registrazione con Mailtrap confermata funzionante dall’utente; ruolo di un utente cambiato manualmente in Prisma Studio per provare creazione/modifica.
 
 ---
 
@@ -85,8 +85,8 @@ Legenda: ✅ fatto · 🟡 parziale · ⬜ non iniziato
 | 28 | Pagine auth | 🟡 | Login, Register, VerifyEmail, AuthLayout e reinvio verifica implementati. Restano ForgotPassword, ResetPassword e AcceptInvite |
 | 29 | Dashboard | 🟡 | Attività recenti, preferiti e statistiche ci sono. Manca la sezione «Recently visited» (`GET /views`) |
 | 30 | Pagine Subjects / Projects / Sections | 🟡 | Prima implementazione in `c12f73a`. Fatti: Subjects/Subject detail, Project detail, ProjectFormDialog riusato in creazione/modifica, SectionFormDialog, eliminazione admin con conferma, riordino nativo + pulsanti accessibili, lista pagine paginata. Collegamenti a reader/editor e breadcrumb completati. Restano CRUD completo Subject e upload cover |
-| 31 | Page view + editor Tiptap | 🟡 | Reader, creazione/modifica, toolbar, tabelle, visibilità, bozza/pubblicazione, guardia modifiche non salvate. Restano autosave 30s, upload immagini, mentions, syntax highlighting, bubble menu, gestione link, tag/preferiti e integrazione revisioni/commenti |
-| 32 | Drawer revisioni | ⬜ | |
+| 31 | Page view + editor Tiptap | 🟡 | Reader, creazione/modifica, toolbar, tabelle, visibilità, bozza/pubblicazione, guardia modifiche non salvate. Fatti anche upload immagini, link, syntax highlighting e contenuti legacy JSON. Restano autosave 30s, mentions, bubble menu, tag/preferiti e integrazione commenti |
+| 32 | Drawer revisioni | ✅ | Cronologia paginata, anteprima, ripristino con conferma Editor/Admin e navigazione allo slug ripristinato |
 | 33 | Componente commenti | ⬜ | |
 | 34 | Pagine settings | ⬜ | |
 | 35 | Hook TanStack Query | 🟡 | Adapter tipizzati per auth/project/page; hook `usePages`, `useSections` e `useSectionMutations`. Restano hook uniformi per gli altri moduli; diverse `useQuery` sono ancora nei componenti |
@@ -120,9 +120,9 @@ Punti in cui il codice si discosta da `GIGAWIKI_V2_TASKS.md`. Vanno **letti prim
 ## Prossimi passi
 
 1. Provare nel browser il ciclo pagina completo: scelta sezione, creazione bozza, pubblicazione, modifica, avviso di uscita e ritorno tramite breadcrumb. Registrazione già confermata dall’utente; per creare/editare pagine occorre EDITOR/ADMIN e, dopo un cambio ruolo da Prisma Studio, aggiornare la sessione.
-2. Completare task 31: autosave, upload immagini, mentions, syntax highlighting, menu contestuale, gestione link, tag/preferiti. Verificare compatibilità con eventuale contenuto Tiptap JSON preesistente: il nuovo flusso salva HTML e converte il testo semplice in nodi di testo.
+2. Completare task 31: autosave, mentions, menu contestuale e tag/preferiti. Reader/editor ora condividono lo schema e supportano HTML, testo semplice e documenti Tiptap JSON; upload immagini, link e syntax highlighting sono implementati. Il prossimo incremento è autosave; il drawer revisioni è implementato.
 3. Completare auth restante (ForgotPassword, ResetPassword, AcceptInvite), Dashboard (recently visited) e CRUD Subject/upload cover.
-4. Revisioni come drawer anteprima/ripristino; commenti riusabili.
+4. Commenti riusabili; provare nel browser il drawer revisioni e il ripristino.
 5. Favorites e Settings sulla stessa base shadcn. Allineare prima i contratti inviti (elenco/reinvio/cancellazione) e cambio password, non completi nel backend.
 6. Completare test delle interazioni frontend e CI. Valutare caricamento differito dell’editor: la build passa, ma segnala un bundle superiore a 500 kB.
 7. A fine prove riportare `ALLOW_SELF_REGISTRATION` a `false` se non si vuole consentire la registrazione libera; valutare rimozione dal tracking di `.claude/settings.local.json`.
@@ -153,6 +153,34 @@ Chi clona il repo su una macchina nuova deve ricreare `init.sh` (o avere Node su
 ---
 
 ## Log delle sessioni
+
+### 2026-10-08 — Drawer revisioni
+
+- Pulsante `View history` nel reader: versione corrente, cronologia paginata e anteprima con lo stesso renderer della pagina.
+- Editor/Admin possono ripristinare una revisione dopo conferma; errori visibili e retry, aggiornamento delle cache e navigazione al nuovo slug quando cambia il titolo.
+- Backend: snapshot e aggiornamento atomici, slug univoci e controllo della revisione corrente per impedire un ripristino su una pagina modificata nel frattempo.
+- Verifiche: 83 test frontend, 240 backend, lint/build frontend e typecheck API. Interazioni coperte in jsdom; prova nel browser reale ancora da eseguire.
+- Prossimo incremento: autosave nell'editor. Diff delle revisioni opzionale, non implementato.
+
+
+### 2026-10-08 — Ridimensionamento immagini nell'editor
+
+- Ripristinata su richiesta la visibilità originale delle maniglie (hover/selezione): la segnalazione riguardava il reader, che correttamente non le mostra.
+
+- Attivato il resize nativo Tiptap Image: quattro maniglie agli angoli, proporzioni conservate e dimensioni minime. Width/height persistono nel contenuto HTML/JSON e sono rispettate nel reader, che non mostra maniglie.
+- Stili condivisi per tema light/dark; larghezza massima limitata al contenitore e altezza automatica per schermi piccoli. Maniglie visibili su hover/selezione e sui dispositivi senza hover.
+- Verifiche: 76 test frontend, lint e build. Test di trascinamento da 400×200 a 600×300 e riapertura nel reader. Nessuna modifica backend o migrazione necessaria; verifica visiva in browser reale ancora da eseguire.
+
+
+### 2026-10-08 — Reader/editor: immagini, link, codice e contenuti legacy
+
+- Schema condiviso reader/editor con supporto a documenti Tiptap JSON, HTML e testo semplice. JSON non documentale resta testo; nodi/mark non supportati vengono segnalati, bloccando il salvataggio invece di perdere il contenuto originale.
+- Upload immagini via pulsante, incolla e drop (JPEG/PNG/WebP/GIF, massimo 10 MB), errori e stato di attesa. Salvataggio sospeso durante upload, inserimento dell'URL persistente e protezione navigazione. Aggiunta rotta pubblica `/uploads/*` che legge da storage solo percorsi registrati in DB, coerente con bucket public-read; header CORP adatto a frontend/API su origini diverse.
+- Dialog link: aggiunta/modifica/rimozione, selezione preservata, URL web/email/locali e rifiuto protocolli eseguibili. Lowlight condiviso per codice, selettore linguaggio e colori adattati al tema.
+- Invalidata anche la query del dettaglio pagina dopo salvataggio, per mostrare subito il contenuto aggiornato nel reader.
+- Verifiche: 75 test frontend (inclusi test interazione Testing Library/jsdom), 237 API, lint/build frontend e typecheck API. Prova MinIO reale: upload 201, lettura 200 di WebP valido e pulizia 200. Nessuna pagina esistente modificata dalla prova. Browser reale ancora da verificare; warning dimensione bundle resta aperto.
+- Prossimo incremento: drawer revisioni con anteprima/ripristino, poi autosave.
+
 
 ### 2026-10-08 — Eliminazione pagine dal reader
 

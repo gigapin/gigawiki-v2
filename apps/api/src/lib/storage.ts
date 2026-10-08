@@ -32,6 +32,10 @@ export async function deleteFile(key: string): Promise<void> {
   await s3.send(new DeleteObjectCommand({ Bucket: env.AWS_BUCKET, Key: key }))
 }
 
+export async function readFile(key: string) {
+  return s3.send(new GetObjectCommand({ Bucket: env.AWS_BUCKET, Key: key }))
+}
+
 export async function getSignedUrl(key: string, expiresIn = 3600): Promise<string> {
   return awsGetSignedUrl(s3, new GetObjectCommand({ Bucket: env.AWS_BUCKET, Key: key }), {
     expiresIn,

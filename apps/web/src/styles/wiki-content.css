@@ -61,6 +61,45 @@
   height: auto;
   border-radius: 0.5em;
 }
+
+.wiki-content [data-resize-container] {
+  max-width: 100%;
+  margin: 1em 0;
+}
+.wiki-content [data-resize-wrapper] {
+  max-width: 100%;
+}
+.wiki-content [data-resize-wrapper] img {
+  display: block;
+  height: auto !important;
+}
+.wiki-content [data-resize-handle] {
+  width: 14px;
+  height: 14px;
+  border: 2px solid oklch(var(--card));
+  border-radius: 3px;
+  background: oklch(var(--primary));
+  opacity: 0;
+  touch-action: none;
+}
+.wiki-content [data-resize-container]:hover [data-resize-handle],
+.wiki-content [data-resize-container].ProseMirror-selectednode [data-resize-handle],
+.wiki-content [data-resize-state='true'] [data-resize-handle] {
+  opacity: 1;
+}
+.wiki-content [data-resize-handle='top-left'],
+.wiki-content [data-resize-handle='bottom-right'] {
+  cursor: nwse-resize;
+}
+.wiki-content [data-resize-handle='top-right'],
+.wiki-content [data-resize-handle='bottom-left'] {
+  cursor: nesw-resize;
+}
+@media (hover: none) {
+  .wiki-content [data-resize-handle] {
+    opacity: 1;
+  }
+}
 .wiki-content .tiptap table {
   width: 100%;
   border-collapse: collapse;
@@ -85,4 +124,43 @@
   height: 0;
   color: oklch(var(--muted-foreground));
   pointer-events: none;
+}
+
+/* Syntax colors follow the active theme. Token names are emitted by lowlight. */
+.wiki-content .hljs-comment,
+.wiki-content .hljs-quote {
+  color: var(--db-muted);
+  font-style: italic;
+}
+.wiki-content .hljs-keyword,
+.wiki-content .hljs-selector-tag,
+.wiki-content .hljs-literal {
+  color: var(--db-indigo-t);
+}
+.wiki-content .hljs-string,
+.wiki-content .hljs-regexp,
+.wiki-content .hljs-addition {
+  color: var(--db-em-deep);
+}
+.wiki-content .hljs-number,
+.wiki-content .hljs-attr,
+.wiki-content .hljs-built_in,
+.wiki-content .hljs-type {
+  color: var(--db-amber-t);
+}
+.wiki-content .hljs-title,
+.wiki-content .hljs-section,
+.wiki-content .hljs-function {
+  color: var(--db-indigo-t);
+}
+.wiki-content .hljs-variable,
+.wiki-content .hljs-symbol,
+.wiki-content .hljs-deletion {
+  color: var(--db-rose-t);
+}
+.wiki-content .tiptap pre code {
+  background: transparent;
+}
+.wiki-content .tiptap img.ProseMirror-selectednode {
+  outline: 2px solid oklch(var(--ring));
 }
