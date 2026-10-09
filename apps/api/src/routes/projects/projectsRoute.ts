@@ -95,10 +95,10 @@ export async function fetchProject(fastify: FastifyInstance) {
       return reply.status(404).send({ error: 'Project not found' })
     }
 
-    // Fire-and-forget View upsert for authenticated requests
+    // Persist the visit before returning so the dashboard sees it immediately.
     try {
       await req.jwtVerify()
-      void prisma.view
+      await prisma.view
         .upsert({
           where: { userId_projectId: { userId: req.user.id, projectId: project.id } },
           update: { count: { increment: 1 }, lastSeenAt: new Date() },

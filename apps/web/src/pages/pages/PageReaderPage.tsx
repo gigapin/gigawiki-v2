@@ -19,7 +19,11 @@ import { useAuthStore } from '@/stores/auth.store'
 
 export function PageReaderPage() {
   const { slug } = useParams({ from: '/_auth/pages/$slug' })
-  const query = useQuery({ queryKey: ['page', slug], queryFn: () => fetchPage(slug) })
+  const query = useQuery({
+    queryKey: ['page', slug],
+    queryFn: () => fetchPage(slug),
+    refetchOnMount: 'always',
+  })
   const user = useAuthStore((s) => s.user)
   const canViewHistory = user?.role === 'EDITOR' || user?.role === 'ADMIN'
   const page = query.data

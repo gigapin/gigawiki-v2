@@ -644,3 +644,25 @@ describe('Page editor save contract', () => {
     await app.close()
   })
 })
+
+it('tracks the selected section for the authenticated account before returning its pages', async () => {
+  mockSection.findFirst.mockResolvedValue({ id: 'section' } as never)
+  mockPage.findMany.mockResolvedValue([])
+  mockPage.count.mockResolvedValue(0)
+  vi.mocked(prisma.view.upsert).mockResolvedValue({} as never)
+  const app = Fastify()
+  app.decorateRequest('user', null as never)
+  app.addHook('preHandler', (req, _reply, done) => {
+    req.user = { id: 'guest', role: 'GUEST', email: 'guest@example.com' }
+    done()
+  })
+  app.register(fetchPagesBySection)
+  const res = await app.inject({ method: 'GET', url: '/sections/intro/pages' })
+  expect(res.statusCode).toBe(200)
+  expect(prisma.view.upsert).toHaveBeenCalledWith({
+    where: { userId_sectionId: { userId: 'guest', sectionId: 'section' } },
+    update: { count: { increment: 1 }, lastSeenAt: expect.any(Date) },
+    create: { userId: 'guest', sectionId: 'section' },
+  })
+  await app.close()
+})

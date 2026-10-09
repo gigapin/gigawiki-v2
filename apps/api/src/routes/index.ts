@@ -52,7 +52,7 @@ import {
 } from './comments/commentsRoute.js'
 import { fetchTags, createTag, deleteTag } from './tags/tagsRoute.js'
 import { fetchFavorites, toggleFavorite } from './favorites/favoritesRoute.js'
-import { fetchPageViews } from './views/viewsRoute.js'
+import { fetchPageViews, fetchRecentViews } from './views/viewsRoute.js'
 import { fetchActivities, fetchUserActivities } from './activities/activitiesRoute.js'
 import { uploadImage, deleteImage, serveUploadedImage } from './images/imagesRoute.js'
 import { fetchSettings, updateSetting } from './settings/settingsRoute.js'
@@ -175,6 +175,7 @@ export function registerRoutes(app: FastifyInstance) {
       instance.register(createTag)
       instance.register(deleteTag)
 
+      instance.register(fetchRecentViews)
       instance.register(fetchFavorites)
       instance.register(toggleFavorite)
 

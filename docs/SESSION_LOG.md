@@ -20,15 +20,15 @@
 |---|---|
 | Branch di lavoro | `dev` (il default remoto è `main`) |
 | Remote | `git@github.com:gigapin/gigawiki-v2.git` |
-| Task completati | 32 / 40 completati; 7 parziali; 1 non iniziato (conteggio dalla tabella sotto) |
-| Fase corrente | **Fase 4 — Frontend**, task 29–30, 34 e 35 parziali. Base shadcn, Project detail e registrazione implementati; reader/editor con immagini ridimensionabili, autosave, revisioni, menzioni e menu contestuale |
-| Backend | Completo (task 5–23). 18 file di test, 273 test verdi |
+| Task completati | 33 / 40 completati; 6 parziali; 1 non iniziato (conteggio dalla tabella sotto) |
+| Fase corrente | **Fase 4 — Frontend**, task 30, 34 e 35 parziali. Base shadcn, Project detail e registrazione implementati; reader/editor con immagini ridimensionabili, autosave, revisioni, menzioni e menu contestuale |
+| Backend | Completo (task 5–23). 18 file di test, 282 test verdi |
 | Frontend | Login, Register, Verify email, ForgotPassword, ResetPassword, AcceptInvite, Dashboard, Subjects, Project detail, scelta destinazione nuova pagina, reader ed editor Tiptap. Bozza/pubblicazione, breadcrumb, tema light/dark, upload e resize immagini, link, syntax highlighting, autosave, drawer revisioni, menzioni e menu contestuale implementati. Tag/preferiti nelle pagine implementati; commenti riusabili integrati nel reader; restano settings |
 | CI/CD | Non iniziata (task 39) |
 
 **Codice della sessione committato dall’utente in `c12f73a`** (`feat: add first implementation of frontend`), su branch `dev`. Il working tree era pulito prima di questo aggiornamento documentale; questa modifica non è stata committata. `.claude/settings.local.json` è ancora tracciato, anche se ora escluso da `.gitignore`.
 
-**Ultime verifiche eseguite:** build e lint frontend, typecheck API, 273 test backend e 133 test frontend superati. Test frontend in ambiente Node e jsdom: non equivalgono a una prova delle interazioni nel browser. Autosave confermato funzionante dall’utente. Registrazione con Mailtrap confermata funzionante dall’utente; ruolo di un utente cambiato manualmente in Prisma Studio per provare creazione/modifica.
+**Ultime verifiche eseguite:** build e lint frontend, typecheck API, 282 test backend e 138 test frontend superati. Test frontend in ambiente Node e jsdom: non equivalgono a una prova delle interazioni nel browser. Autosave confermato funzionante dall’utente. Registrazione con Mailtrap confermata funzionante dall’utente; ruolo di un utente cambiato manualmente in Prisma Studio per provare creazione/modifica.
 
 ---
 
@@ -83,7 +83,7 @@ Legenda: ✅ fatto · 🟡 parziale · ⬜ non iniziato
 | 26 | Store Zustand | ✅ | `auth.store.ts`, `settings.store.ts` |
 | 27 | Componenti di layout | ✅ | AppShell, Sidebar, Topbar, SearchModal |
 | 28 | Pagine auth | ✅ | Login, Register, VerifyEmail, AuthLayout, reinvio verifica, ForgotPassword, ResetPassword e AcceptInvite. Inviti avviano la sessione; errori e validazione coperti in jsdom. Resta verifica browser/SMTP |
-| 29 | Dashboard | 🟡 | Attività recenti, preferiti e statistiche ci sono. Manca la sezione «Recently visited» (`GET /views`) |
+| 29 | Dashboard | ✅ | Attività, preferiti/statistiche personali e Recently visited con sei visite, link pagina/progetto/sezione, stato vuoto/caricamento/errore e retry. Endpoint `/views` personale con ordinamento e filtro eliminati |
 | 30 | Pagine Subjects / Projects / Sections | 🟡 | Prima implementazione in `c12f73a`. Fatti: Subjects/Subject detail, Project detail, ProjectFormDialog riusato in creazione/modifica, SectionFormDialog, eliminazione admin con conferma, riordino nativo + pulsanti accessibili, lista pagine paginata. Collegamenti a reader/editor e breadcrumb completati. Restano CRUD completo Subject e upload cover |
 | 31 | Page view + editor Tiptap | ✅ | Reader, creazione/modifica, toolbar, tabelle, visibilità, bozza/pubblicazione, guardia modifiche non salvate. Fatti anche upload e ridimensionamento immagini, link, syntax highlighting e contenuti legacy JSON. Autosave dopo 30s di inattività sulle pagine esistenti. Menzioni e bubble menu implementati. Tag/preferiti e commenti nel reader completati; resta la prova nel browser |
 | 32 | Drawer revisioni | ✅ | Cronologia e anteprima riservate a Editor/Admin; ripristino con conferma Editor/Admin e navigazione allo slug ripristinato |
@@ -122,8 +122,8 @@ Punti in cui il codice si discosta da `GIGAWIKI_V2_TASKS.md`. Vanno **letti prim
 ## Prossimi passi
 
 1. Provare nel browser il ciclo pagina completo: scelta sezione, creazione bozza, pubblicazione, modifica, avviso di uscita e ritorno tramite breadcrumb. Registrazione già confermata dall’utente; per creare/editare pagine occorre EDITOR/ADMIN e, dopo un cambio ruolo da Prisma Studio, aggiornare la sessione.
-2. **Prossimo incremento: Recently visited nella Dashboard (task 29).** Reader/editor condividono lo schema HTML/JSON; upload e resize immagini, link, syntax highlighting, autosave, revisioni, menzioni e menu contestuale sono completati. Tag, preferiti e commenti nel reader completati.
-3. Completare Dashboard (recently visited), poi CRUD Subject/upload cover.
+2. **Prossimo incremento: CRUD Subject e upload cover (task 30).** Reader/editor condividono lo schema HTML/JSON; upload e resize immagini, link, syntax highlighting, autosave, revisioni, menzioni e menu contestuale sono completati. Tag, preferiti e commenti nel reader completati.
+3. Completare CRUD Subject/upload cover, poi le schermate Settings restanti.
 4. Provare nel browser commenti, tag/preferiti, drawer revisioni e ripristino.
 5. Favorites e Settings sulla stessa base shadcn. Allineare prima i contratti inviti (elenco/reinvio/cancellazione) e cambio password, non completi nel backend.
 6. Completare test delle interazioni frontend e CI. Valutare caricamento differito dell’editor: la build passa, ma segnala un bundle superiore a 500 kB.
@@ -157,6 +157,16 @@ Chi clona il repo su una macchina nuova deve ricreare `init.sh` (o avere Node su
 ---
 
 ## Log delle sessioni
+
+### 2026-10-09 — Recently visited nella Dashboard
+
+- Completato task 29: sezione con le sei visite più recenti, card pagina/progetto/sezione, data relativa e link alla sezione selezionata. Caricamento, stato vuoto ed errore con retry; query personale con ID utente e aggiornamento al ritorno in Dashboard.
+- Nuovo GET autenticato `/api/v2/views`, paginazione `page/limit`, ordinamento `lastSeenAt` decrescente con spareggio stabile. Il richiedente determina l’utente anche in presenza di `userId` arbitrario; risorse eliminate e contenitori eliminati esclusi, nessun contenuto wiki o profilo altrui nella risposta.
+- Selezione sezione registrata alla lettura della sua lista pagine. Persistenza visite pagina/progetto attesa prima della risposta; riapertura delle risorse già in cache aggiorna la visita.
+- Verifiche: 138 test frontend e 282 API, build/lint frontend e typecheck API superati. Test su tre destinazioni, errori/retry, cambio account, aggiornamento al ritorno, paginazione/filtro eliminati, scoping API e registrazione visita sezione.
+
+**Lasciato aperto:** prova browser reale e verifica query su DB reale (test API mockati). Prossimo incremento: CRUD Subject/upload cover (task 30). Warning bundle invariato.
+
 
 ### 2026-10-09 — Sessione persistente per test locali
 

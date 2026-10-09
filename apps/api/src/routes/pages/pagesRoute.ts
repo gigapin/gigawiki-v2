@@ -107,6 +107,16 @@ export async function fetchPagesBySection(fastify: FastifyInstance) {
         prisma.page.count({ where }),
       ])
 
+      if (req.user?.id) {
+        await prisma.view
+          .upsert({
+            where: { userId_sectionId: { userId: req.user.id, sectionId: section.id } },
+            update: { count: { increment: 1 }, lastSeenAt: new Date() },
+            create: { userId: req.user.id, sectionId: section.id },
+          })
+          .catch(() => {})
+      }
+
       return reply.status(200).send({ pages, total, page: parseInt(page), limit: take })
     },
   )
@@ -144,7 +154,7 @@ export async function fetchPage(fastify: FastifyInstance) {
 
     try {
       await req.jwtVerify()
-      void prisma.view
+      await prisma.view
         .upsert({
           where: { userId_pageId: { userId: req.user.id, pageId: page.id } },
           update: { count: { increment: 1 }, lastSeenAt: new Date() },

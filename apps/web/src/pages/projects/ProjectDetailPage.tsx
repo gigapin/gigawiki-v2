@@ -44,7 +44,11 @@ export function ProjectDetail({ slug, sectionSlug }: { slug: string; sectionSlug
   const navigate = useNavigate()
   const client = useQueryClient()
   const user = useAuthStore((state) => state.user)
-  const projectQuery = useQuery({ queryKey: ['project', slug], queryFn: () => fetchProject(slug) })
+  const projectQuery = useQuery({
+    queryKey: ['project', slug],
+    queryFn: () => fetchProject(slug),
+    refetchOnMount: 'always',
+  })
   const sectionsQuery = useSections(slug)
   const { remove, reorder } = useSectionMutations(slug)
   const [selectedId, setSelectedId] = useState<string>()
