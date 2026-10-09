@@ -327,3 +327,47 @@ describe('DELETE /subjects/:slug', () => {
     expect(res.statusCode).toBe(404)
   })
 })
+
+describe('Subject cover contracts', () => {
+  it('accepts a cover during creation', async () => {
+    mockSubject.findFirst.mockResolvedValue(null)
+    mockSubject.create.mockResolvedValue({ ...fakeSubject, imageId: 'cover' } as never)
+    const app = buildAuthApp('EDITOR')
+    const res = await app.inject({
+      method: 'POST',
+      url: '/subjects',
+      payload: { name: 'Resource', imageId: 'cover' },
+    })
+    expect(res.statusCode).toBe(201)
+    expect(mockSubject.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ imageId: 'cover' }) }),
+    )
+    await app.close()
+  })
+  it('unlinks a cover without changing the slug when the name is unchanged', async () => {
+    mockSubject.findFirst.mockResolvedValue(fakeSubject as never)
+    mockSubject.update.mockResolvedValue({ ...fakeSubject, imageId: null } as never)
+    const app = buildAuthApp('ADMIN')
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/subjects/' + fakeSubject.slug,
+      payload: { name: fakeSubject.name, imageId: null },
+    })
+    expect(res.statusCode).toBe(200)
+    expect(mockSubject.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { name: fakeSubject.name, imageId: null } }),
+    )
+    await app.close()
+  })
+  it('rejects empty names and malformed image IDs before writing', async () => {
+    const app = buildAuthApp('ADMIN')
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/subjects/resource',
+      payload: { name: ' ', imageId: 42 },
+    })
+    expect(res.statusCode).toBe(400)
+    expect(mockSubject.update).not.toHaveBeenCalled()
+    await app.close()
+  })
+})

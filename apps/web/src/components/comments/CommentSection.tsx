@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ChevronRight } from 'lucide-react'
 
 import { CommentForm } from './CommentForm'
 import { CommentList } from './CommentList'
@@ -26,55 +27,63 @@ export function CommentSection({ resource }: { resource: CommentResource }) {
     await mutation.mutateAsync(action)
   }
   return (
-    <section aria-label="Comments" className="space-y-4 border-t pt-6">
-      <h2 className="text-xl font-semibold">Comments {data && `(${data.total} threads)`}</h2>
-      {query.isPending ? (
-        <ListSkeleton />
-      ) : query.isError ? (
-        <ErrorState
-          description={apiErrorMessage(query.error)}
-          onRetry={() => void query.refetch()}
+    <details className="group border-t pt-4">
+      <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+        <ChevronRight
+          aria-hidden="true"
+          className="size-4 transition-transform group-open:rotate-90"
         />
-      ) : (
-        data && (
-          <>
-            {data.comments.length === 0 ? (
-              <EmptyState title="No comments yet" description="Start the discussion." />
-            ) : (
-              <CommentList
-                comments={data.comments}
-                pending={mutation.isPending}
-                run={run}
-                error={mutation.isError ? apiErrorMessage(mutation.error) : undefined}
+        Comments
+      </summary>
+      <section aria-label="Comments" className="mt-4 space-y-4">
+        {query.isPending ? (
+          <ListSkeleton />
+        ) : query.isError ? (
+          <ErrorState
+            description={apiErrorMessage(query.error)}
+            onRetry={() => void query.refetch()}
+          />
+        ) : (
+          data && (
+            <>
+              {data.comments.length === 0 ? (
+                <EmptyState title="No comments yet" description="Start the discussion." />
+              ) : (
+                <CommentList
+                  comments={data.comments}
+                  pending={mutation.isPending}
+                  run={run}
+                  error={mutation.isError ? apiErrorMessage(mutation.error) : undefined}
+                />
+              )}
+              <Pagination
+                page={page}
+                total={data.total}
+                limit={data.limit}
+                disabled={mutation.isPending}
+                onChange={setPage}
               />
-            )}
-            <Pagination
-              page={page}
-              total={data.total}
-              limit={data.limit}
-              disabled={mutation.isPending}
-              onChange={setPage}
-            />
-            {user && (
-              <CommentForm
-                pending={mutation.isPending}
-                onSubmit={async (body) => {
-                  await run({ type: 'create', body })
-                  // The API sorts roots oldest first, so a new thread is on the final page.
-                  const latest = await query.refetch()
-                  if (latest.data)
-                    setPage(Math.max(1, Math.ceil(latest.data.total / latest.data.limit)))
-                }}
-              />
-            )}
-          </>
-        )
-      )}
-      {mutation.isError && (
-        <p role="alert" className="text-sm text-destructive">
-          {apiErrorMessage(mutation.error)}
-        </p>
-      )}
-    </section>
+              {user && (
+                <CommentForm
+                  pending={mutation.isPending}
+                  onSubmit={async (body) => {
+                    await run({ type: 'create', body })
+                    // The API sorts roots oldest first, so a new thread is on the final page.
+                    const latest = await query.refetch()
+                    if (latest.data)
+                      setPage(Math.max(1, Math.ceil(latest.data.total / latest.data.limit)))
+                  }}
+                />
+              )}
+            </>
+          )
+        )}
+        {mutation.isError && (
+          <p role="alert" className="text-sm text-destructive">
+            {apiErrorMessage(mutation.error)}
+          </p>
+        )}
+      </section>
+    </details>
   )
 }

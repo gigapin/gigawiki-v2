@@ -18,4 +18,18 @@ export const createSubject = (body: {
   color?: string
   icon?: string
   visibility?: 'PUBLIC' | 'PRIVATE'
+  imageId?: string | null
 }) => apiClient.post<Subject>('/api/v2/subjects', body).then((r) => r.data)
+
+export type SubjectInput = {
+  name: string
+  description: string
+  visibility: 'PUBLIC' | 'PRIVATE'
+  color: string
+  icon: string
+  imageId?: string | null
+}
+export const updateSubject = (slug: string, input: SubjectInput) =>
+  apiClient.patch<Subject>(`/api/v2/subjects/${slug}`, input).then((r) => r.data)
+export const deleteSubject = (slug: string) =>
+  apiClient.delete(`/api/v2/subjects/${slug}`).then(() => undefined)

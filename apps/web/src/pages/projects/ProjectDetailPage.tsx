@@ -128,6 +128,13 @@ export function ProjectDetail({ slug, sectionSlug }: { slug: string; sectionSlug
   return (
     <div className="mx-auto max-w-7xl space-y-8 p-4 sm:p-6 lg:p-9">
       <header className="space-y-4">
+        {project.image?.url && (
+          <img
+            src={project.image.url}
+            alt=""
+            className="h-48 w-full rounded-xl object-cover sm:h-60"
+          />
+        )}
         <ProjectBreadcrumb subject={project.subject} project={project} current={project.name} />
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 space-y-3">

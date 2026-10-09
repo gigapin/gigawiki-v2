@@ -3,6 +3,7 @@ import { useParams, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import type { Subject } from '@shared/types/subject'
 
+import { SubjectActions } from '@/components/subjects/SubjectActions'
 import { CARD_TONES, toneForColor } from '@/styles/cover-colors'
 import apiClient from '@/api/client'
 import { Icon, type IconName } from '@/components/ui/icon'
@@ -89,6 +90,13 @@ function ProjectCard({ project, toneIndex, onClick }: ProjectCardProps) {
           overflow: 'hidden',
         }}
       >
+        {project.image?.url && (
+          <img
+            src={project.image.url}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        )}
         {/* decorative letter */}
         <span
           style={{
@@ -349,7 +357,6 @@ export function SubjectDetailPage() {
   if (subjectQuery.isLoading) {
     return (
       <div style={{ maxWidth: 1320, width: '100%' }}>
-        <div style={{ height: 200, background: 'var(--db-surface)' }} />
         <div style={{ padding: '28px 36px' }}>
           <div
             style={{
@@ -415,105 +422,63 @@ export function SubjectDetailPage() {
 
   return (
     <div style={{ maxWidth: 1320, width: '100%' }}>
-      {/* hero banner */}
-      <div
-        style={{
-          height: 200,
-          background: `linear-gradient(160deg, ${tone.banner} 0%, ${tone.bannerDeep} 100%)`,
-          position: 'relative',
-          overflow: 'visible',
-        }}
-      >
-        {/* visibility badge */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 16,
-            left: 20,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-            fontFamily: 'var(--font-mono)',
-            fontSize: 11,
-            color: tone.label,
-            background: 'rgba(0,0,0,0.3)',
-            border: '1px solid rgba(255,255,255,0.15)',
-            borderRadius: 999,
-            padding: '3px 10px 3px 8px',
-            backdropFilter: 'blur(6px)',
-          }}
-        >
-          <Icon name={subject.visibility === 'PUBLIC' ? 'globe' : 'lock'} size={10} stroke={2} />
-          {subject.visibility}
-        </div>
-
-        {/* three-dot menu */}
-        {canManage && (
-          <div style={{ position: 'absolute', top: 14, right: 16 }}>
-            <ThreeDotMenu />
-          </div>
-        )}
-
-        {/* icon badge (overlapping bottom edge) */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: -28,
-            left: 36,
-            width: 56,
-            height: 56,
-            borderRadius: 14,
-            background: 'rgba(0,0,0,0.35)',
-            border: `2px solid ${tone.banner}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: tone.label,
-            backdropFilter: 'blur(8px)',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
-          }}
-        >
-          <Icon name={(subject.icon as IconName) ?? 'book'} size={26} stroke={1.6} />
-        </div>
-      </div>
-
       {/* subject info */}
-      <div style={{ padding: '48px 36px 24px' }}>
-        <h1
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontWeight: 400,
-            fontStyle: 'italic',
-            fontSize: 48,
-            lineHeight: 1.05,
-            letterSpacing: '-0.015em',
-            margin: '0 0 8px',
-            color: 'var(--db-ink)',
-            display: 'flex',
-            alignItems: 'baseline',
-            gap: 12,
-            flexWrap: 'wrap',
-          }}
-        >
-          {subject.name}
-          {projectsData && (
-            <span
+      <div style={{ padding: '28px 36px 24px' }}>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex min-w-0 flex-1 items-center gap-4">
+            <div
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
+              style={{ background: tone.banner, color: tone.label }}
+            >
+              <Icon name={(subject.icon as IconName) ?? 'book'} size={26} stroke={1.6} />
+            </div>
+            <h1
               style={{
-                fontFamily: 'var(--font-mono)',
-                fontStyle: 'normal',
-                fontSize: 12,
-                color: 'var(--db-muted)',
-                background: 'var(--db-bg-2)',
-                border: '1px solid var(--db-line)',
-                padding: '3px 9px',
-                borderRadius: 999,
-                transform: 'translateY(-4px)',
+                fontFamily: 'var(--font-display)',
+                fontWeight: 400,
+                fontStyle: 'italic',
+                fontSize: 36,
+                lineHeight: 1.05,
+                letterSpacing: '-0.015em',
+                margin: 0,
+                color: 'var(--db-ink)',
+                display: 'flex',
+                alignItems: 'baseline',
+                gap: 12,
+                flexWrap: 'wrap',
               }}
             >
-              {total} {total === 1 ? 'project' : 'projects'}
-            </span>
+              {subject.name}
+              {projectsData && (
+                <span
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontStyle: 'normal',
+                    fontSize: 12,
+                    color: 'var(--db-muted)',
+                    background: 'var(--db-bg-2)',
+                    border: '1px solid var(--db-line)',
+                    padding: '3px 9px',
+                    borderRadius: 999,
+                    transform: 'translateY(-4px)',
+                  }}
+                >
+                  {total} {total === 1 ? 'project' : 'projects'}
+                </span>
+              )}
+            </h1>
+          </div>
+          {canManage && (
+            <div className="ml-auto shrink-0">
+              <SubjectActions subject={subject} />
+            </div>
           )}
-        </h1>
+        </div>
+
+        <div className="mb-4 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Icon name={subject.visibility === 'PUBLIC' ? 'globe' : 'lock'} size={12} />
+          {subject.visibility}
+        </div>
 
         {subject.description && (
           <p
@@ -742,85 +707,6 @@ export function SubjectDetailPage() {
         subjectSlug={slug}
         onClose={() => setCreateOpen(false)}
       />
-    </div>
-  )
-}
-
-/* ── three-dot menu ── */
-function ThreeDotMenu() {
-  const [open, setOpen] = useState(false)
-
-  return (
-    <div style={{ position: 'relative' }}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        style={{
-          width: 34,
-          height: 34,
-          borderRadius: 8,
-          border: '1px solid rgba(255,255,255,0.15)',
-          background: 'rgba(0,0,0,0.28)',
-          color: 'rgba(255,255,255,0.8)',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backdropFilter: 'blur(6px)',
-        }}
-      >
-        <Icon name="dots-h" size={16} />
-      </button>
-
-      {open && (
-        <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 49 }} onClick={() => setOpen(false)} />
-          <div
-            style={{
-              position: 'absolute',
-              top: 'calc(100% + 6px)',
-              right: 0,
-              zIndex: 50,
-              background: 'var(--db-surface)',
-              border: '1px solid var(--db-line)',
-              borderRadius: 10,
-              padding: '4px',
-              minWidth: 160,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-            }}
-          >
-            {[
-              { label: 'Edit subject', icon: 'pencil' as IconName },
-              { label: 'Manage access', icon: 'users' as IconName },
-              { label: 'Change visibility', icon: 'globe' as IconName },
-            ].map((item) => (
-              <button
-                key={item.label}
-                onClick={() => setOpen(false)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 9,
-                  width: '100%',
-                  padding: '8px 10px',
-                  borderRadius: 7,
-                  border: 'none',
-                  background: 'transparent',
-                  color: 'var(--db-ink-2)',
-                  fontSize: 13.5,
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-ui)',
-                  textAlign: 'left',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--db-bg-2)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-              >
-                <Icon name={item.icon} size={14} stroke={1.7} />
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
     </div>
   )
 }
