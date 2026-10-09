@@ -7,6 +7,7 @@ import { prisma } from '../../lib/prisma.js'
 
 import {
   fetchAllUsers,
+  fetchMentionUsers,
   fetchUser,
   updateUser,
   deleteUser,
@@ -52,6 +53,7 @@ function buildApp(userRole: string = 'ADMIN', userId: string = 'user-1') {
     done()
   })
   app.register(fetchAllUsers)
+  app.register(fetchMentionUsers)
   app.register(fetchUser)
   app.register(updateUser)
   app.register(deleteUser)
@@ -294,5 +296,22 @@ describe('POST /users/:id/avatar', () => {
     })
 
     expect(res.statusCode).toBe(400)
+  })
+})
+
+describe('GET /users/mentions', () => {
+  it.each(['ADMIN', 'EDITOR', 'GUEST'])('provides a minimal directory for %s', async (role) => {
+    mockPrismaUser.findMany.mockResolvedValue([])
+    const app = buildApp(role)
+    const response = await app.inject({ method: 'GET', url: '/users/mentions?search=Al' })
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toEqual({ users: [] })
+    expect(mockPrismaUser.findMany).toHaveBeenCalledWith({
+      where: { name: { contains: 'Al', mode: 'insensitive' } },
+      select: { id: true, name: true },
+      take: 8,
+      orderBy: [{ name: 'asc' }, { id: 'asc' }],
+    })
+    await app.close()
   })
 })

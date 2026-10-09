@@ -14,21 +14,21 @@
 
 ## Stato attuale
 
-**Aggiornato al:** 2026-10-08
+**Aggiornato al:** 2026-10-09
 
 | | |
 |---|---|
 | Branch di lavoro | `dev` (il default remoto è `main`) |
 | Remote | `git@github.com:gigapin/gigawiki-v2.git` |
 | Task completati | 29 / 40 completati; 8 parziali; 3 non iniziati (conteggio dalla tabella sotto) |
-| Fase corrente | **Fase 4 — Frontend**, task 28–31 e 35 parziali. Base shadcn, Project detail, registrazione e primo flusso reader/editor implementati |
-| Backend | Completo (task 5–23). 17 file di test, 240 test verdi |
-| Frontend | Login, Register, Verify email, Dashboard, Subjects, Project detail, scelta destinazione nuova pagina, reader ed editor Tiptap. Bozza/pubblicazione e breadcrumb navigabili. Restano le funzionalità avanzate del task 31, commenti e settings |
+| Fase corrente | **Fase 4 — Frontend**, task 28–31 e 35 parziali. Base shadcn, Project detail e registrazione implementati; reader/editor con immagini ridimensionabili, autosave, revisioni, menzioni e menu contestuale |
+| Backend | Completo (task 5–23). 17 file di test, 244 test verdi |
+| Frontend | Login, Register, Verify email, Dashboard, Subjects, Project detail, scelta destinazione nuova pagina, reader ed editor Tiptap. Bozza/pubblicazione, breadcrumb, tema light/dark, upload e resize immagini, link, syntax highlighting, autosave, drawer revisioni, menzioni e menu contestuale implementati. Tag/preferiti nelle pagine implementati; restano commenti e settings |
 | CI/CD | Non iniziata (task 39) |
 
 **Codice della sessione committato dall’utente in `c12f73a`** (`feat: add first implementation of frontend`), su branch `dev`. Il working tree era pulito prima di questo aggiornamento documentale; questa modifica non è stata committata. `.claude/settings.local.json` è ancora tracciato, anche se ora escluso da `.gitignore`.
 
-**Ultime verifiche eseguite:** build e lint frontend, typecheck API, 240 test backend e 88 test frontend superati. Test frontend in ambiente Node e jsdom: non equivalgono a una prova delle interazioni nel browser. Registrazione con Mailtrap confermata funzionante dall’utente; ruolo di un utente cambiato manualmente in Prisma Studio per provare creazione/modifica.
+**Ultime verifiche eseguite:** build e lint frontend, typecheck API, 244 test backend e 95 test frontend superati. Test frontend in ambiente Node e jsdom: non equivalgono a una prova delle interazioni nel browser. Autosave confermato funzionante dall’utente. Registrazione con Mailtrap confermata funzionante dall’utente; ruolo di un utente cambiato manualmente in Prisma Studio per provare creazione/modifica.
 
 ---
 
@@ -85,11 +85,11 @@ Legenda: ✅ fatto · 🟡 parziale · ⬜ non iniziato
 | 28 | Pagine auth | 🟡 | Login, Register, VerifyEmail, AuthLayout e reinvio verifica implementati. Restano ForgotPassword, ResetPassword e AcceptInvite |
 | 29 | Dashboard | 🟡 | Attività recenti, preferiti e statistiche ci sono. Manca la sezione «Recently visited» (`GET /views`) |
 | 30 | Pagine Subjects / Projects / Sections | 🟡 | Prima implementazione in `c12f73a`. Fatti: Subjects/Subject detail, Project detail, ProjectFormDialog riusato in creazione/modifica, SectionFormDialog, eliminazione admin con conferma, riordino nativo + pulsanti accessibili, lista pagine paginata. Collegamenti a reader/editor e breadcrumb completati. Restano CRUD completo Subject e upload cover |
-| 31 | Page view + editor Tiptap | 🟡 | Reader, creazione/modifica, toolbar, tabelle, visibilità, bozza/pubblicazione, guardia modifiche non salvate. Fatti anche upload immagini, link, syntax highlighting e contenuti legacy JSON. Autosave dopo 30s di inattività sulle pagine esistenti. Restano mentions, bubble menu, tag/preferiti e integrazione commenti |
+| 31 | Page view + editor Tiptap | 🟡 | Reader, creazione/modifica, toolbar, tabelle, visibilità, bozza/pubblicazione, guardia modifiche non salvate. Fatti anche upload e ridimensionamento immagini, link, syntax highlighting e contenuti legacy JSON. Autosave dopo 30s di inattività sulle pagine esistenti. Menzioni e bubble menu implementati. Tag/preferiti nel reader completati; resta integrazione commenti |
 | 32 | Drawer revisioni | ✅ | Cronologia paginata, anteprima, ripristino con conferma Editor/Admin e navigazione allo slug ripristinato |
 | 33 | Componente commenti | ⬜ | |
 | 34 | Pagine settings | ⬜ | |
-| 35 | Hook TanStack Query | 🟡 | Adapter tipizzati per auth/project/page; hook `usePages`, `useSections` e `useSectionMutations`. Restano hook uniformi per gli altri moduli; diverse `useQuery` sono ancora nei componenti |
+| 35 | Hook TanStack Query | 🟡 | Adapter tipizzati per auth/project/page/revisions; hook `usePages`, `useSections`, `useSectionMutations`, `useRevisions`, `useRevision` e `useRestoreRevision`. Restano hook uniformi per gli altri moduli; diverse `useQuery` sono ancora nei componenti |
 
 ### Fase 5 — Test, CI/CD, GitHub
 
@@ -120,7 +120,7 @@ Punti in cui il codice si discosta da `GIGAWIKI_V2_TASKS.md`. Vanno **letti prim
 ## Prossimi passi
 
 1. Provare nel browser il ciclo pagina completo: scelta sezione, creazione bozza, pubblicazione, modifica, avviso di uscita e ritorno tramite breadcrumb. Registrazione già confermata dall’utente; per creare/editare pagine occorre EDITOR/ADMIN e, dopo un cambio ruolo da Prisma Studio, aggiornare la sessione.
-2. Completare task 31: autosave, mentions, menu contestuale e tag/preferiti. Reader/editor ora condividono lo schema e supportano HTML, testo semplice e documenti Tiptap JSON; upload immagini, link e syntax highlighting sono implementati. Autosave e drawer revisioni sono implementati; procedere con mentions e menu contestuale.
+2. **Prossimo incremento: integrazione commenti (task 33).** Reader/editor condividono lo schema HTML/JSON; upload e resize immagini, link, syntax highlighting, autosave, revisioni, menzioni e menu contestuale sono completati. Tag e preferiti nel reader completati.
 3. Completare auth restante (ForgotPassword, ResetPassword, AcceptInvite), Dashboard (recently visited) e CRUD Subject/upload cover.
 4. Commenti riusabili; provare nel browser il drawer revisioni e il ripristino.
 5. Favorites e Settings sulla stessa base shadcn. Allineare prima i contratti inviti (elenco/reinvio/cancellazione) e cambio password, non completi nel backend.
@@ -153,6 +153,33 @@ Chi clona il repo su una macchina nuova deve ricreare `init.sh` (o avere Node su
 ---
 
 ## Log delle sessioni
+
+
+### 2026-10-09 — Tag e preferiti nelle pagine
+
+- Reader: tag, aggiunta Editor/Admin con suggerimenti, normalizzazione, blocco duplicati e limite di 10; rimozione per autore del tag o Admin. Errori inline e controlli disabilitati durante le richieste.
+- Preferiti: toggle disponibile anche ai Guest, stato personale e conteggio dal dettaglio pagina; aggiornamento cache pagina e invalidazione liste/contatori dashboard. GET pagina filtra i preferiti per il richiedente e restituisce solo `favorited`, senza esporre i record.
+- Hook tipizzati per ricerca/creazione/rimozione tag e toggle preferito. Le modifiche ai metadati non passano dal salvataggio contenuto e non creano revisioni.
+- Verifiche: 95 test frontend e 244 API superati; build/lint frontend e typecheck API superati. Aggiunti test jsdom su ruoli, limiti, duplicati, errori e cache, più test API sullo stato personale del preferito.
+
+**Lasciato aperto:** integrazione commenti (task 33) e verifica nel browser. Resta il warning sulla dimensione bundle.
+
+### 2026-10-08 — Riepilogo del lavoro completato
+
+- Allineati stato attuale e tabella task con le funzionalità editor completate: upload e resize immagini, link, codice con syntax highlighting, compatibilità JSON, autosave, revisioni, menzioni e menu contestuale.
+- Task 32 completato; task 31 ancora parziale per tag/preferiti e commenti. Totale: 29 task completati, 8 parziali e 3 non iniziati.
+- Ultima verifica: 95 test frontend e 243 backend superati, build/lint frontend e typecheck API riusciti. Autosave verificato anche dall’utente; le prove dell’agente sulle interazioni sono in jsdom.
+- Prossimo intervento: tag e preferiti nelle pagine, poi commenti. Restano le verifiche nel browser di menzioni, menu contestuale e revisioni.
+
+
+### 2026-10-08 — Menzioni e menu contestuale
+
+- Digitando `@` nell’editor si cercano utenti per nome: selezione con mouse o frecce/Invio, chiusura Escape, stati vuoto/errore. Menzione persistita con ID e nome, supportata dallo schema condiviso per reader e revisioni.
+- Endpoint autenticato `GET /api/v2/users/mentions`: massimo 8 risultati, solo ID e nome; l’elenco amministrativo utenti resta riservato agli Admin.
+- Menu contestuale sulle selezioni di testo con grassetto, corsivo e aggiunta/modifica link; esclusi blocchi codice e selezioni immagine.
+- Verifiche: 95 test frontend e 243 backend, lint, build frontend e typecheck API. Interazioni verificate in jsdom; prova browser reale ancora da eseguire.
+- Autosave confermato funzionante dall’utente. Prossimo incremento: tag/preferiti per le pagine.
+
 
 ### 2026-10-08 — Autosave editor
 

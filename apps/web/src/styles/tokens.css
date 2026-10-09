@@ -127,3 +127,11 @@
   --cover-teal-body: oklch(0.97 0.012 195);
   --cover-teal-bodyEdge: oklch(0.86 0.025 195);
 }
+
+.wiki-content .mention {
+  border-radius: 0.25rem;
+  background: oklch(var(--secondary));
+  color: oklch(var(--secondary-foreground));
+  padding: 0.1rem 0.25rem;
+  font-weight: 500;
+}

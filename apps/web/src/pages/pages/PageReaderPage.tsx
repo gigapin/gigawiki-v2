@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { deletePage, fetchPage } from '@/api/pages'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { ProjectBreadcrumb } from '@/components/shared/ProjectBreadcrumb'
+import { PageMetadata } from '@/components/pages/PageMetadata'
 import { PageContent } from '@/components/pages/PageContent'
 import { RevisionsDrawer } from '@/components/revisions/RevisionsDrawer'
 import { ErrorState, ListSkeleton } from '@/components/shared/ResourceState'
@@ -115,6 +116,7 @@ export function PageReaderPage() {
               {new Date(page.updatedAt).toLocaleDateString('en-GB')}
             </p>
           </header>
+          <PageMetadata key={page.id} page={page} />
           <PageContent key={`${page.id}:${page.currentRevision}`} content={page.content} />
           {historyOpen && (
             <RevisionsDrawer key={page.slug} page={page} onClose={() => setHistoryOpen(false)} />

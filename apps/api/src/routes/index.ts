@@ -28,6 +28,7 @@ import {
   updateUser,
   deleteUser,
   fetchAllUsers,
+  fetchMentionUsers,
   uploadAvatar,
   inviteUser,
 } from './users/usersRoutes.js'
@@ -164,6 +165,7 @@ export function registerRoutes(app: FastifyInstance) {
       instance.register(deleteComment)
 
       instance.register(fetchAllUsers)
+      instance.register(fetchMentionUsers)
       instance.register(fetchUser)
       instance.register(updateUser)
       instance.register(deleteUser)

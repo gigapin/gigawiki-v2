@@ -208,3 +208,17 @@ export async function inviteUser(fastify: FastifyInstance) {
     return reply.status(201).send({ invite })
   })
 }
+
+// A small directory for mentions; administration fields remain on the Admin-only endpoint.
+export async function fetchMentionUsers(fastify: FastifyInstance) {
+  fastify.get<{ Querystring: { search?: string } }>('/users/mentions', async (req, reply) => {
+    const search = req.query.search?.trim().slice(0, 100) ?? ''
+    const users = await prisma.user.findMany({
+      where: search ? { name: { contains: search, mode: 'insensitive' } } : {},
+      select: { id: true, name: true },
+      take: 8,
+      orderBy: [{ name: 'asc' }, { id: 'asc' }],
+    })
+    return reply.send({ users })
+  })
+}

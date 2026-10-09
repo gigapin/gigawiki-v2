@@ -17,7 +17,7 @@ vi.mock('@tanstack/react-router', () => ({
 vi.mock('@tanstack/react-query', async (importOriginal) => ({
   ...(await importOriginal()),
   useMutation: (options) => {
-    state.mutation = options
+    if (!state.mutation) state.mutation = options
     return { isPending: false, isError: false, reset: vi.fn(), mutate: vi.fn() }
   },
 }))
@@ -49,7 +49,7 @@ function render(role) {
   return { html, client }
 }
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => { vi.clearAllMocks(); state.mutation = null })
 
 it.each(['GUEST', 'EDITOR', 'ADMIN'])(
   'shows page actions for %s according to permissions',

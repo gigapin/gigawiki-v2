@@ -157,6 +157,28 @@ describe('GET /pages/:slug', () => {
     expect(res.json()._count.comments).toBe(2)
   })
 
+  it('returns only the requester favorite state without exposing favorite records', async () => {
+    mockPage.findFirst.mockResolvedValue({ ...fakePage, favorites: [{ id: 'fav' }] } as never)
+    const app = Fastify()
+    app.decorateRequest('user', null as never)
+    app.addHook('preHandler', (req, _reply, done) => {
+      req.user = { id: 'reader', email: 'reader@example.com', role: 'GUEST' }
+      done()
+    })
+    app.register(fetchPage)
+    const res = await app.inject({ method: 'GET', url: '/pages/introduction' })
+    expect(res.json().favorited).toBe(true)
+    expect(res.json().favorites).toBeUndefined()
+    expect(mockPage.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          favorites: { where: { userId: 'reader' }, select: { id: true } },
+        }),
+      }),
+    )
+    await app.close()
+  })
+
   it('returns 404 when page does not exist', async () => {
     mockPage.findFirst.mockResolvedValue(null)
 
