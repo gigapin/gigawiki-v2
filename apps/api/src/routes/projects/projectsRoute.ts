@@ -87,7 +87,7 @@ export async function fetchProject(fastify: FastifyInstance) {
         subject: { select: { name: true, slug: true } },
         sections: { where: { deletedAt: null }, orderBy: { position: 'asc' } },
         tags: true,
-        _count: { select: { favorites: true } },
+        _count: { select: { favorites: { where: { userId: req.user?.id ?? '' } } } },
       },
     })
 

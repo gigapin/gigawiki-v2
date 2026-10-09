@@ -1,8 +1,10 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Favorite } from '@shared/types/favorite'
 
 import type { PageDetail } from './pages'
 import apiClient from './client'
+
+import { useAuthStore } from '@/stores/auth.store'
 
 interface FavoritesResponse {
   favorites: Favorite[]
@@ -11,16 +13,29 @@ interface FavoritesResponse {
   limit: number
 }
 
-export const fetchFavorites = (params?: { page?: number; limit?: number }) =>
-  apiClient.get<FavoritesResponse>('/api/v2/favorites', { params }).then((r) => r.data)
+export const fetchFavorites = (params?: { page?: number; limit?: number }, signal?: AbortSignal) =>
+  apiClient.get<FavoritesResponse>('/api/v2/favorites', { params, signal }).then((r) => r.data)
+
+export function useFavorites(params: { page?: number; limit?: number } = {}, countOnly = false) {
+  const userId = useAuthStore((state) => state.user?.id)
+  const { page = 1, limit = 20 } = params
+  return useQuery({
+    queryKey: [countOnly ? 'favorites-count' : 'favorites', userId, page, limit],
+    enabled: Boolean(userId),
+    queryFn: ({ signal }) => fetchFavorites({ page, limit }, signal),
+  })
+}
 
 export function useToggleFavorite(slug: string, pageId: string) {
   const client = useQueryClient()
+  const userId = useAuthStore((state) => state.user?.id)
   return useMutation({
     mutationFn: () =>
       apiClient.post<{ favorited: boolean }>('/api/v2/favorites', { pageId }).then((r) => r.data),
     onSuccess: async ({ favorited }) => {
+      if (useAuthStore.getState().user?.id !== userId) return
       await client.cancelQueries({ queryKey: ['page', slug], exact: true })
+      if (useAuthStore.getState().user?.id !== userId) return
       client.setQueryData<PageDetail>(['page', slug], (current) =>
         current
           ? {
@@ -28,9 +43,7 @@ export function useToggleFavorite(slug: string, pageId: string) {
               favorited,
               _count: {
                 ...current._count,
-                favorites:
-                  current._count.favorites +
-                  (current.favorited === favorited ? 0 : favorited ? 1 : -1),
+                favorites: favorited ? 1 : 0,
               },
             }
           : current,

@@ -84,11 +84,11 @@ it('shows the current version and fetches a previous revision only when selected
   expect(screen.getByRole('button', { name: 'Restore this revision' })).toBeTruthy()
 })
 
-it('lets guests preview history without restore controls', async () => {
+it('does not show or fetch any history for guests', () => {
   session.user = { role: 'GUEST' }
   mount()
-  await selectRevision()
-  expect(screen.queryByRole('button', { name: 'Restore this revision' })).toBeNull()
+  expect(screen.queryByRole('dialog')).toBeNull()
+  expect(apiClient.get).not.toHaveBeenCalled()
   expect(apiClient.post).not.toHaveBeenCalled()
 })
 

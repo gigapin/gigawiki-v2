@@ -1,6 +1,9 @@
 import { FastifyInstance } from 'fastify'
 import argon2 from 'argon2'
+import { z } from 'zod'
 
+import { env } from '../../config/env.js'
+import { emailQueue } from '../../lib/queue.js'
 import { prisma } from '../../lib/prisma.js'
 
 const USER_SELECT = {
@@ -33,7 +36,6 @@ type PatchUserBody = {
 
 type InviteBody = {
   email: string
-  name: string
   role?: 'ADMIN' | 'EDITOR' | 'GUEST'
 }
 
@@ -189,7 +191,15 @@ export async function inviteUser(fastify: FastifyInstance) {
       return reply.status(403).send({ error: 'Admin access required' })
     }
 
-    const { email, name, role = 'GUEST' } = req.body
+    const parsed = z
+      .object({
+        email: z.string().trim().toLowerCase().pipe(z.email()),
+        role: z.enum(['ADMIN', 'EDITOR', 'GUEST']).default('GUEST'),
+      })
+      .safeParse(req.body)
+    if (!parsed.success)
+      return reply.status(400).send({ error: 'Provide a valid email and a valid role.' })
+    const { email, role } = parsed.data
 
     const existing = await prisma.user.findUnique({ where: { email } })
     if (existing) {
@@ -200,10 +210,30 @@ export async function inviteUser(fastify: FastifyInstance) {
     expiresAt.setDate(expiresAt.getDate() + 7)
 
     const invite = await prisma.emailInvite.create({
-      data: { email, name, role, sentById: req.user.id, expiresAt },
+      // Legacy invite records require a name; the account name is chosen on acceptance.
+      data: { email, name: '', role, sentById: req.user.id, expiresAt },
     })
 
-    // TODO: queue InviteEmail job via BullMQ
+    const acceptUrl = new URL('/accept-invite', env.FRONTEND_URL)
+    acceptUrl.searchParams.set('token', invite.token)
+    try {
+      await emailQueue.add('invite', {
+        to: email,
+        template: 'invite',
+        data: {
+          inviterName: req.user.email,
+          role,
+          acceptUrl: acceptUrl.toString(),
+          expiresAt: invite.expiresAt.toISOString(),
+        },
+      })
+    } catch (error) {
+      req.log.error(error, 'Unable to queue invitation email')
+      return reply.status(503).send({
+        code: 'INVITE_DELIVERY_FAILED',
+        error: 'The invitation was created, but the email could not be queued.',
+      })
+    }
 
     return reply.status(201).send({ invite })
   })

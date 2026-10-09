@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client'
 
 import './index.css'
 import { router } from './router'
+import { bindSessionCache } from './lib/session-cache'
 import { ThemedToaster } from './components/shared/ThemedToaster'
 
 const queryClient = new QueryClient({
@@ -14,6 +15,8 @@ const queryClient = new QueryClient({
     },
   },
 })
+
+bindSessionCache(queryClient)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

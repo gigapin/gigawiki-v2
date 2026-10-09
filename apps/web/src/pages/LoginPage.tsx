@@ -395,9 +395,9 @@ export function LoginPage() {
                   <span className="gw-check" aria-hidden="true" />
                   Remember me
                 </label>
-                <a href="#" className="gw-link">
+                <Link to="/forgot-password" className="gw-link">
                   Forgot password?
-                </a>
+                </Link>
               </div>
 
               <button type="submit" className="gw-submit" disabled={submitting}>

@@ -49,7 +49,10 @@ function render(role) {
   return { html, client }
 }
 
-beforeEach(() => { vi.clearAllMocks(); state.mutation = null })
+beforeEach(() => {
+  vi.clearAllMocks()
+  state.mutation = null
+})
 
 it.each(['GUEST', 'EDITOR', 'ADMIN'])(
   'shows page actions for %s according to permissions',
@@ -58,6 +61,7 @@ it.each(['GUEST', 'EDITOR', 'ADMIN'])(
     expect(html).toContain('Wiki content')
     expect(html.includes('Delete page')).toBe(role === 'ADMIN')
     expect(html.includes('Edit page')).toBe(role !== 'GUEST')
+    expect(html.includes('View history')).toBe(role !== 'GUEST')
     client.clear()
   },
 )

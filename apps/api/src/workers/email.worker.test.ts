@@ -32,3 +32,31 @@ describe('Verification email delivery', () => {
     expect(sendMail).not.toHaveBeenCalled()
   })
 })
+
+it.each([
+  ['reset-password', 'resetUrl', '/reset-password?token=reset', 'Reset your password'],
+  ['invite', 'acceptUrl', '/accept-invite?token=invite', "You've been invited to GiGaWiki"],
+] as const)(
+  'renders the %s email with the correct frontend link',
+  async (template, field, path, subject) => {
+    const url = `http://localhost:5173${path}`
+    await deliverEmail({
+      data: {
+        to: 'alice@example.com',
+        template,
+        data: {
+          name: 'Alice',
+          inviterName: 'Admin',
+          role: 'EDITOR',
+          expiresAt: new Date(Date.now() + 86400000).toISOString(),
+          [field]: url,
+        },
+      },
+    })
+    expect(sendMail).toHaveBeenCalledWith({
+      to: 'alice@example.com',
+      subject,
+      html: expect.stringContaining(url),
+    })
+  },
+)

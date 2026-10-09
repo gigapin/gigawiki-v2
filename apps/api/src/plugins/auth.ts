@@ -7,7 +7,8 @@ import { env } from '../config/env.js'
 export default fastifyPlugin(async function (fastify: FastifyInstance) {
   fastify.register(jwt, {
     secret: env.JWT_SECRET,
-    sign: { expiresIn: env.JWT_ACCESS_EXPIRES_IN },
+    // Local testing keeps the access token valid until explicit logout.
+    sign: env.NODE_ENV === 'development' ? {} : { expiresIn: env.JWT_ACCESS_EXPIRES_IN },
   })
 
   fastify.decorate('authenticate', async function (request: FastifyRequest, reply: FastifyReply) {

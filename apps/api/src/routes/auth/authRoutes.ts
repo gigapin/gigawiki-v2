@@ -50,7 +50,10 @@ function setRefreshCookie(reply: FastifyReply, token: string, expiresAt: Date) {
 
 async function createRefreshToken(reply: FastifyReply, userId: string) {
   const token = nanoid(64)
-  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+  const expiresAt =
+    env.NODE_ENV === 'development'
+      ? new Date('9999-12-31T23:59:59.000Z')
+      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
   await prisma.refreshToken.create({ data: { userId, token, expiresAt } })
   setRefreshCookie(reply, token, expiresAt)
 
@@ -102,7 +105,11 @@ export async function refresh(fastify: FastifyInstance) {
     if (!token) return reply.status(401).send({ error: 'Missing refresh token' })
 
     const stored = await prisma.refreshToken.findFirst({
-      where: { token, revokedAt: null, expiresAt: { gt: new Date() } },
+      where: {
+        token,
+        revokedAt: null,
+        ...(env.NODE_ENV === 'development' ? {} : { expiresAt: { gt: new Date() } }),
+      },
     })
     if (!stored) return reply.status(401).send({ error: 'Invalid or expired refresh token' })
 
@@ -199,16 +206,25 @@ export async function forgotPassword(fastify: FastifyInstance) {
     '/auth/forgot-password',
     AUTH_RATE_LIMIT,
     async (request, reply) => {
-      const { email } = request.body
+      const parsed = ResendVerificationSchema.safeParse(request.body)
+      if (!parsed.success) return reply.status(400).send({ error: 'Enter a valid email address.' })
+      const { email } = parsed.data
 
       const user = await prisma.user.findUnique({ where: { email } })
       if (user) {
-        const token = nanoid(32)
-        await redis.set(`reset:${token}`, user.id, 'EX', 3600)
-        await emailQueue.add('reset-password', {
-          to: email,
-          data: { name: user.name, token },
-        })
+        try {
+          const token = nanoid(32)
+          await redis.set(`reset:${token}`, user.id, 'EX', 3600)
+          const resetUrl = new URL('/reset-password', env.FRONTEND_URL)
+          resetUrl.searchParams.set('token', token)
+          await emailQueue.add('reset-password', {
+            to: email,
+            template: 'reset-password',
+            data: { name: user.name, resetUrl: resetUrl.toString() },
+          })
+        } catch (error) {
+          request.log.error(error, 'Unable to queue password reset email')
+        }
       }
 
       return reply
@@ -223,7 +239,14 @@ export async function resetPassword(fastify: FastifyInstance) {
     '/auth/reset-password',
     AUTH_RATE_LIMIT,
     async (request, reply) => {
-      const { token, newPassword } = request.body
+      const parsed = z
+        .object({ token: z.string().min(1).max(128), newPassword: z.string().min(8).max(128) })
+        .safeParse(request.body)
+      if (!parsed.success)
+        return reply
+          .status(400)
+          .send({ error: 'Provide a token and a password of 8–128 characters.' })
+      const { token, newPassword } = parsed.data
 
       const userId = await redis.getdel(`reset:${token}`)
       if (!userId) return reply.status(400).send({ error: 'Invalid or expired reset token' })
@@ -264,7 +287,18 @@ export async function acceptInvite(fastify: FastifyInstance) {
     '/auth/accept-invite',
     AUTH_RATE_LIMIT,
     async (request, reply) => {
-      const { token, name, password } = request.body
+      const parsed = z
+        .object({
+          token: z.string().min(1).max(128),
+          name: z.string().trim().min(1).max(100),
+          password: z.string().min(8).max(128),
+        })
+        .safeParse(request.body)
+      if (!parsed.success)
+        return reply
+          .status(400)
+          .send({ error: 'Provide a token, a name and a password of 8–128 characters.' })
+      const { token, name, password } = parsed.data
 
       const invite = await prisma.emailInvite.findUnique({ where: { token } })
       if (!invite) return reply.status(404).send({ error: 'Invite not found' })
@@ -276,21 +310,25 @@ export async function acceptInvite(fastify: FastifyInstance) {
         Boolean(await prisma.user.findUnique({ where: { slug: candidate }, select: { id: true } })),
       )
 
-      const user = await prisma.user.create({
-        data: {
-          name,
-          email: invite.email,
-          password: hashedPassword,
-          slug,
-          role: invite.role,
-          emailConfirmed: true,
-          emailVerifiedAt: new Date(),
-        },
-      })
-
-      await prisma.emailInvite.update({
-        where: { id: invite.id },
-        data: { acceptedAt: new Date() },
+      const user = await prisma.$transaction(async (tx) => {
+        const claimed = await tx.emailInvite.updateMany({
+          where: { id: invite.id, acceptedAt: null, expiresAt: { gt: new Date() } },
+          data: { acceptedAt: new Date() },
+        })
+        if (claimed.count !== 1) {
+          throw Object.assign(new Error('Invite expired or already accepted'), { statusCode: 400 })
+        }
+        return tx.user.create({
+          data: {
+            name,
+            email: invite.email,
+            password: hashedPassword,
+            slug,
+            role: invite.role,
+            emailConfirmed: true,
+            emailVerifiedAt: new Date(),
+          },
+        })
       })
 
       const accessToken = fastify.jwt.sign({ id: user.id, email: user.email, role: user.role })

@@ -37,6 +37,9 @@ export async function fetchRevisions(fastify: FastifyInstance) {
   fastify.get<{ Params: PageSlugParams; Querystring: PaginationQuery }>(
     '/pages/:pageSlug/revisions',
     async (req, reply) => {
+      if (req.user?.role !== 'EDITOR' && req.user?.role !== 'ADMIN')
+        return reply.status(403).send({ error: 'Editor or Admin role required' })
+
       const { pageSlug } = req.params
       const { page = '1', limit = '20' } = req.query
 
@@ -72,6 +75,9 @@ export async function fetchRevision(fastify: FastifyInstance) {
   fastify.get<{ Params: RevisionParams }>(
     '/pages/:pageSlug/revisions/:revisionNumber',
     async (req, reply) => {
+      if (req.user?.role !== 'EDITOR' && req.user?.role !== 'ADMIN')
+        return reply.status(403).send({ error: 'Editor or Admin role required' })
+
       const { pageSlug, revisionNumber } = req.params
       if (!/^\d+$/.test(revisionNumber) || !Number.isSafeInteger(Number(revisionNumber)))
         return reply.status(400).send({ error: 'Invalid revision number' })
@@ -103,9 +109,8 @@ export async function restoreRevision(fastify: FastifyInstance) {
   fastify.post<{ Params: RevisionParams }>(
     '/pages/:pageSlug/revisions/:revisionNumber/restore',
     async (req, reply) => {
-      if (req.user.role === 'GUEST') {
+      if (req.user?.role !== 'EDITOR' && req.user?.role !== 'ADMIN')
         return reply.status(403).send({ error: 'Editor or Admin role required' })
-      }
 
       const { pageSlug, revisionNumber } = req.params
       if (!/^\d+$/.test(revisionNumber) || !Number.isSafeInteger(Number(revisionNumber)))

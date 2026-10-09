@@ -173,6 +173,7 @@ describe('GET /pages/:slug', () => {
       expect.objectContaining({
         include: expect.objectContaining({
           favorites: { where: { userId: 'reader' }, select: { id: true } },
+          _count: { select: { comments: true, favorites: { where: { userId: 'reader' } } } },
         }),
       }),
     )

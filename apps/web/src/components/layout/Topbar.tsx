@@ -3,6 +3,7 @@ import { useNavigate, useMatches } from '@tanstack/react-router'
 
 import { SearchModal } from './SearchModal'
 
+import { InviteUsersLink } from '@/components/auth/InviteUsersLink'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import apiClient from '@/api/client'
 import { useAuthStore } from '@/stores/auth.store'
@@ -80,6 +81,7 @@ function AvatarDropdown({ onClose }: { onClose: () => void }) {
           {label}
         </div>
       ))}
+      <InviteUsersLink onClick={onClose} />
       <div style={{ height: 1, background: 'var(--db-line)', margin: '5px 4px' }} />
       <div
         onClick={handleLogout}

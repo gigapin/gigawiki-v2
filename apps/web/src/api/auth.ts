@@ -1,5 +1,8 @@
+import axios from 'axios'
+import type { User } from '@shared/types/user'
 import { useMutation, useQuery } from '@tanstack/react-query'
 
+import { API_BASE_URL } from './config'
 import apiClient from './client'
 
 import { apiErrorMessage } from '@/lib/api-error'
@@ -41,4 +44,42 @@ export async function verifyEmailToken(token: string): Promise<VerificationResul
   } catch (error) {
     return { status: 'error', message: apiErrorMessage(error) }
   }
+}
+
+export function useForgotPassword() {
+  return useMutation({
+    mutationFn: (email: string) =>
+      apiClient
+        .post<AuthMessage>('/api/v2/auth/forgot-password', { email: email.trim().toLowerCase() })
+        .then((r) => r.data),
+  })
+}
+export function useResetPassword() {
+  return useMutation({
+    mutationFn: (input: { token: string; newPassword: string }) =>
+      apiClient.post<AuthMessage>('/api/v2/auth/reset-password', input).then((r) => r.data),
+  })
+}
+export function useAcceptInvite() {
+  return useMutation({
+    mutationFn: (input: { token: string; name: string; password: string }) =>
+      apiClient
+        .post<{ accessToken: string }>('/api/v2/auth/accept-invite', input)
+        .then((r) => r.data),
+  })
+}
+
+// Read the invited account with its new token, even if another account is signed in.
+export function useInvitationSession() {
+  return useMutation({
+    mutationFn: (accessToken: string) =>
+      axios
+        .get<{
+          user: User
+        }>(`${API_BASE_URL}/api/v2/auth/me`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          withCredentials: true,
+        })
+        .then((r) => ({ user: r.data.user, accessToken })),
+  })
 }

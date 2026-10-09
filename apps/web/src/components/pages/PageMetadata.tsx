@@ -30,7 +30,7 @@ export function PageMetadata({ page }: { page: PageDetail }) {
         onClick={() => favorite.mutate()}
       >
         <Star className={page.favorited ? 'fill-current' : ''} />
-        {page.favorited ? 'Remove favorite' : 'Add favorite'} ({page._count?.favorites ?? 0})
+        {page.favorited ? 'Remove favorite' : 'Add favorite'}
       </Button>
       {favorite.isError && (
         <p role="alert" className="text-sm text-destructive">

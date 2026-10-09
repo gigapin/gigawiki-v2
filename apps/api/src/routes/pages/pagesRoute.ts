@@ -132,7 +132,9 @@ export async function fetchPage(fastify: FastifyInstance) {
         section: { select: { id: true, title: true, slug: true } },
         tags: true,
         favorites: { where: { userId: req.user?.id ?? '' }, select: { id: true } },
-        _count: { select: { comments: true, favorites: true } },
+        _count: {
+          select: { comments: true, favorites: { where: { userId: req.user?.id ?? '' } } },
+        },
       },
     })
 
