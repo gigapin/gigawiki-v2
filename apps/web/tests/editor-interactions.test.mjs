@@ -1,11 +1,14 @@
 // @vitest-environment jsdom
 import { createElement } from 'react'
-import { render, screen, fireEvent, waitFor, act, cleanup } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act, cleanup, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import { PageEditor } from '../src/components/pages/PageEditor'
 import { PageContent } from '../src/components/pages/PageContent'
+import apiClient from '../src/api/client'
 import { uploadInlineImage } from '../src/api/images'
+
+vi.mock('../src/api/client', () => ({ default: { get: vi.fn() } }))
 
 vi.mock('../src/api/images', () => ({
   uploadInlineImage: vi.fn(),
@@ -45,7 +48,11 @@ it('edits and removes a link while preserving the selected text', async () => {
   expect(editor.getHTML()).toContain('href="https://example.com"')
   expect(editor.getText()).toBe('Welcome')
   expect(onChange).toHaveBeenCalled()
-  await userEvent.click(screen.getByRole('button', { name: 'Edit link' }))
+  await userEvent.click(
+    within(screen.getByRole('toolbar', { name: 'Text formatting' })).getByRole('button', {
+      name: 'Edit link',
+    }),
+  )
   await userEvent.click(screen.getByRole('button', { name: 'Remove link' }))
   expect(editor.getHTML()).not.toContain('<a')
 })
@@ -168,4 +175,46 @@ it('resizes an image proportionally and preserves its dimensions after reopening
   await waitFor(() => expect(document.querySelector('.tiptap img')).not.toBeNull())
   expect(document.querySelector('.tiptap img').getAttribute('width')).toBe('600')
   expect(document.querySelector('[data-resize-handle]')).toBeNull()
+})
+
+it('searches mention users and inserts a persistent mention with keyboard navigation', async () => {
+  apiClient.get.mockResolvedValue({
+    data: {
+      users: [
+        { id: 'alice', name: 'Alice' },
+        { id: 'alex', name: 'Alex' },
+      ],
+    },
+  })
+  const { editor, textbox } = await mount('<p></p>')
+  act(() => editor.chain().focus().insertContent('@Al').run())
+  await screen.findByRole('listbox', { name: 'Mention users' })
+  expect(apiClient.get).toHaveBeenCalledWith('/api/v2/users/mentions', { params: { search: 'Al' } })
+  fireEvent.keyDown(textbox, { key: 'ArrowDown' })
+  fireEvent.keyDown(textbox, { key: 'Enter' })
+  expect(editor.getHTML()).toContain('data-id="alex"')
+  expect(editor.getText()).toContain('@Alex')
+  const html = editor.getHTML()
+  cleanup()
+  render(createElement(PageContent, { content: html }))
+  expect(screen.getByText('@Alex')).toBeTruthy()
+})
+
+it('shows mention lookup errors without inserting a user', async () => {
+  apiClient.get.mockRejectedValue(new Error('offline'))
+  const { editor, textbox } = await mount('<p></p>')
+  act(() => editor.chain().focus().insertContent('@Al').run())
+  await screen.findByText('Cannot load users. Try typing again.')
+  fireEvent.keyDown(textbox, { key: 'Enter' })
+  expect(editor.getHTML()).not.toContain('data-type="mention"')
+  fireEvent.keyDown(textbox, { key: 'Escape' })
+  expect(screen.queryByRole('listbox')).toBeNull()
+})
+
+it('formats selected text from the contextual toolbar', async () => {
+  const { editor } = await mount()
+  act(() => editor.chain().focus().setTextSelection({ from: 1, to: 8 }).run())
+  const toolbar = await screen.findByRole('toolbar', { name: 'Selection formatting' })
+  await userEvent.click(within(toolbar).getByRole('button', { name: 'Bold' }))
+  expect(editor.getHTML()).toContain('<strong>Welcome</strong>')
 })

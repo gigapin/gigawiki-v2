@@ -159,3 +159,17 @@ describe('POST /favorites', () => {
     expect(res.statusCode).toBe(400)
   })
 })
+
+it('keeps Guest favorites and their count scoped to the authenticated user', async () => {
+  mockFavorite.findMany.mockResolvedValue([])
+  mockFavorite.count.mockResolvedValue(0)
+  const app = buildAuthApp('GUEST', 'guest-user')
+  const res = await app.inject({ method: 'GET', url: '/favorites?userId=other-user' })
+  expect(res.statusCode).toBe(200)
+  expect(res.json().total).toBe(0)
+  expect(mockFavorite.findMany).toHaveBeenCalledWith(
+    expect.objectContaining({ where: { userId: 'guest-user' } }),
+  )
+  expect(mockFavorite.count).toHaveBeenCalledWith({ where: { userId: 'guest-user' } })
+  await app.close()
+})

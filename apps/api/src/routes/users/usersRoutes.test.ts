@@ -3,10 +3,12 @@ import Fastify from 'fastify'
 import multipart from '@fastify/multipart'
 import { Role } from '@prisma/client'
 
+import { emailQueue } from '../../lib/queue.js'
 import { prisma } from '../../lib/prisma.js'
 
 import {
   fetchAllUsers,
+  fetchMentionUsers,
   fetchUser,
   updateUser,
   deleteUser,
@@ -33,6 +35,9 @@ vi.mock('../../lib/prisma.js', () => ({
   },
 }))
 
+vi.mock('../../lib/queue.js', () => ({ emailQueue: { add: vi.fn().mockResolvedValue(undefined) } }))
+vi.mock('../../config/env.js', () => ({ env: { FRONTEND_URL: 'http://localhost:5173' } }))
+
 vi.mock('argon2', () => ({
   default: {
     hash: vi.fn().mockResolvedValue('hashed_password'),
@@ -52,6 +57,7 @@ function buildApp(userRole: string = 'ADMIN', userId: string = 'user-1') {
     done()
   })
   app.register(fetchAllUsers)
+  app.register(fetchMentionUsers)
   app.register(fetchUser)
   app.register(updateUser)
   app.register(deleteUser)
@@ -237,11 +243,28 @@ describe('POST /users/invite', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/users/invite',
-      payload: { email: 'new@example.com', name: 'New User' },
+      payload: { email: 'new@example.com' },
     })
 
     expect(res.statusCode).toBe(201)
     expect(res.json().invite.email).toBe('new@example.com')
+    expect(mockPrismaEmailInvite.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ email: 'new@example.com', name: '', role: 'GUEST' }),
+    })
+    expect(vi.mocked(emailQueue.add).mock.calls[0][1]).toEqual(
+      expect.objectContaining({ data: expect.not.objectContaining({ name: expect.any(String) }) }),
+    )
+    expect(emailQueue.add).toHaveBeenCalledWith(
+      'invite',
+      expect.objectContaining({
+        template: 'invite',
+        to: 'new@example.com',
+        data: expect.objectContaining({
+          acceptUrl: 'http://localhost:5173/accept-invite?token=tok',
+          role: 'GUEST',
+        }),
+      }),
+    )
   })
 
   it('returns 409 when email is already registered', async () => {
@@ -262,7 +285,7 @@ describe('POST /users/invite', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/users/invite',
-      payload: { email: 'new@example.com', name: 'New User' },
+      payload: { email: 'new@example.com' },
     })
 
     expect(res.statusCode).toBe(403)
@@ -295,4 +318,52 @@ describe('POST /users/:id/avatar', () => {
 
     expect(res.statusCode).toBe(400)
   })
+})
+
+describe('GET /users/mentions', () => {
+  it.each(['ADMIN', 'EDITOR', 'GUEST'])('provides a minimal directory for %s', async (role) => {
+    mockPrismaUser.findMany.mockResolvedValue([])
+    const app = buildApp(role)
+    const response = await app.inject({ method: 'GET', url: '/users/mentions?search=Al' })
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toEqual({ users: [] })
+    expect(mockPrismaUser.findMany).toHaveBeenCalledWith({
+      where: { name: { contains: 'Al', mode: 'insensitive' } },
+      select: { id: true, name: true },
+      take: 8,
+      orderBy: [{ name: 'asc' }, { id: 'asc' }],
+    })
+    await app.close()
+  })
+})
+
+it('reports a saved invitation separately when email delivery cannot be queued', async () => {
+  mockPrismaUser.findUnique.mockResolvedValue(null)
+  mockPrismaEmailInvite.create.mockResolvedValue({
+    token: 'tok',
+    expiresAt: new Date(Date.now() + 86400000),
+  } as never)
+  vi.mocked(emailQueue.add).mockRejectedValueOnce(new Error('offline'))
+  const app = buildApp('ADMIN')
+  const res = await app.inject({
+    method: 'POST',
+    url: '/users/invite',
+    payload: { email: 'alice@example.com' },
+  })
+  expect(res.statusCode).toBe(503)
+  expect(res.json().code).toBe('INVITE_DELIVERY_FAILED')
+  expect(mockPrismaEmailInvite.create).toHaveBeenCalledTimes(1)
+  await app.close()
+})
+it('rejects malformed invitations before saving or queuing them', async () => {
+  const app = buildApp('ADMIN')
+  const res = await app.inject({
+    method: 'POST',
+    url: '/users/invite',
+    payload: { name: ' ', email: 'invalid', role: 'SUPERUSER' },
+  })
+  expect(res.statusCode).toBe(400)
+  expect(mockPrismaEmailInvite.create).not.toHaveBeenCalled()
+  expect(emailQueue.add).not.toHaveBeenCalled()
+  await app.close()
 })

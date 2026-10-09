@@ -37,7 +37,6 @@ export async function deliverEmail(job: Pick<Job<EmailJobData>, 'data'>) {
     case 'invite':
       html = await render(
         <InviteEmail
-          name={data.name}
           inviterName={data.inviterName}
           role={data.role}
           acceptUrl={data.acceptUrl}

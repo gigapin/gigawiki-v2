@@ -1,10 +1,12 @@
 import { getSchema, type JSONContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
+import Mention from '@tiptap/extension-mention'
 import { Table, TableRow, TableHeader, TableCell } from '@tiptap/extension-table'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import { common, createLowlight } from 'lowlight'
 
+import { mentionSuggestion } from './mention-suggestion'
 import { editorContent } from './page-content'
 import { normalizeLink } from './editor-link'
 
@@ -20,6 +22,10 @@ export function wikiExtensions(editable: boolean) {
         defaultProtocol: 'https',
         isAllowedUri: (url, context) => context.defaultValidate(url) && normalizeLink(url) !== null,
       },
+    }),
+    Mention.configure({
+      HTMLAttributes: { class: 'mention' },
+      suggestion: editable ? mentionSuggestion : { char: '@', items: () => [] },
     }),
     Image.configure({
       allowBase64: false,

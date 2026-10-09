@@ -25,6 +25,12 @@ import { useAuthStore } from '@/stores/auth.store'
 const LIMIT = 10
 
 export function RevisionsDrawer({ page, onClose }: { page: PageDetail; onClose: () => void }) {
+  const user = useAuthStore((state) => state.user)
+  if (user?.role !== 'EDITOR' && user?.role !== 'ADMIN') return null
+  return <RevisionsDrawerContent page={page} onClose={onClose} />
+}
+
+function RevisionsDrawerContent({ page, onClose }: { page: PageDetail; onClose: () => void }) {
   const [pagination, setPagination] = useState(1)
   const [selected, setSelected] = useState<number | 'current'>('current')
   const [confirmOpen, setConfirmOpen] = useState(false)

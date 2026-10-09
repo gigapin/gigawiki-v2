@@ -131,7 +131,10 @@ export async function fetchPage(fastify: FastifyInstance) {
         },
         section: { select: { id: true, title: true, slug: true } },
         tags: true,
-        _count: { select: { comments: true, favorites: true } },
+        favorites: { where: { userId: req.user?.id ?? '' }, select: { id: true } },
+        _count: {
+          select: { comments: true, favorites: { where: { userId: req.user?.id ?? '' } } },
+        },
       },
     })
 
@@ -152,7 +155,8 @@ export async function fetchPage(fastify: FastifyInstance) {
       // unauthenticated — skip view tracking
     }
 
-    return reply.status(200).send(page)
+    const { favorites, ...detail } = page
+    return reply.status(200).send({ ...detail, favorited: Boolean(favorites?.length) })
   })
 }
 

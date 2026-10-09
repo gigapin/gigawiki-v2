@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { fetchSubjects } from '@/api/subjects'
-import { fetchFavorites } from '@/api/favorites'
+import { useFavorites } from '@/api/favorites'
 import { fetchActivities } from '@/api/activities'
 import { useAuthStore } from '@/stores/auth.store'
 import { Icon, type IconName } from '@/components/ui/icon'
@@ -101,10 +101,7 @@ function StatCards() {
     queryKey: ['subjects'],
     queryFn: () => fetchSubjects({ limit: 1 }),
   })
-  const { data: favsData } = useQuery({
-    queryKey: ['favorites-count'],
-    queryFn: () => fetchFavorites({ limit: 1 }),
-  })
+  const { data: favsData } = useFavorites({ limit: 1 }, true)
   const { data: activitiesData } = useQuery({
     queryKey: ['activities-count'],
     queryFn: () => fetchActivities({ limit: 1 }),
@@ -446,10 +443,7 @@ const EMBLEM_TONES: Record<string, { bg: string; color: string }> = {
 }
 
 function FavoritesList() {
-  const { data, isLoading } = useQuery({
-    queryKey: ['favorites'],
-    queryFn: () => fetchFavorites({ limit: 6 }),
-  })
+  const { data, isLoading } = useFavorites({ limit: 6 })
 
   return (
     <div style={{ marginBottom: 36 }}>
@@ -629,10 +623,7 @@ function FavoritesList() {
 /* ── dashboard root ── */
 export function DashboardPage() {
   const user = useAuthStore((s) => s.user)
-  const { data: favsData } = useQuery({
-    queryKey: ['favorites-count'],
-    queryFn: () => fetchFavorites({ limit: 1 }),
-  })
+  const { data: favsData } = useFavorites({ limit: 1 }, true)
 
   return (
     <div style={{ padding: '28px 28px 60px', maxWidth: 1320, width: '100%' }}>

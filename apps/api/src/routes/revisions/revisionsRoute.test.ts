@@ -16,8 +16,13 @@ vi.mock('../../lib/prisma.js', () => ({
 const mockPage = vi.mocked(prisma.page)
 const mockRevision = vi.mocked(prisma.revision)
 
-function buildPublicApp() {
+function buildPublicApp(role = 'EDITOR') {
   const app = Fastify()
+  app.decorateRequest('user', null as never)
+  app.addHook('preHandler', (req, _reply, done) => {
+    req.user = { id: 'reader', email: 'reader@example.com', role }
+    done()
+  })
   app.register(fetchRevisions)
   app.register(fetchRevision)
   return app
@@ -327,3 +332,16 @@ describe('POST /pages/:pageSlug/revisions/:revisionNumber/restore', () => {
     expect(res.json()).toEqual({ error: 'Revision not found' })
   })
 })
+
+it.each(['/pages/introduction/revisions', '/pages/introduction/revisions/0'])(
+  'rejects Guest history access at %s before reading any data',
+  async (url) => {
+    const app = buildPublicApp('GUEST')
+    const res = await app.inject({ method: 'GET', url })
+    expect(res.statusCode).toBe(403)
+    expect(mockPage.findFirst).not.toHaveBeenCalled()
+    expect(mockRevision.findMany).not.toHaveBeenCalled()
+    expect(mockRevision.findFirst).not.toHaveBeenCalled()
+    await app.close()
+  },
+)

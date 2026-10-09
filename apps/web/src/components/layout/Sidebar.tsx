@@ -4,11 +4,12 @@ import { useQuery } from '@tanstack/react-query'
 import type { Subject } from '@shared/types/subject'
 import { BookOpen, ChevronRight, Folder } from 'lucide-react'
 
+import { InviteUsersLink } from '@/components/auth/InviteUsersLink'
 import apiClient from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { fetchProjectsBySubject } from '@/api/projects'
 import { fetchSubjects } from '@/api/subjects'
-import { fetchFavorites } from '@/api/favorites'
+import { useFavorites } from '@/api/favorites'
 import { useAuthStore } from '@/stores/auth.store'
 import { Icon, type IconName } from '@/components/ui/icon'
 
@@ -162,6 +163,7 @@ function UserMenu({ onClose }: { onClose: () => void }) {
           {label}
         </div>
       ))}
+      <InviteUsersLink onClick={onClose} />
       <div style={{ height: 1, background: 'var(--db-line)', margin: '5px 4px' }} />
       <div
         onClick={handleLogout}
@@ -193,10 +195,7 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
     queryFn: () => fetchSubjects({ limit: 50 }),
   })
 
-  const { data: favsData } = useQuery({
-    queryKey: ['favorites-count'],
-    queryFn: () => fetchFavorites({ limit: 1 }),
-  })
+  const { data: favsData } = useFavorites({ limit: 1 }, true)
 
   const avatarInitials = user ? initials(user.name) : '?'
   const w = collapsed ? 52 : 264

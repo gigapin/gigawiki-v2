@@ -7,6 +7,8 @@ import { toast } from 'sonner'
 import { deletePage, fetchPage } from '@/api/pages'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { ProjectBreadcrumb } from '@/components/shared/ProjectBreadcrumb'
+import { CommentSection } from '@/components/comments/CommentSection'
+import { PageMetadata } from '@/components/pages/PageMetadata'
 import { PageContent } from '@/components/pages/PageContent'
 import { RevisionsDrawer } from '@/components/revisions/RevisionsDrawer'
 import { ErrorState, ListSkeleton } from '@/components/shared/ResourceState'
@@ -19,6 +21,7 @@ export function PageReaderPage() {
   const { slug } = useParams({ from: '/_auth/pages/$slug' })
   const query = useQuery({ queryKey: ['page', slug], queryFn: () => fetchPage(slug) })
   const user = useAuthStore((s) => s.user)
+  const canViewHistory = user?.role === 'EDITOR' || user?.role === 'ADMIN'
   const page = query.data
   const navigate = useNavigate()
   const client = useQueryClient()
@@ -78,13 +81,15 @@ export function PageReaderPage() {
             <div className="flex flex-wrap items-start justify-between gap-4">
               <h1 className="min-w-0 break-words text-3xl font-semibold">{page.title}</h1>
               <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  disabled={deletion.isPending}
-                  onClick={() => setHistoryOpen(true)}
-                >
-                  <History /> View history
-                </Button>
+                {canViewHistory && (
+                  <Button
+                    variant="outline"
+                    disabled={deletion.isPending}
+                    onClick={() => setHistoryOpen(true)}
+                  >
+                    <History /> View history
+                  </Button>
+                )}
                 {(user?.role === 'EDITOR' || user?.role === 'ADMIN') && (
                   <Button variant="outline" disabled={deletion.isPending} asChild>
                     <Link to="/pages/$slug/edit" params={{ slug }}>
@@ -115,8 +120,13 @@ export function PageReaderPage() {
               {new Date(page.updatedAt).toLocaleDateString('en-GB')}
             </p>
           </header>
+          <PageMetadata key={page.id} page={page} />
           <PageContent key={`${page.id}:${page.currentRevision}`} content={page.content} />
-          {historyOpen && (
+          <CommentSection
+            key={`comments:${page.id}`}
+            resource={{ type: 'pages', id: page.id, slug: page.slug }}
+          />
+          {canViewHistory && historyOpen && (
             <RevisionsDrawer key={page.slug} page={page} onClose={() => setHistoryOpen(false)} />
           )}
           {user?.role === 'ADMIN' && (

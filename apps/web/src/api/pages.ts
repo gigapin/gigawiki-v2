@@ -28,6 +28,9 @@ export function usePages(sectionSlug: string | undefined, page = 1, limit = 10) 
 }
 
 export type PageDetail = Page & {
+  tags: { id: string; name: string; userId: string }[]
+  favorited: boolean
+  _count: { comments: number; favorites: number }
   createdBy: { id: string; name: string; slug: string }
   project: { id: string; name: string; slug: string; subject: { name: string; slug: string } }
   section: { id: string; title: string; slug: string }

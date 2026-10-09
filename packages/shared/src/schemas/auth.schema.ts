@@ -21,7 +21,6 @@ export const ResetPasswordSchema = z.object({
 })
 
 export const InviteSchema = z.object({
-  name: z.string().min(1).max(100),
   email: z.string().email(),
   role: z.enum(['ADMIN', 'EDITOR', 'GUEST']).default('GUEST'),
 })

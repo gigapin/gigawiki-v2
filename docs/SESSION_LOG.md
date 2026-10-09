@@ -14,21 +14,21 @@
 
 ## Stato attuale
 
-**Aggiornato al:** 2026-10-08
+**Aggiornato al:** 2026-10-09
 
 | | |
 |---|---|
 | Branch di lavoro | `dev` (il default remoto è `main`) |
 | Remote | `git@github.com:gigapin/gigawiki-v2.git` |
-| Task completati | 29 / 40 completati; 8 parziali; 3 non iniziati (conteggio dalla tabella sotto) |
-| Fase corrente | **Fase 4 — Frontend**, task 28–31 e 35 parziali. Base shadcn, Project detail, registrazione e primo flusso reader/editor implementati |
-| Backend | Completo (task 5–23). 17 file di test, 240 test verdi |
-| Frontend | Login, Register, Verify email, Dashboard, Subjects, Project detail, scelta destinazione nuova pagina, reader ed editor Tiptap. Bozza/pubblicazione e breadcrumb navigabili. Restano le funzionalità avanzate del task 31, commenti e settings |
+| Task completati | 32 / 40 completati; 7 parziali; 1 non iniziato (conteggio dalla tabella sotto) |
+| Fase corrente | **Fase 4 — Frontend**, task 29–30, 34 e 35 parziali. Base shadcn, Project detail e registrazione implementati; reader/editor con immagini ridimensionabili, autosave, revisioni, menzioni e menu contestuale |
+| Backend | Completo (task 5–23). 18 file di test, 273 test verdi |
+| Frontend | Login, Register, Verify email, ForgotPassword, ResetPassword, AcceptInvite, Dashboard, Subjects, Project detail, scelta destinazione nuova pagina, reader ed editor Tiptap. Bozza/pubblicazione, breadcrumb, tema light/dark, upload e resize immagini, link, syntax highlighting, autosave, drawer revisioni, menzioni e menu contestuale implementati. Tag/preferiti nelle pagine implementati; commenti riusabili integrati nel reader; restano settings |
 | CI/CD | Non iniziata (task 39) |
 
 **Codice della sessione committato dall’utente in `c12f73a`** (`feat: add first implementation of frontend`), su branch `dev`. Il working tree era pulito prima di questo aggiornamento documentale; questa modifica non è stata committata. `.claude/settings.local.json` è ancora tracciato, anche se ora escluso da `.gitignore`.
 
-**Ultime verifiche eseguite:** build e lint frontend, typecheck API, 240 test backend e 83 test frontend superati. Test frontend in ambiente Node e jsdom: non equivalgono a una prova delle interazioni nel browser. Registrazione con Mailtrap confermata funzionante dall’utente; ruolo di un utente cambiato manualmente in Prisma Studio per provare creazione/modifica.
+**Ultime verifiche eseguite:** build e lint frontend, typecheck API, 273 test backend e 133 test frontend superati. Test frontend in ambiente Node e jsdom: non equivalgono a una prova delle interazioni nel browser. Autosave confermato funzionante dall’utente. Registrazione con Mailtrap confermata funzionante dall’utente; ruolo di un utente cambiato manualmente in Prisma Studio per provare creazione/modifica.
 
 ---
 
@@ -82,14 +82,14 @@ Legenda: ✅ fatto · 🟡 parziale · ⬜ non iniziato
 | 25 | TanStack Router + Query + client axios | ✅ | Rotte auth, dashboard, subject/project, `/new-page`, `/projects/$projectSlug/sections/$sectionSlug/pages/new`, `/pages/$slug`, `/pages/$slug/edit`. Query `section` per ripristinare la sezione nel Project |
 | 26 | Store Zustand | ✅ | `auth.store.ts`, `settings.store.ts` |
 | 27 | Componenti di layout | ✅ | AppShell, Sidebar, Topbar, SearchModal |
-| 28 | Pagine auth | 🟡 | Login, Register, VerifyEmail, AuthLayout e reinvio verifica implementati. Restano ForgotPassword, ResetPassword e AcceptInvite |
+| 28 | Pagine auth | ✅ | Login, Register, VerifyEmail, AuthLayout, reinvio verifica, ForgotPassword, ResetPassword e AcceptInvite. Inviti avviano la sessione; errori e validazione coperti in jsdom. Resta verifica browser/SMTP |
 | 29 | Dashboard | 🟡 | Attività recenti, preferiti e statistiche ci sono. Manca la sezione «Recently visited» (`GET /views`) |
 | 30 | Pagine Subjects / Projects / Sections | 🟡 | Prima implementazione in `c12f73a`. Fatti: Subjects/Subject detail, Project detail, ProjectFormDialog riusato in creazione/modifica, SectionFormDialog, eliminazione admin con conferma, riordino nativo + pulsanti accessibili, lista pagine paginata. Collegamenti a reader/editor e breadcrumb completati. Restano CRUD completo Subject e upload cover |
-| 31 | Page view + editor Tiptap | 🟡 | Reader, creazione/modifica, toolbar, tabelle, visibilità, bozza/pubblicazione, guardia modifiche non salvate. Fatti anche upload immagini, link, syntax highlighting e contenuti legacy JSON. Restano autosave 30s, mentions, bubble menu, tag/preferiti e integrazione commenti |
-| 32 | Drawer revisioni | ✅ | Cronologia paginata, anteprima, ripristino con conferma Editor/Admin e navigazione allo slug ripristinato |
-| 33 | Componente commenti | ⬜ | |
-| 34 | Pagine settings | ⬜ | |
-| 35 | Hook TanStack Query | 🟡 | Adapter tipizzati per auth/project/page; hook `usePages`, `useSections` e `useSectionMutations`. Restano hook uniformi per gli altri moduli; diverse `useQuery` sono ancora nei componenti |
+| 31 | Page view + editor Tiptap | ✅ | Reader, creazione/modifica, toolbar, tabelle, visibilità, bozza/pubblicazione, guardia modifiche non salvate. Fatti anche upload e ridimensionamento immagini, link, syntax highlighting e contenuti legacy JSON. Autosave dopo 30s di inattività sulle pagine esistenti. Menzioni e bubble menu implementati. Tag/preferiti e commenti nel reader completati; resta la prova nel browser |
+| 32 | Drawer revisioni | ✅ | Cronologia e anteprima riservate a Editor/Admin; ripristino con conferma Editor/Admin e navigazione allo slug ripristinato |
+| 33 | Componente commenti | ✅ | Thread paginati e risposte espandibili, avatar, markdown-lite sicuro, modifica propria, eliminazione propria/Admin con conferma, cache ottimistica e rollback. Integrato nel reader; riusabile per Project/Section |
+| 34 | Pagine settings | 🟡 | Creazione inviti Admin in `/settings/invites`, link Invite users nei menu avatar/utente, email/ruolo, validazione e gestione errori/conferma. Restano elenco/reinvio/cancellazione inviti e altre pagine settings |
+| 35 | Hook TanStack Query | 🟡 | Adapter tipizzati per auth/project/page/revisions/comments/tags/favorites; hook `usePages`, `useSections`, `useSectionMutations`, `useRevisions`, `useRevision` e `useRestoreRevision`. Restano hook uniformi per gli altri moduli; diverse `useQuery` sono ancora nei componenti |
 
 ### Fase 5 — Test, CI/CD, GitHub
 
@@ -117,15 +117,19 @@ Punti in cui il codice si discosta da `GIGAWIKI_V2_TASKS.md`. Vanno **letti prim
 
 ---
 
+8. **Cronologia riservata a Editor/Admin.** Su richiesta dell’utente, i Guest non possono vedere né interrogare lista/dettaglio revisioni: 403 API, pulsante nascosto e drawer non montato. Questa scelta prevale sulle letture pubbliche descritte nel task 16.
+
 ## Prossimi passi
 
 1. Provare nel browser il ciclo pagina completo: scelta sezione, creazione bozza, pubblicazione, modifica, avviso di uscita e ritorno tramite breadcrumb. Registrazione già confermata dall’utente; per creare/editare pagine occorre EDITOR/ADMIN e, dopo un cambio ruolo da Prisma Studio, aggiornare la sessione.
-2. Completare task 31: autosave, mentions, menu contestuale e tag/preferiti. Reader/editor ora condividono lo schema e supportano HTML, testo semplice e documenti Tiptap JSON; upload immagini, link e syntax highlighting sono implementati. Il prossimo incremento è autosave; il drawer revisioni è implementato.
-3. Completare auth restante (ForgotPassword, ResetPassword, AcceptInvite), Dashboard (recently visited) e CRUD Subject/upload cover.
-4. Commenti riusabili; provare nel browser il drawer revisioni e il ripristino.
+2. **Prossimo incremento: Recently visited nella Dashboard (task 29).** Reader/editor condividono lo schema HTML/JSON; upload e resize immagini, link, syntax highlighting, autosave, revisioni, menzioni e menu contestuale sono completati. Tag, preferiti e commenti nel reader completati.
+3. Completare Dashboard (recently visited), poi CRUD Subject/upload cover.
+4. Provare nel browser commenti, tag/preferiti, drawer revisioni e ripristino.
 5. Favorites e Settings sulla stessa base shadcn. Allineare prima i contratti inviti (elenco/reinvio/cancellazione) e cambio password, non completi nel backend.
 6. Completare test delle interazioni frontend e CI. Valutare caricamento differito dell’editor: la build passa, ma segnala un bundle superiore a 500 kB.
 7. A fine prove riportare `ALLOW_SELF_REGISTRATION` a `false` se non si vuole consentire la registrazione libera; valutare rimozione dal tracking di `.claude/settings.local.json`.
+
+Auth restante completata: link reset/inviti collegati ai template email. Verificare i flussi reali con Mailtrap e browser.
 
 Scelte adottate: dark iniziale e light selezionabile; sezioni inline nel Project; revisioni drawer, diff opzionale; settings secondo task 34; nuove icone Lucide, empty state con icona/testo. Non sono necessari nuovi template Claude Design.
 
@@ -153,6 +157,109 @@ Chi clona il repo su una macchina nuova deve ricreare `init.sh` (o avere Node su
 ---
 
 ## Log delle sessioni
+
+### 2026-10-09 — Sessione persistente per test locali
+
+- `NODE_ENV=development`: JWT di accesso senza scadenza, refresh persistente con data lontana e controllo scadenza disattivato solo in sviluppo. Revoca/logout e verifica dell’utente restano attivi. Cookie HttpOnly conservato per ripristinare la sessione al reload e alla riapertura del browser.
+- `production` e `test`: durata JWT configurata e refresh a 30 giorni invariati; cookie Secure in produzione. Nessun nuovo parametro richiesto: `.env` locale già impostato a development, `.env.example` documentato.
+- Verifiche: 273 test API su 18 file e typecheck superati. Nuovi test su JWT nei tre ambienti, cookie persistente locale, scadenze/Secure produzione e recupero di vecchi refresh locali. Frontend invariato (ultima verifica: 133 test).
+
+**Lasciato aperto:** conferma browser della persistenza locale. La nuova durata cookie viene emessa al prossimo login/refresh; un cookie già rimosso dal browser richiede un login iniziale.
+
+
+### 2026-10-09 — Contatori preferiti personali e token al cambio login
+
+- Corretto un secondo punto: il pulsante pagina mostrava `_count.favorites` globale, anche quando l’utente non aveva salvato la pagina. Rimosso il numero dal toggle; conteggi favorites di dettaglio pagina/progetto filtrati per richiedente, cache toggle impostata a 0/1 per lo stato personale.
+- Il client axios conserva l’Authorization esplicita: il GET me dopo un nuovo login non può essere sovrascritto dal token del precedente account ancora nello store. Le richieste ordinarie continuano a usare il token corrente.
+- Verifiche: 133 test frontend e 266 API, build/lint frontend e typecheck API. Test con conteggio altrui 99 e stato personale false, filtro API del conteggio e nuovo token con precedente account nello store.
+
+**Lasciato aperto:** conferma nel browser del punto segnalato dall’utente (Dashboard/sidebar/pulsante pagina).
+
+
+### 2026-10-09 — Permessi cronologia e isolamento cache per account
+
+- Reader: View history visibile solo Editor/Admin; drawer non montato per Guest, senza richieste revisioni. API lista/dettaglio/ripristino revisioni riservate a Editor/Admin.
+- Preferiti: API già filtrata per `req.user.id`; corretta la cache frontend che riusava chiavi globali dopo logout/login. Hook `useFavorites` con ID utente e paginazione nelle chiavi, richieste annullabili, adottato in Dashboard e Sidebar.
+- Cache applicativa cancellata al cambio account, logout o cambio ruolo, mantenuta al solo rinnovo token dello stesso account. Risposte tardive del toggle preferito ignorate dopo cambio utente; anche il dettaglio pagina personalizzato viene rimosso.
+- Verifiche: 130 test frontend e 266 API, build/lint frontend e typecheck API superati. Test per cambio account, logout, cambio ruolo, rinnovo token, risposta tardiva, filtro API Guest e rifiuto cronologia Guest.
+
+**Lasciato aperto:** prova browser reale con passaggio Admin/Editor → logout → Guest. Prossimo incremento roadmap invariato.
+
+
+### 2026-10-09 — Nome scelto dall’utente invitato
+
+- Rimosso nome dal form Admin e dal contratto shared/API di creazione inviti: si inviano solo email e ruolo. Il nome continua a essere richiesto nel form di accettazione e viene usato per creare account e slug.
+- Email invito con saluto generico; job senza nome del destinatario. Per compatibilità con la colonna obbligatoria già esistente, il record invito conserva `name` vuoto; non occorre migrazione e gli inviti già creati restano validi.
+- Verifiche: 124 test frontend e 263 API, build/lint frontend e typecheck API; adattati i test per verificare assenza del campo e creazione senza nome.
+
+**Lasciato aperto:** elenco/reinvio/cancellazione inviti e prova browser/SMTP reale.
+
+
+### 2026-10-09 — Creazione inviti dalla UI Admin
+
+- Aggiunta pagina `/settings/invites` con form nome/email/ruolo, Guest di default, validazione e normalizzazione; successo con indirizzo/ruolo e azione per un altro invito. Hook tipizzato `useInviteUser` sul POST già esistente.
+- Link “Invite users” visibile agli Admin nei menu avatar della Topbar e utente della Sidebar. Guardia rotta per non Admin e controllo nel componente; autorizzazione API invariata.
+- Errori inline con campi conservati e possibilità di riprovare. Nel caso `INVITE_DELIVERY_FAILED`, esplicitato che l’invito è salvato e bloccata una seconda creazione per lo stesso form.
+- Verifiche: build/lint frontend e 124 test superati. Test jsdom per accesso/menu, validazione, normalizzazione, scelta ruolo, conferma, conflitti, fallimento parziale e richieste duplicate.
+
+**Lasciato aperto:** elenco/reinvio/cancellazione inviti e altre schermate Settings (task 34 resta parziale). Prova browser/SMTP reale da eseguire. Il prossimo incremento della roadmap resta Recently visited nella Dashboard.
+
+
+### 2026-10-09 — Recupero password, reset e accettazione inviti
+
+- Completato task 28: rotte pubbliche `/forgot-password`, `/reset-password?token=…`, `/accept-invite?token=…`, link Forgot password nel Login e form shadcn condiviso con conferma/visibilità password. Validazione, token mancanti/scaduti, errori inline, controlli bloccati durante le richieste e conferme con ritorno al login.
+- Accettazione invito: email e ruolo derivano solo dall’invito; caricamento profilo con il nuovo token, pulizia cache dell’eventuale account precedente, sessione e navigazione Dashboard. Se il caricamento profilo fallisce, si riprova senza consumare nuovamente l’invito.
+- Backend: validazione prima di consumare token reset/invito, normalizzazione email e risposta neutra del recupero anche con coda indisponibile. Corretto job reset con template e URL completo; implementato accodamento email invito. Account e accettazione invito sono in transazione con controllo contro doppia accettazione.
+- Verifiche: 116 test frontend e 263 API, build/lint frontend e typecheck API superati. Test jsdom per form, errori, retry, sessione; test API per validazione/token/ruoli/job e doppia accettazione; rendering reale dei template reset/invito con mailer mockato.
+
+**Lasciato aperto:** browser e invio SMTP reali non verificati. Reinvio/cancellazione inviti resta parte di Settings: se l’accodamento fallisce dopo la creazione, l’API espone `INVITE_DELIVERY_FAILED` e l’invito resta salvato. Prossimo incremento: Recently visited nella Dashboard (task 29). Warning bundle invariato.
+
+
+
+### 2026-10-09 — Commenti riusabili e integrazione reader
+
+- Completati task 33 e integrazione task 31: thread paginati, risposte espandibili su un livello, avatar/data, testo con grassetto/corsivo/codice senza HTML eseguibile. Guest autenticati possono scrivere; modifica solo propria, cancellazione propria o Admin con conferma e avviso sulla rimozione delle risposte.
+- Hook tipizzati per pagine/progetti/sezioni; cache ottimistica per creazione/modifica/eliminazione, rollback sugli errori, bozze conservate e controlli bloccati durante le mutazioni. Aggiornamento dettaglio risorsa e attività; nuove radici sulla pagina finale, ritorno alla precedente dopo eliminazione dell’ultima radice.
+- Backend: inclusi avatar nelle risposte; respinti corpi vuoti/spazi e risposte a risposte, coerentemente con il limite di un livello della specifica.
+- Verifiche: 105 test frontend e 247 API superati, lint/build frontend e typecheck API. Nuovi test per permessi, conferma, formattazione sicura, errori/rollback, bozze, risposte e paginazione.
+
+**Lasciato aperto:** prova nel browser reale; le schermate Project/Section possono riusare il componente ma non lo montano ancora. Prossimo incremento: auth restante (task 28). Resta il warning sulla dimensione bundle.
+
+
+### 2026-10-09 — Tag e preferiti nelle pagine
+
+- Reader: tag, aggiunta Editor/Admin con suggerimenti, normalizzazione, blocco duplicati e limite di 10; rimozione per autore del tag o Admin. Errori inline e controlli disabilitati durante le richieste.
+- Preferiti: toggle disponibile anche ai Guest, stato personale e conteggio dal dettaglio pagina; aggiornamento cache pagina e invalidazione liste/contatori dashboard. GET pagina filtra i preferiti per il richiedente e restituisce solo `favorited`, senza esporre i record.
+- Hook tipizzati per ricerca/creazione/rimozione tag e toggle preferito. Le modifiche ai metadati non passano dal salvataggio contenuto e non creano revisioni.
+- Verifiche: 95 test frontend e 244 API superati; build/lint frontend e typecheck API superati. Aggiunti test jsdom su ruoli, limiti, duplicati, errori e cache, più test API sullo stato personale del preferito.
+
+**Lasciato aperto:** integrazione commenti (task 33) e verifica nel browser. Resta il warning sulla dimensione bundle.
+
+### 2026-10-08 — Riepilogo del lavoro completato
+
+- Allineati stato attuale e tabella task con le funzionalità editor completate: upload e resize immagini, link, codice con syntax highlighting, compatibilità JSON, autosave, revisioni, menzioni e menu contestuale.
+- Task 32 completato; task 31 ancora parziale per tag/preferiti e commenti. Totale: 29 task completati, 8 parziali e 3 non iniziati.
+- Ultima verifica: 95 test frontend e 243 backend superati, build/lint frontend e typecheck API riusciti. Autosave verificato anche dall’utente; le prove dell’agente sulle interazioni sono in jsdom.
+- Prossimo intervento: tag e preferiti nelle pagine, poi commenti. Restano le verifiche nel browser di menzioni, menu contestuale e revisioni.
+
+
+### 2026-10-08 — Menzioni e menu contestuale
+
+- Digitando `@` nell’editor si cercano utenti per nome: selezione con mouse o frecce/Invio, chiusura Escape, stati vuoto/errore. Menzione persistita con ID e nome, supportata dallo schema condiviso per reader e revisioni.
+- Endpoint autenticato `GET /api/v2/users/mentions`: massimo 8 risultati, solo ID e nome; l’elenco amministrativo utenti resta riservato agli Admin.
+- Menu contestuale sulle selezioni di testo con grassetto, corsivo e aggiunta/modifica link; esclusi blocchi codice e selezioni immagine.
+- Verifiche: 95 test frontend e 243 backend, lint, build frontend e typecheck API. Interazioni verificate in jsdom; prova browser reale ancora da eseguire.
+- Autosave confermato funzionante dall’utente. Prossimo incremento: tag/preferiti per le pagine.
+
+
+### 2026-10-08 — Autosave editor
+
+- Pagine esistenti salvate dopo 30 secondi di inattività, mantenendo bozza/pubblicazione e visibilità; l’editor resta aperto. La prima creazione è manuale.
+- Indicatore salvataggio/orario; modifiche non salvate ed errore conservati in caso di fallimento. Upload, contenuto invalido e titolo vuoto sospendono l’autosave.
+- Cambio titolo: aggiornamento dello slug nell’editor e uso del nuovo indirizzo per le richieste successive. Salvataggio manuale annulla il timer; protezione uscita durante modifiche e richieste pendenti.
+- Verifiche: 88 test frontend, build e lint. Test autosave con timer controllati in jsdom; verifica browser reale da eseguire.
+- Prossimi interventi del task 31: mentions e menu contestuale.
+
 
 ### 2026-10-08 — Drawer revisioni
 

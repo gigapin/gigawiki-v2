@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react'
 import Placeholder from '@tiptap/extension-placeholder'
-import type { SelectionBookmark } from '@tiptap/pm/state'
+import { BubbleMenu } from '@tiptap/react/menus'
+import { TextSelection, type SelectionBookmark } from '@tiptap/pm/state'
 
 import { Button } from '@/components/ui/button'
 import { prepareWikiContent, wikiExtensions, CODE_LANGUAGES } from '@/lib/wiki-extensions'
@@ -385,6 +386,47 @@ export function PageEditor({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {editor && !blocked && (
+        <BubbleMenu
+          editor={editor}
+          shouldShow={({ editor, state }) =>
+            editor.isEditable &&
+            state.selection instanceof TextSelection &&
+            !state.selection.empty &&
+            state.selection.$from.parent.isTextblock &&
+            !editor.isActive('codeBlock')
+          }
+        >
+          <div
+            role="toolbar"
+            aria-label="Selection formatting"
+            className="flex gap-1 rounded-md border bg-popover p-1 shadow-lg"
+          >
+            {controls.slice(0, 2).map((control) => (
+              <Button
+                type="button"
+                key={control.label}
+                size="sm"
+                variant={control.active ? 'secondary' : 'ghost'}
+                aria-pressed={Boolean(control.active)}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={control.run}
+              >
+                {control.label}
+              </Button>
+            ))}
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={openLink}
+            >
+              {state?.link ? 'Edit link' : 'Add link'}
+            </Button>
+          </div>
+        </BubbleMenu>
+      )}
       <EditorContent
         editor={editor}
         className={`wiki-content ${blocked ? 'pointer-events-none opacity-60' : ''}`}

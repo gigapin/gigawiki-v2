@@ -1,5 +1,9 @@
 import { createRootRoute, createRoute, createRouter, redirect } from '@tanstack/react-router'
 
+import { InvitesPage } from '@/pages/settings/InvitesPage'
+import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage'
+import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage'
+import { AcceptInvitePage } from '@/pages/auth/AcceptInvitePage'
 import { NewPagePage, EditPagePage } from '@/pages/pages/PageEditorPage'
 import { NewPageLocationPage } from '@/pages/pages/NewPageLocationPage'
 import { PageReaderPage } from '@/pages/pages/PageReaderPage'
@@ -49,6 +53,28 @@ const verifyEmailRoute = createRoute({
   pendingMs: 0,
   pendingComponent: VerifyEmailPending,
   component: VerifyEmailPage,
+})
+
+const forgotPasswordRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/forgot-password',
+  component: ForgotPasswordPage,
+})
+const resetPasswordRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/reset-password',
+  validateSearch: (search: Record<string, unknown>) => ({
+    token: typeof search.token === 'string' ? search.token : '',
+  }),
+  component: ResetPasswordPage,
+})
+const acceptInviteRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/accept-invite',
+  validateSearch: (search: Record<string, unknown>) => ({
+    token: typeof search.token === 'string' ? search.token : '',
+  }),
+  component: AcceptInvitePage,
 })
 
 const authLayout = createRoute({
@@ -123,12 +149,26 @@ const editPageRoute = createRoute({
   component: EditPagePage,
 })
 
+const invitesRoute = createRoute({
+  getParentRoute: () => authLayout,
+  path: '/settings/invites',
+  staticData: { title: 'Invitations' },
+  beforeLoad: () => {
+    if (useAuthStore.getState().user?.role !== 'ADMIN') throw redirect({ to: '/' })
+  },
+  component: InvitesPage,
+})
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
   registerRoute,
   verifyEmailRoute,
+  forgotPasswordRoute,
+  resetPasswordRoute,
+  acceptInviteRoute,
   authLayout.addChildren([
     indexRoute,
+    invitesRoute,
     subjectsRoute,
     subjectDetailRoute,
     projectDetailRoute,

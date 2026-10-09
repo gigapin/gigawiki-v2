@@ -6,6 +6,7 @@ import { Role } from '@prisma/client'
 
 import { prisma } from '../../lib/prisma.js'
 import { redis } from '../../lib/redis.js'
+import { env } from '../../config/env.js'
 import { emailQueue } from '../../lib/queue.js'
 
 import {
@@ -34,8 +35,10 @@ vi.mock('../../lib/prisma.js', () => ({
       delete: vi.fn(),
       updateMany: vi.fn(),
     },
+    $transaction: vi.fn(),
     emailInvite: {
       findUnique: vi.fn(),
+      updateMany: vi.fn(),
       update: vi.fn(),
     },
     setting: {
@@ -104,6 +107,11 @@ function buildApp() {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  env.NODE_ENV = 'test'
+  vi.mocked(prisma.$transaction).mockImplementation((async (
+    callback: (tx: typeof prisma) => unknown,
+  ) => callback(prisma)) as never)
+  vi.mocked(prisma.emailInvite.updateMany).mockResolvedValue({ count: 1 })
 })
 
 const fakeUser = {
@@ -479,7 +487,15 @@ describe('POST /auth/forgot-password', () => {
     })
 
     expect(res.statusCode).toBe(200)
-    expect(emailQueue.add).toHaveBeenCalledWith('reset-password', expect.any(Object))
+    expect(emailQueue.add).toHaveBeenCalledWith(
+      'reset-password',
+      expect.objectContaining({
+        template: 'reset-password',
+        data: expect.objectContaining({
+          resetUrl: expect.stringMatching(/^http:\/\/localhost:5173\/reset-password\?token=.+/),
+        }),
+      }),
+    )
   })
 })
 
@@ -535,5 +551,211 @@ describe('GET /auth/me', () => {
     const res = await app.inject({ method: 'GET', url: '/auth/me' })
 
     expect(res.statusCode).toBe(401)
+  })
+})
+
+describe('Password and invitation validation', () => {
+  it('normalizes recovery emails and rejects invalid addresses', async () => {
+    mockUser.findUnique.mockResolvedValue(null)
+    const app = buildApp()
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url: '/auth/forgot-password',
+          payload: { email: ' Alice@Example.com ' },
+        })
+      ).statusCode,
+    ).toBe(200)
+    expect(mockUser.findUnique).toHaveBeenCalledWith({ where: { email: 'alice@example.com' } })
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url: '/auth/forgot-password',
+          payload: { email: 'invalid' },
+        })
+      ).statusCode,
+    ).toBe(400)
+    await app.close()
+  })
+  it.each(['short', 'x'.repeat(129)])(
+    'rejects invalid passwords without consuming the reset token',
+    async (newPassword) => {
+      const app = buildApp()
+      const res = await app.inject({
+        method: 'POST',
+        url: '/auth/reset-password',
+        payload: { token: 'valid-token', newPassword },
+      })
+      expect(res.statusCode).toBe(400)
+      expect(redis.getdel).not.toHaveBeenCalled()
+      expect(mockUser.update).not.toHaveBeenCalled()
+      await app.close()
+    },
+  )
+  it.each([
+    { token: '', name: 'Alice', password: 'password123' },
+    { token: 'invite', name: '   ', password: 'password123' },
+    { token: 'invite', name: 'Alice', password: 'short' },
+  ])('validates invitation fields before lookup', async (payload) => {
+    const app = buildApp()
+    const res = await app.inject({ method: 'POST', url: '/auth/accept-invite', payload })
+    expect(res.statusCode).toBe(400)
+    expect(prisma.emailInvite.findUnique).not.toHaveBeenCalled()
+    await app.close()
+  })
+  it.each([
+    [null, 404],
+    [{ acceptedAt: new Date(), expiresAt: new Date(Date.now() + 86400000) }, 400],
+    [{ acceptedAt: null, expiresAt: new Date(0) }, 400],
+  ])('rejects missing, accepted or expired invitations', async (invite, status) => {
+    vi.mocked(prisma.emailInvite.findUnique).mockResolvedValue(invite as never)
+    const app = buildApp()
+    const res = await app.inject({
+      method: 'POST',
+      url: '/auth/accept-invite',
+      payload: { token: 'invite', name: 'Alice', password: 'password123' },
+    })
+    expect(res.statusCode).toBe(status)
+    expect(mockUser.create).not.toHaveBeenCalled()
+    await app.close()
+  })
+  it('uses the invited email/role, verifies the account and creates an authenticated session', async () => {
+    vi.mocked(prisma.emailInvite.findUnique).mockResolvedValue({
+      id: 'invite',
+      email: 'invited@example.com',
+      role: 'EDITOR',
+      acceptedAt: null,
+      expiresAt: new Date(Date.now() + 86400000),
+    } as never)
+    mockUser.findUnique.mockResolvedValue(null)
+    mockUser.create.mockResolvedValue({
+      ...fakeUser,
+      email: 'invited@example.com',
+      role: Role.EDITOR,
+    })
+    const app = buildApp()
+    const res = await app.inject({
+      method: 'POST',
+      url: '/auth/accept-invite',
+      payload: {
+        token: 'invite',
+        name: ' Alice ',
+        password: 'password123',
+        role: 'ADMIN',
+        email: 'override@example.com',
+      },
+    })
+    expect(res.statusCode).toBe(201)
+    expect(mockUser.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          name: 'Alice',
+          email: 'invited@example.com',
+          role: 'EDITOR',
+          emailConfirmed: true,
+        }),
+      }),
+    )
+    expect(prisma.emailInvite.updateMany).toHaveBeenCalledWith({
+      where: { id: 'invite', acceptedAt: null, expiresAt: { gt: expect.any(Date) } },
+      data: { acceptedAt: expect.any(Date) },
+    })
+    expect(res.json().accessToken).toBeTruthy()
+    expect(res.headers['set-cookie']).toContain('HttpOnly')
+    await app.close()
+  })
+})
+
+it('keeps the recovery response neutral when the email queue fails', async () => {
+  mockUser.findUnique.mockResolvedValue(fakeUser)
+  vi.mocked(emailQueue.add).mockRejectedValueOnce(new Error('offline'))
+  const app = buildApp()
+  const res = await app.inject({
+    method: 'POST',
+    url: '/auth/forgot-password',
+    payload: { email: 'alice@example.com' },
+  })
+  expect(res.statusCode).toBe(200)
+  expect(res.json().message).toContain('If that email is registered')
+  await app.close()
+})
+it('does not create an account or session when an invitation was claimed concurrently', async () => {
+  vi.mocked(prisma.emailInvite.findUnique).mockResolvedValue({
+    id: 'invite',
+    email: 'invited@example.com',
+    role: 'EDITOR',
+    acceptedAt: null,
+    expiresAt: new Date(Date.now() + 86400000),
+  } as never)
+  mockUser.findUnique.mockResolvedValue(null)
+  vi.mocked(prisma.emailInvite.updateMany).mockResolvedValueOnce({ count: 0 })
+  const app = buildApp()
+  const res = await app.inject({
+    method: 'POST',
+    url: '/auth/accept-invite',
+    payload: { token: 'invite', name: 'Alice', password: 'password123' },
+  })
+  expect(res.statusCode).toBe(400)
+  expect(mockUser.create).not.toHaveBeenCalled()
+  expect(mockRefreshToken.create).not.toHaveBeenCalled()
+  await app.close()
+})
+
+describe('Development session persistence', () => {
+  it('issues a persistent refresh cookie in development', async () => {
+    env.NODE_ENV = 'development'
+    mockUser.findUnique.mockResolvedValue({ ...fakeUser, emailConfirmed: true })
+    const app = buildApp()
+    const res = await app.inject({
+      method: 'POST',
+      url: '/auth/login',
+      payload: { email: 'alice@example.com', password: 'password123' },
+    })
+    expect(res.statusCode).toBe(200)
+    expect(mockRefreshToken.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ expiresAt: new Date('9999-12-31T23:59:59.000Z') }),
+    })
+    expect(String(res.headers['set-cookie'])).toContain('Expires=Fri, 31 Dec 9999')
+    expect(String(res.headers['set-cookie'])).toContain('HttpOnly')
+    await app.close()
+  })
+  it.each(['test', 'production'] as const)('keeps refresh expiry in %s', async (environment) => {
+    env.NODE_ENV = environment
+    mockUser.findUnique.mockResolvedValue({ ...fakeUser, emailConfirmed: true })
+    const before = Date.now()
+    const app = buildApp()
+    const res = await app.inject({
+      method: 'POST',
+      url: '/auth/login',
+      payload: { email: 'alice@example.com', password: 'password123' },
+    })
+    expect(res.statusCode).toBe(200)
+    const expiry = vi.mocked(mockRefreshToken.create).mock.calls[0][0].data.expiresAt as Date
+    expect(expiry.getTime()).toBeGreaterThanOrEqual(before + 30 * 86400000)
+    expect(expiry.getTime()).toBeLessThanOrEqual(Date.now() + 30 * 86400000)
+    if (environment === 'production') expect(String(res.headers['set-cookie'])).toContain('Secure')
+    await app.close()
+  })
+  it('restores an old local session without checking its previous expiry, but still checks revocation', async () => {
+    env.NODE_ENV = 'development'
+    mockRefreshToken.findFirst.mockResolvedValue({
+      id: 'refresh',
+      userId: fakeUser.id,
+      expiresAt: new Date(0),
+    } as never)
+    mockUser.findUnique.mockResolvedValue(fakeUser)
+    const app = buildApp()
+    const res = await app.inject({
+      method: 'POST',
+      url: '/auth/refresh',
+      headers: { cookie: 'refreshToken=old-local-token' },
+    })
+    expect(res.statusCode).toBe(200)
+    expect(mockRefreshToken.findFirst).toHaveBeenCalledWith({
+      where: { token: 'old-local-token', revokedAt: null },
+    })
+    await app.close()
   })
 })
