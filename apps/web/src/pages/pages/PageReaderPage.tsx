@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { deletePage, fetchPage } from '@/api/pages'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { ProjectBreadcrumb } from '@/components/shared/ProjectBreadcrumb'
+import { CommentSection } from '@/components/comments/CommentSection'
 import { PageMetadata } from '@/components/pages/PageMetadata'
 import { PageContent } from '@/components/pages/PageContent'
 import { RevisionsDrawer } from '@/components/revisions/RevisionsDrawer'
@@ -118,6 +119,10 @@ export function PageReaderPage() {
           </header>
           <PageMetadata key={page.id} page={page} />
           <PageContent key={`${page.id}:${page.currentRevision}`} content={page.content} />
+          <CommentSection
+            key={`comments:${page.id}`}
+            resource={{ type: 'pages', id: page.id, slug: page.slug }}
+          />
           {historyOpen && (
             <RevisionsDrawer key={page.slug} page={page} onClose={() => setHistoryOpen(false)} />
           )}

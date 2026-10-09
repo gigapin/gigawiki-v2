@@ -9,7 +9,7 @@ const COMMENT_SELECT = {
   createdAt: true,
   updatedAt: true,
   userId: true,
-  user: { select: { id: true, name: true, slug: true } },
+  user: { select: { id: true, name: true, slug: true, avatar: { select: { url: true } } } },
   replies: {
     where: { parentId: { not: null } },
     select: {
@@ -18,7 +18,7 @@ const COMMENT_SELECT = {
       createdAt: true,
       updatedAt: true,
       userId: true,
-      user: { select: { id: true, name: true, slug: true } },
+      user: { select: { id: true, name: true, slug: true, avatar: { select: { url: true } } } },
     },
     orderBy: { createdAt: 'asc' as const },
   },
@@ -152,6 +152,9 @@ export async function createComment(fastify: FastifyInstance) {
   fastify.post<{ Body: CreateCommentBody }>('/comments', async (req, reply) => {
     const { body, pageId, projectId, sectionId, parentId } = req.body
 
+    if (typeof body !== 'string' || !body.trim())
+      return reply.status(400).send({ error: 'Comment body is required' })
+
     const targets = [pageId, projectId, sectionId].filter(Boolean)
     if (targets.length !== 1) {
       return reply
@@ -162,12 +165,15 @@ export async function createComment(fastify: FastifyInstance) {
     if (parentId) {
       const parent = await prisma.comment.findFirst({
         where: { id: parentId },
-        select: { pageId: true, projectId: true, sectionId: true },
+        select: { pageId: true, projectId: true, sectionId: true, parentId: true },
       })
 
       if (!parent) {
         return reply.status(400).send({ error: 'Parent comment not found' })
       }
+
+      if (parent.parentId)
+        return reply.status(400).send({ error: 'Replies must belong to a root comment' })
 
       const sameTarget =
         (pageId && parent.pageId === pageId) ||
@@ -195,7 +201,7 @@ export async function createComment(fastify: FastifyInstance) {
         createdAt: true,
         updatedAt: true,
         userId: true,
-        user: { select: { id: true, name: true, slug: true } },
+        user: { select: { id: true, name: true, slug: true, avatar: { select: { url: true } } } },
       },
     })
 
@@ -208,6 +214,8 @@ export async function updateComment(fastify: FastifyInstance) {
     '/comments/:id',
     async (req, reply) => {
       const { id } = req.params
+      if (typeof req.body.body !== 'string' || !req.body.body.trim())
+        return reply.status(400).send({ error: 'Comment body is required' })
 
       const existing = await prisma.comment.findFirst({
         where: { id },
@@ -232,7 +240,7 @@ export async function updateComment(fastify: FastifyInstance) {
           createdAt: true,
           updatedAt: true,
           userId: true,
-          user: { select: { id: true, name: true, slug: true } },
+          user: { select: { id: true, name: true, slug: true, avatar: { select: { url: true } } } },
         },
       })
 

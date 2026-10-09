@@ -20,15 +20,15 @@
 |---|---|
 | Branch di lavoro | `dev` (il default remoto è `main`) |
 | Remote | `git@github.com:gigapin/gigawiki-v2.git` |
-| Task completati | 29 / 40 completati; 8 parziali; 3 non iniziati (conteggio dalla tabella sotto) |
-| Fase corrente | **Fase 4 — Frontend**, task 28–31 e 35 parziali. Base shadcn, Project detail e registrazione implementati; reader/editor con immagini ridimensionabili, autosave, revisioni, menzioni e menu contestuale |
-| Backend | Completo (task 5–23). 17 file di test, 244 test verdi |
-| Frontend | Login, Register, Verify email, Dashboard, Subjects, Project detail, scelta destinazione nuova pagina, reader ed editor Tiptap. Bozza/pubblicazione, breadcrumb, tema light/dark, upload e resize immagini, link, syntax highlighting, autosave, drawer revisioni, menzioni e menu contestuale implementati. Tag/preferiti nelle pagine implementati; restano commenti e settings |
+| Task completati | 31 / 40 completati; 7 parziali; 2 non iniziati (conteggio dalla tabella sotto) |
+| Fase corrente | **Fase 4 — Frontend**, task 28–30 e 35 parziali. Base shadcn, Project detail e registrazione implementati; reader/editor con immagini ridimensionabili, autosave, revisioni, menzioni e menu contestuale |
+| Backend | Completo (task 5–23). 17 file di test, 247 test verdi |
+| Frontend | Login, Register, Verify email, Dashboard, Subjects, Project detail, scelta destinazione nuova pagina, reader ed editor Tiptap. Bozza/pubblicazione, breadcrumb, tema light/dark, upload e resize immagini, link, syntax highlighting, autosave, drawer revisioni, menzioni e menu contestuale implementati. Tag/preferiti nelle pagine implementati; commenti riusabili integrati nel reader; restano settings |
 | CI/CD | Non iniziata (task 39) |
 
 **Codice della sessione committato dall’utente in `c12f73a`** (`feat: add first implementation of frontend`), su branch `dev`. Il working tree era pulito prima di questo aggiornamento documentale; questa modifica non è stata committata. `.claude/settings.local.json` è ancora tracciato, anche se ora escluso da `.gitignore`.
 
-**Ultime verifiche eseguite:** build e lint frontend, typecheck API, 244 test backend e 95 test frontend superati. Test frontend in ambiente Node e jsdom: non equivalgono a una prova delle interazioni nel browser. Autosave confermato funzionante dall’utente. Registrazione con Mailtrap confermata funzionante dall’utente; ruolo di un utente cambiato manualmente in Prisma Studio per provare creazione/modifica.
+**Ultime verifiche eseguite:** build e lint frontend, typecheck API, 247 test backend e 105 test frontend superati. Test frontend in ambiente Node e jsdom: non equivalgono a una prova delle interazioni nel browser. Autosave confermato funzionante dall’utente. Registrazione con Mailtrap confermata funzionante dall’utente; ruolo di un utente cambiato manualmente in Prisma Studio per provare creazione/modifica.
 
 ---
 
@@ -85,11 +85,11 @@ Legenda: ✅ fatto · 🟡 parziale · ⬜ non iniziato
 | 28 | Pagine auth | 🟡 | Login, Register, VerifyEmail, AuthLayout e reinvio verifica implementati. Restano ForgotPassword, ResetPassword e AcceptInvite |
 | 29 | Dashboard | 🟡 | Attività recenti, preferiti e statistiche ci sono. Manca la sezione «Recently visited» (`GET /views`) |
 | 30 | Pagine Subjects / Projects / Sections | 🟡 | Prima implementazione in `c12f73a`. Fatti: Subjects/Subject detail, Project detail, ProjectFormDialog riusato in creazione/modifica, SectionFormDialog, eliminazione admin con conferma, riordino nativo + pulsanti accessibili, lista pagine paginata. Collegamenti a reader/editor e breadcrumb completati. Restano CRUD completo Subject e upload cover |
-| 31 | Page view + editor Tiptap | 🟡 | Reader, creazione/modifica, toolbar, tabelle, visibilità, bozza/pubblicazione, guardia modifiche non salvate. Fatti anche upload e ridimensionamento immagini, link, syntax highlighting e contenuti legacy JSON. Autosave dopo 30s di inattività sulle pagine esistenti. Menzioni e bubble menu implementati. Tag/preferiti nel reader completati; resta integrazione commenti |
+| 31 | Page view + editor Tiptap | ✅ | Reader, creazione/modifica, toolbar, tabelle, visibilità, bozza/pubblicazione, guardia modifiche non salvate. Fatti anche upload e ridimensionamento immagini, link, syntax highlighting e contenuti legacy JSON. Autosave dopo 30s di inattività sulle pagine esistenti. Menzioni e bubble menu implementati. Tag/preferiti e commenti nel reader completati; resta la prova nel browser |
 | 32 | Drawer revisioni | ✅ | Cronologia paginata, anteprima, ripristino con conferma Editor/Admin e navigazione allo slug ripristinato |
-| 33 | Componente commenti | ⬜ | |
+| 33 | Componente commenti | ✅ | Thread paginati e risposte espandibili, avatar, markdown-lite sicuro, modifica propria, eliminazione propria/Admin con conferma, cache ottimistica e rollback. Integrato nel reader; riusabile per Project/Section |
 | 34 | Pagine settings | ⬜ | |
-| 35 | Hook TanStack Query | 🟡 | Adapter tipizzati per auth/project/page/revisions; hook `usePages`, `useSections`, `useSectionMutations`, `useRevisions`, `useRevision` e `useRestoreRevision`. Restano hook uniformi per gli altri moduli; diverse `useQuery` sono ancora nei componenti |
+| 35 | Hook TanStack Query | 🟡 | Adapter tipizzati per auth/project/page/revisions/comments/tags/favorites; hook `usePages`, `useSections`, `useSectionMutations`, `useRevisions`, `useRevision` e `useRestoreRevision`. Restano hook uniformi per gli altri moduli; diverse `useQuery` sono ancora nei componenti |
 
 ### Fase 5 — Test, CI/CD, GitHub
 
@@ -120,9 +120,9 @@ Punti in cui il codice si discosta da `GIGAWIKI_V2_TASKS.md`. Vanno **letti prim
 ## Prossimi passi
 
 1. Provare nel browser il ciclo pagina completo: scelta sezione, creazione bozza, pubblicazione, modifica, avviso di uscita e ritorno tramite breadcrumb. Registrazione già confermata dall’utente; per creare/editare pagine occorre EDITOR/ADMIN e, dopo un cambio ruolo da Prisma Studio, aggiornare la sessione.
-2. **Prossimo incremento: integrazione commenti (task 33).** Reader/editor condividono lo schema HTML/JSON; upload e resize immagini, link, syntax highlighting, autosave, revisioni, menzioni e menu contestuale sono completati. Tag e preferiti nel reader completati.
+2. **Prossimo incremento: auth restante (ForgotPassword, ResetPassword, AcceptInvite, task 28).** Reader/editor condividono lo schema HTML/JSON; upload e resize immagini, link, syntax highlighting, autosave, revisioni, menzioni e menu contestuale sono completati. Tag, preferiti e commenti nel reader completati.
 3. Completare auth restante (ForgotPassword, ResetPassword, AcceptInvite), Dashboard (recently visited) e CRUD Subject/upload cover.
-4. Commenti riusabili; provare nel browser il drawer revisioni e il ripristino.
+4. Provare nel browser commenti, tag/preferiti, drawer revisioni e ripristino.
 5. Favorites e Settings sulla stessa base shadcn. Allineare prima i contratti inviti (elenco/reinvio/cancellazione) e cambio password, non completi nel backend.
 6. Completare test delle interazioni frontend e CI. Valutare caricamento differito dell’editor: la build passa, ma segnala un bundle superiore a 500 kB.
 7. A fine prove riportare `ALLOW_SELF_REGISTRATION` a `false` se non si vuole consentire la registrazione libera; valutare rimozione dal tracking di `.claude/settings.local.json`.
@@ -153,6 +153,16 @@ Chi clona il repo su una macchina nuova deve ricreare `init.sh` (o avere Node su
 ---
 
 ## Log delle sessioni
+
+
+### 2026-10-09 — Commenti riusabili e integrazione reader
+
+- Completati task 33 e integrazione task 31: thread paginati, risposte espandibili su un livello, avatar/data, testo con grassetto/corsivo/codice senza HTML eseguibile. Guest autenticati possono scrivere; modifica solo propria, cancellazione propria o Admin con conferma e avviso sulla rimozione delle risposte.
+- Hook tipizzati per pagine/progetti/sezioni; cache ottimistica per creazione/modifica/eliminazione, rollback sugli errori, bozze conservate e controlli bloccati durante le mutazioni. Aggiornamento dettaglio risorsa e attività; nuove radici sulla pagina finale, ritorno alla precedente dopo eliminazione dell’ultima radice.
+- Backend: inclusi avatar nelle risposte; respinti corpi vuoti/spazi e risposte a risposte, coerentemente con il limite di un livello della specifica.
+- Verifiche: 105 test frontend e 247 API superati, lint/build frontend e typecheck API. Nuovi test per permessi, conferma, formattazione sicura, errori/rollback, bozze, risposte e paginazione.
+
+**Lasciato aperto:** prova nel browser reale; le schermate Project/Section possono riusare il componente ma non lo montano ancora. Prossimo incremento: auth restante (task 28). Resta il warning sulla dimensione bundle.
 
 
 ### 2026-10-09 — Tag e preferiti nelle pagine

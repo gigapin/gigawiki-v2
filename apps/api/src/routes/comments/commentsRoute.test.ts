@@ -266,6 +266,39 @@ describe('POST /comments', () => {
   })
 })
 
+describe('Comment validation', () => {
+  it.each(['', '   '])('rejects empty body %j before writing', async (body) => {
+    const app = buildAuthApp()
+    const created = await app.inject({
+      method: 'POST',
+      url: '/comments',
+      payload: { body, pageId: 'page-1' },
+    })
+    const updated = await app.inject({
+      method: 'PATCH',
+      url: '/comments/comment-1',
+      payload: { body },
+    })
+    expect(created.statusCode).toBe(400)
+    expect(updated.statusCode).toBe(400)
+    expect(mockComment.create).not.toHaveBeenCalled()
+    expect(mockComment.update).not.toHaveBeenCalled()
+    await app.close()
+  })
+  it('rejects replies to replies', async () => {
+    mockComment.findFirst.mockResolvedValue({ pageId: 'page-1', parentId: 'root' } as never)
+    const app = buildAuthApp()
+    const res = await app.inject({
+      method: 'POST',
+      url: '/comments',
+      payload: { body: 'Nested', pageId: 'page-1', parentId: 'reply' },
+    })
+    expect(res.statusCode).toBe(400)
+    expect(mockComment.create).not.toHaveBeenCalled()
+    await app.close()
+  })
+})
+
 describe('PATCH /comments/:id', () => {
   it('allows owner to update their comment', async () => {
     mockComment.findFirst.mockResolvedValue({ id: 'comment-1', userId: 'user-1' } as never)
