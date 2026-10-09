@@ -1,6 +1,7 @@
+import { z } from 'zod'
 import { FastifyInstance } from 'fastify'
 
-import { generateSlug, generateUniqueSlug } from '../../lib/slugify.js'
+import { generateUniqueSlug } from '../../lib/slugify.js'
 import { prisma } from '../../lib/prisma.js'
 
 const SUBJECT_SELECT = {
@@ -12,6 +13,7 @@ const SUBJECT_SELECT = {
   icon: true,
   visibility: true,
   imageId: true,
+  image: { select: { id: true, url: true } },
   userId: true,
   deletedAt: true,
   createdAt: true,
@@ -32,6 +34,7 @@ type CreateSubjectBody = {
   color?: string
   icon?: string
   visibility?: 'PUBLIC' | 'PRIVATE'
+  imageId?: string | null
 }
 
 type PatchSubjectBody = {
@@ -40,7 +43,7 @@ type PatchSubjectBody = {
   color?: string
   icon?: string
   visibility?: 'PUBLIC' | 'PRIVATE'
-  imageId?: string
+  imageId?: string | null
 }
 
 export async function fetchAllSubjects(fastify: FastifyInstance) {
@@ -55,7 +58,10 @@ export async function fetchAllSubjects(fastify: FastifyInstance) {
     const [subjects, total] = await Promise.all([
       prisma.subject.findMany({
         where,
-        select: { ...SUBJECT_SELECT, _count: { select: { projects: true } } },
+        select: {
+          ...SUBJECT_SELECT,
+          _count: { select: { projects: { where: { deletedAt: null } } } },
+        },
         skip,
         take,
         orderBy: { createdAt: 'desc' },
@@ -76,7 +82,7 @@ export async function fetchSubject(fastify: FastifyInstance) {
       select: {
         ...SUBJECT_SELECT,
         user: { select: { id: true, name: true } },
-        _count: { select: { projects: true } },
+        _count: { select: { projects: { where: { deletedAt: null } } } },
       },
     })
 
@@ -94,7 +100,18 @@ export async function createSubject(fastify: FastifyInstance) {
       return reply.status(403).send({ error: 'Editor or Admin role required' })
     }
 
-    const { name, description, color, icon, visibility } = req.body
+    const parsed = z
+      .object({
+        name: z.string().trim().min(1).max(100),
+        description: z.string().optional(),
+        visibility: z.enum(['PUBLIC', 'PRIVATE']).optional(),
+        imageId: z.string().min(1).nullable().optional(),
+        color: z.string().optional(),
+        icon: z.string().optional(),
+      })
+      .safeParse(req.body)
+    if (!parsed.success) return reply.status(400).send({ error: 'Invalid subject fields' })
+    const { name, description, color, icon, visibility, imageId } = parsed.data
 
     const checkDuplicateSubjectName = await prisma.subject.findFirst({
       where: { name },
@@ -111,7 +128,7 @@ export async function createSubject(fastify: FastifyInstance) {
     )
 
     const subject = await prisma.subject.create({
-      data: { userId: req.user.id, name, slug, description, color, icon, visibility },
+      data: { userId: req.user.id, name, slug, description, color, icon, visibility, imageId },
       select: SUBJECT_SELECT,
     })
 
@@ -124,11 +141,22 @@ export async function updateSubject(fastify: FastifyInstance) {
     '/subjects/:slug',
     async (req, reply) => {
       const { slug } = req.params
-      const { name, description, color, icon, visibility, imageId } = req.body
+      const parsed = z
+        .object({
+          name: z.string().trim().min(1).max(100).optional(),
+          description: z.string().optional(),
+          visibility: z.enum(['PUBLIC', 'PRIVATE']).optional(),
+          imageId: z.string().min(1).nullable().optional(),
+          color: z.string().optional(),
+          icon: z.string().optional(),
+        })
+        .safeParse(req.body)
+      if (!parsed.success) return reply.status(400).send({ error: 'Invalid subject fields' })
+      const { name, description, color, icon, visibility, imageId } = parsed.data
 
       const existing = await prisma.subject.findFirst({
         where: { slug, deletedAt: null },
-        select: { id: true, userId: true },
+        select: { id: true, userId: true, name: true },
       })
 
       if (!existing) {
@@ -145,7 +173,14 @@ export async function updateSubject(fastify: FastifyInstance) {
       const data: Record<string, unknown> = {}
       if (name !== undefined) {
         data.name = name
-        data.slug = generateSlug(name)
+        if (name !== existing.name)
+          data.slug = await generateUniqueSlug(name, async (candidate) => {
+            const match = await prisma.subject.findUnique({
+              where: { slug: candidate },
+              select: { id: true },
+            })
+            return Boolean(match && match.id !== existing.id)
+          })
       }
       if (description !== undefined) data.description = description
       if (color !== undefined) data.color = color

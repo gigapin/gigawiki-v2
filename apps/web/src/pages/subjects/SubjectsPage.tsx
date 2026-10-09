@@ -18,10 +18,19 @@ interface SubjectCardProps {
   projectCount: number
   color: string
   icon: IconName
+  image?: { url: string } | null
   onClick: () => void
 }
 
-function SubjectCard({ name, description, projectCount, color, icon, onClick }: SubjectCardProps) {
+function SubjectCard({
+  name,
+  description,
+  projectCount,
+  color,
+  icon,
+  image,
+  onClick,
+}: SubjectCardProps) {
   const tone = toneForColor(color)
   const glyph = name[0]?.toUpperCase() ?? '?'
   const [hovered, setHovered] = useState(false)
@@ -57,6 +66,9 @@ function SubjectCard({ name, description, projectCount, color, icon, onClick }: 
           padding: '0 20px 14px',
         }}
       >
+        {image?.url && (
+          <img src={image.url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        )}
         {/* decorative large letter */}
         <span
           style={{
@@ -347,6 +359,7 @@ export function SubjectsPage() {
           subjects.map((subject) => (
             <SubjectCard
               key={subject.id}
+              image={subject.image}
               name={subject.name}
               slug={subject.slug}
               description={subject.description}

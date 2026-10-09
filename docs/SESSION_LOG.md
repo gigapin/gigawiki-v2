@@ -20,15 +20,15 @@
 |---|---|
 | Branch di lavoro | `dev` (il default remoto è `main`) |
 | Remote | `git@github.com:gigapin/gigawiki-v2.git` |
-| Task completati | 32 / 40 completati; 7 parziali; 1 non iniziato (conteggio dalla tabella sotto) |
-| Fase corrente | **Fase 4 — Frontend**, task 29–30, 34 e 35 parziali. Base shadcn, Project detail e registrazione implementati; reader/editor con immagini ridimensionabili, autosave, revisioni, menzioni e menu contestuale |
-| Backend | Completo (task 5–23). 18 file di test, 273 test verdi |
+| Task completati | 34 / 40 completati; 5 parziali; 1 non iniziato (conteggio dalla tabella sotto) |
+| Fase corrente | **Fase 4 — Frontend**, task 34 e 35 parziali. Base shadcn, Project detail e registrazione implementati; reader/editor con immagini ridimensionabili, autosave, revisioni, menzioni e menu contestuale |
+| Backend | Completo (task 5–23). 18 file di test, 288 test verdi |
 | Frontend | Login, Register, Verify email, ForgotPassword, ResetPassword, AcceptInvite, Dashboard, Subjects, Project detail, scelta destinazione nuova pagina, reader ed editor Tiptap. Bozza/pubblicazione, breadcrumb, tema light/dark, upload e resize immagini, link, syntax highlighting, autosave, drawer revisioni, menzioni e menu contestuale implementati. Tag/preferiti nelle pagine implementati; commenti riusabili integrati nel reader; restano settings |
 | CI/CD | Non iniziata (task 39) |
 
 **Codice della sessione committato dall’utente in `c12f73a`** (`feat: add first implementation of frontend`), su branch `dev`. Il working tree era pulito prima di questo aggiornamento documentale; questa modifica non è stata committata. `.claude/settings.local.json` è ancora tracciato, anche se ora escluso da `.gitignore`.
 
-**Ultime verifiche eseguite:** build e lint frontend, typecheck API, 273 test backend e 133 test frontend superati. Test frontend in ambiente Node e jsdom: non equivalgono a una prova delle interazioni nel browser. Autosave confermato funzionante dall’utente. Registrazione con Mailtrap confermata funzionante dall’utente; ruolo di un utente cambiato manualmente in Prisma Studio per provare creazione/modifica.
+**Ultime verifiche eseguite:** build e lint frontend, typecheck API, 288 test backend e 154 test frontend superati. Test frontend in ambiente Node e jsdom: non equivalgono a una prova delle interazioni nel browser. Autosave confermato funzionante dall’utente. Registrazione con Mailtrap confermata funzionante dall’utente; ruolo di un utente cambiato manualmente in Prisma Studio per provare creazione/modifica.
 
 ---
 
@@ -83,8 +83,8 @@ Legenda: ✅ fatto · 🟡 parziale · ⬜ non iniziato
 | 26 | Store Zustand | ✅ | `auth.store.ts`, `settings.store.ts` |
 | 27 | Componenti di layout | ✅ | AppShell, Sidebar, Topbar, SearchModal |
 | 28 | Pagine auth | ✅ | Login, Register, VerifyEmail, AuthLayout, reinvio verifica, ForgotPassword, ResetPassword e AcceptInvite. Inviti avviano la sessione; errori e validazione coperti in jsdom. Resta verifica browser/SMTP |
-| 29 | Dashboard | 🟡 | Attività recenti, preferiti e statistiche ci sono. Manca la sezione «Recently visited» (`GET /views`) |
-| 30 | Pagine Subjects / Projects / Sections | 🟡 | Prima implementazione in `c12f73a`. Fatti: Subjects/Subject detail, Project detail, ProjectFormDialog riusato in creazione/modifica, SectionFormDialog, eliminazione admin con conferma, riordino nativo + pulsanti accessibili, lista pagine paginata. Collegamenti a reader/editor e breadcrumb completati. Restano CRUD completo Subject e upload cover |
+| 29 | Dashboard | ✅ | Attività, preferiti/statistiche personali e Recently visited con sei visite, link pagina/progetto/sezione, stato vuoto/caricamento/errore e retry. Endpoint `/views` personale con ordinamento e filtro eliminati |
+| 30 | Pagine Subjects / Projects / Sections | ✅ | Prima implementazione in `c12f73a`. Fatti: Subjects/Subject detail, Project detail, ProjectFormDialog riusato in creazione/modifica, SectionFormDialog, eliminazione admin con conferma, riordino nativo + pulsanti accessibili, lista pagine paginata. Collegamenti a reader/editor e breadcrumb completati. CRUD Subject completo, modifica proprietario/Admin ed eliminazione Admin con conferma. Upload cover Subject/Project con anteprima, sostituzione e rimozione |
 | 31 | Page view + editor Tiptap | ✅ | Reader, creazione/modifica, toolbar, tabelle, visibilità, bozza/pubblicazione, guardia modifiche non salvate. Fatti anche upload e ridimensionamento immagini, link, syntax highlighting e contenuti legacy JSON. Autosave dopo 30s di inattività sulle pagine esistenti. Menzioni e bubble menu implementati. Tag/preferiti e commenti nel reader completati; resta la prova nel browser |
 | 32 | Drawer revisioni | ✅ | Cronologia e anteprima riservate a Editor/Admin; ripristino con conferma Editor/Admin e navigazione allo slug ripristinato |
 | 33 | Componente commenti | ✅ | Thread paginati e risposte espandibili, avatar, markdown-lite sicuro, modifica propria, eliminazione propria/Admin con conferma, cache ottimistica e rollback. Integrato nel reader; riusabile per Project/Section |
@@ -95,8 +95,8 @@ Legenda: ✅ fatto · 🟡 parziale · ⬜ non iniziato
 
 | # | Task | Stato | Note |
 |---|---|---|---|
-| 36 | Test backend | 🟡 | 234 test verdi su 17 file, ma con un approccio diverso dalla specifica (vedi sotto) |
-| 37 | Test componenti frontend | 🟡 | 35 test Vitest Node su registrazione/verifica, contratti API, sessione/settings, riordino, contenuto legacy, breadcrumb e rendering UI per ruoli. Restano i test browser/Testing Library per le interazioni |
+| 36 | Test backend | 🟡 | 288 test verdi su 18 file con Prisma mockato. Restano test di integrazione su PostgreSQL dedicato: migrazioni, ricerca full-text, revisioni e soft delete |
+| 37 | Test componenti frontend | 🟡 | 154 test Vitest Node/jsdom su 22 file, inclusi test Testing Library delle interazioni auth, commenti, cover, permessi e autosave/Save draft. Restano copertura completa login/editor reale e prove browser dei flussi |
 | 38 | Dockerfile per l'API | ✅ | Implementato meglio della specifica: `pnpm deploy --prod` + rimozione mirata di dipendenze non raggiungibili a runtime |
 | 39 | GitHub Actions CI | ⬜ | `.github/` non esiste |
 | 40 | Init repo GitHub | 🟡 | Repo e remote esistono. Manca `CONTRIBUTING.md`; il branch di sviluppo si chiama `dev`, non `develop` come da specifica; la branch protection su `main` è da verificare |
@@ -119,17 +119,24 @@ Punti in cui il codice si discosta da `GIGAWIKI_V2_TASKS.md`. Vanno **letti prim
 
 8. **Cronologia riservata a Editor/Admin.** Su richiesta dell’utente, i Guest non possono vedere né interrogare lista/dettaglio revisioni: 403 API, pulsante nascosto e drawer non montato. Questa scelta prevale sulle letture pubbliche descritte nel task 16.
 
-## Prossimi passi
+## Prossimi passi — ripresa del lavoro
 
-1. Provare nel browser il ciclo pagina completo: scelta sezione, creazione bozza, pubblicazione, modifica, avviso di uscita e ritorno tramite breadcrumb. Registrazione già confermata dall’utente; per creare/editare pagine occorre EDITOR/ADMIN e, dopo un cambio ruolo da Prisma Studio, aggiornare la sessione.
-2. **Prossimo incremento: Recently visited nella Dashboard (task 29).** Reader/editor condividono lo schema HTML/JSON; upload e resize immagini, link, syntax highlighting, autosave, revisioni, menzioni e menu contestuale sono completati. Tag, preferiti e commenti nel reader completati.
-3. Completare Dashboard (recently visited), poi CRUD Subject/upload cover.
-4. Provare nel browser commenti, tag/preferiti, drawer revisioni e ripristino.
-5. Favorites e Settings sulla stessa base shadcn. Allineare prima i contratti inviti (elenco/reinvio/cancellazione) e cambio password, non completi nel backend.
-6. Completare test delle interazioni frontend e CI. Valutare caricamento differito dell’editor: la build passa, ma segnala un bundle superiore a 500 kB.
-7. A fine prove riportare `ALLOW_SELF_REGISTRATION` a `false` se non si vuole consentire la registrazione libera; valutare rimozione dal tracking di `.claude/settings.local.json`.
+**Ripartire dal task 34: SettingsLayout e profilo utente.** Creare la navigazione Settings e il form nome/email/avatar con anteprima, verificando il contratto `PATCH /api/v2/users/me`, la riverifica email e l’aggiornamento della sessione/cache. La pagina inviti esistente va integrata nel layout.
 
-Auth restante completata: link reset/inviti collegati ai template email. Verificare i flussi reali con Mailtrap e browser.
+Ordine degli incrementi successivi:
+
+1. **Task 34:** cambio password (prima completare il contratto backend), Appearance, gestione utenti Admin, elenco/reinvio/cancellazione inviti e impostazioni applicazione. La creazione inviti è già implementata.
+2. **Task 35:** uniformare gli hook API tipizzati e spostare le chiamate ancora presenti nei componenti.
+3. **Task 36:** aggiungere test di integrazione su un PostgreSQL separato, ad esempio `gigawiki_test`, con migrazioni e pulizia dei dati. Non usare il database dell’app. I 288 test attuali simulano Prisma e non verificano SQL, vincoli e ricerca reali. Approccio spiegato all’utente; infrastruttura ancora da configurare.
+4. **Task 37:** completare i test delle interazioni login/editor e provare nel browser creazione bozza, salvataggi successivi, pubblicazione, autosave, upload, commenti, preferiti personali e revisioni con ruoli Guest/Editor/Admin.
+5. **Task 39:** GitHub Actions per lint, typecheck, test e build; adattare i trigger al branch di sviluppo attuale `dev`.
+6. **Task 40:** `CONTRIBUTING.md`, verifica protezione `main` e strategia branch. Repo e remote esistono già.
+
+**Stato alla chiusura:** 34/40 completati, 5 parziali, 1 non iniziato. Ultime verifiche: 154 test frontend e 288 API, lint/build frontend e typecheck API superati. Non sono state eseguite prove browser/storage/DB reali per gli ultimi interventi. Le modifiche di questa sessione sono nel working tree e non sono state committate dall’assistente.
+
+**Comportamenti da preservare:** dettaglio Subject senza banner grande, icona/titolo a sinistra e azioni a destra; commenti richiusi inizialmente sotto “Comments” con freccia, bozze mantenute alla chiusura; Save draft mantiene l’editor aperto e usa la stessa pagina nei salvataggi successivi, Publish apre il reader. Guest senza cronologia, preferiti personali per account e temporizzazione login disattivata in development come richiesto.
+
+**Verifiche e manutenzione residue:** prova SMTP/Mailtrap dei reset e inviti, storage reale delle cover, warning bundle superiore a 500 kB (valutare caricamento differito dell’editor), consolidamento dei due moduli env e verifica del servizio Meilisearch inutilizzato. Valutare `ALLOW_SELF_REGISTRATION=false` a fine prove e rimozione dal tracking di `.claude/settings.local.json`.
 
 Scelte adottate: dark iniziale e light selezionabile; sezioni inline nel Project; revisioni drawer, diff opzionale; settings secondo task 34; nuove icone Lucide, empty state con icona/testo. Non sono necessari nuovi template Claude Design.
 
@@ -157,6 +164,41 @@ Chi clona il repo su una macchina nuova deve ricreare `init.sh` (o avere Node su
 ---
 
 ## Log delle sessioni
+
+### 2026-10-09 — Chiusura sessione e consegna per la ripresa
+
+- Aggiornati stato e conteggi dei test, correggendo le vecchie note dei task 36/37.
+- Registrati gli ultimi ritocchi UI: Subject compatto con azioni a destra e commenti richiudibili con etichetta piccola/freccia, conservando le bozze.
+- Riepilogati i sei task ancora aperti e il significato dei test su database reale: PostgreSQL dedicato ai test, separato dai dati dell’app.
+- Prossimo intervento: task 34, layout Settings e profilo nome/email/avatar. Modifiche non committate dall’assistente; mantenere il lavoro presente nel working tree.
+
+
+### 2026-10-09 — Correzione Save draft nell’editor pagine
+
+- Save draft mantiene l’editor aperto; una nuova bozza passa al proprio URL di modifica, mentre rinomina e salvataggi successivi utilizzano lo slug restituito dall’API. Publish continua ad aprire il reader.
+- La guardia di uscita riconosce il salvataggio riuscito prima della navigazione, anche quando il router usa un callback precedente all’aggiornamento React. Errori mantengono contenuto e protezione delle modifiche.
+- Verifiche: 154 test frontend superati, inclusi creazione/aggiornamento bozza, autosave successivo con stato draft, errore/retry e guardia durante la navigazione. Build e lint superati; resta la prova browser reale.
+
+
+### 2026-10-09 — Task 30: CRUD Subject e cover Subject/Project
+
+- Form Subject condiviso per creazione/modifica; azioni nella pagina dettaglio per proprietario/Admin, eliminazione con conferma riservata ad Admin. Cache e navigazione aggiornate dopo modifica o eliminazione.
+- Cover nei form Subject e Project: anteprima, scelta file o drag/drop, validazione formato e limite 10 MB, sostituzione e rimozione. Upload COVER al salvataggio; retry della risorsa riutilizza l’immagine già caricata. Le cover compaiono nelle card e nei dettagli.
+- API Subject/Project: relazione immagine nelle risposte, `imageId` nullable, validazione campi e slug univoco quando cambia il nome; il nome invariato conserva lo slug.
+- Verifiche: 149 test frontend e 288 API superati; build/lint frontend e typecheck API superati. Coperti permessi, conferma eliminazione, errori/retry, upload differito e rimozione cover.
+
+**Lasciato aperto:** prova browser e storage/DB reali. Rimuovere una cover scollega l’immagine senza eliminare asset potenzialmente condivisi; un upload riuscito seguito da salvataggio fallito può lasciare un asset non collegato. Warning bundle invariato. Prossimo incremento: profilo utente nelle Settings (task 34).
+
+
+### 2026-10-09 — Recently visited nella Dashboard
+
+- Completato task 29: sezione con le sei visite più recenti, card pagina/progetto/sezione, data relativa e link alla sezione selezionata. Caricamento, stato vuoto ed errore con retry; query personale con ID utente e aggiornamento al ritorno in Dashboard.
+- Nuovo GET autenticato `/api/v2/views`, paginazione `page/limit`, ordinamento `lastSeenAt` decrescente con spareggio stabile. Il richiedente determina l’utente anche in presenza di `userId` arbitrario; risorse eliminate e contenitori eliminati esclusi, nessun contenuto wiki o profilo altrui nella risposta.
+- Selezione sezione registrata alla lettura della sua lista pagine. Persistenza visite pagina/progetto attesa prima della risposta; riapertura delle risorse già in cache aggiorna la visita.
+- Verifiche: 138 test frontend e 282 API, build/lint frontend e typecheck API superati. Test su tre destinazioni, errori/retry, cambio account, aggiornamento al ritorno, paginazione/filtro eliminati, scoping API e registrazione visita sezione.
+
+**Lasciato aperto:** prova browser reale e verifica query su DB reale (test API mockati). Prossimo incremento: CRUD Subject/upload cover (task 30). Warning bundle invariato.
+
 
 ### 2026-10-09 — Sessione persistente per test locali
 

@@ -5,6 +5,7 @@ export const CreateProjectSchema = z.object({
   subjectId: z.string().min(1),
   description: z.string().optional(),
   visibility: z.enum(['PUBLIC', 'PRIVATE']).default('PUBLIC'),
+  imageId: z.string().min(1).nullable().optional(),
 })
 
 export const UpdateProjectSchema = z.object({

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 
+import { RecentlyVisited } from '@/components/dashboard/RecentlyVisited'
 import { fetchSubjects } from '@/api/subjects'
 import { useFavorites } from '@/api/favorites'
 import { fetchActivities } from '@/api/activities'
@@ -676,6 +677,7 @@ export function DashboardPage() {
         <ActivityFeed />
         <FavoritesList />
       </div>
+      <RecentlyVisited />
     </div>
   )
 }

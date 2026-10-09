@@ -25,7 +25,12 @@ export function fetchProjectsBySubject(
 }
 
 export type ProjectDetail = Project & { tags: Tag[]; subject: { name: string; slug: string } }
-export type ProjectInput = { name: string; description: string; visibility: 'PUBLIC' | 'PRIVATE' }
+export type ProjectInput = {
+  name: string
+  description: string
+  visibility: 'PUBLIC' | 'PRIVATE'
+  imageId?: string | null
+}
 
 export function fetchProject(slug: string): Promise<ProjectDetail> {
   return apiClient.get<ProjectDetail>(`/api/v2/projects/${slug}`).then((response) => response.data)

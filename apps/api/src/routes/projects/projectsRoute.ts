@@ -1,6 +1,7 @@
+import { z } from 'zod'
 import { FastifyInstance } from 'fastify'
 
-import { generateSlug, generateUniqueSlug } from '../../lib/slugify.js'
+import { generateUniqueSlug } from '../../lib/slugify.js'
 import { prisma } from '../../lib/prisma.js'
 
 const PROJECT_SELECT = {
@@ -10,6 +11,7 @@ const PROJECT_SELECT = {
   description: true,
   visibility: true,
   imageId: true,
+  image: { select: { id: true, url: true } },
   userId: true,
   subjectId: true,
   deletedAt: true,
@@ -27,13 +29,14 @@ type CreateProjectBody = {
   subjectId: string
   description?: string
   visibility?: 'PUBLIC' | 'PRIVATE'
+  imageId?: string | null
 }
 
 type PatchProjectBody = {
   name?: string
   description?: string
   visibility?: 'PUBLIC' | 'PRIVATE'
-  imageId?: string
+  imageId?: string | null
 }
 
 export async function fetchProjectsBySubject(fastify: FastifyInstance) {
@@ -60,6 +63,7 @@ export async function fetchProjectsBySubject(fastify: FastifyInstance) {
         prisma.project.findMany({
           where,
           include: {
+            image: { select: { id: true, url: true } },
             tags: true,
             _count: {
               select: { sections: true, pages: { where: { deletedAt: null } }, views: true },
@@ -84,6 +88,7 @@ export async function fetchProject(fastify: FastifyInstance) {
     const project = await prisma.project.findFirst({
       where: { slug, deletedAt: null },
       include: {
+        image: { select: { id: true, url: true } },
         subject: { select: { name: true, slug: true } },
         sections: { where: { deletedAt: null }, orderBy: { position: 'asc' } },
         tags: true,
@@ -95,10 +100,10 @@ export async function fetchProject(fastify: FastifyInstance) {
       return reply.status(404).send({ error: 'Project not found' })
     }
 
-    // Fire-and-forget View upsert for authenticated requests
+    // Persist the visit before returning so the dashboard sees it immediately.
     try {
       await req.jwtVerify()
-      void prisma.view
+      await prisma.view
         .upsert({
           where: { userId_projectId: { userId: req.user.id, projectId: project.id } },
           update: { count: { increment: 1 }, lastSeenAt: new Date() },
@@ -119,7 +124,17 @@ export async function createProject(fastify: FastifyInstance) {
       return reply.status(403).send({ error: 'Editor or Admin role required' })
     }
 
-    const { name, subjectId, description, visibility } = req.body
+    const parsed = z
+      .object({
+        name: z.string().trim().min(1).max(100),
+        description: z.string().optional(),
+        visibility: z.enum(['PUBLIC', 'PRIVATE']).optional(),
+        imageId: z.string().min(1).nullable().optional(),
+        subjectId: z.string().min(1),
+      })
+      .safeParse(req.body)
+    if (!parsed.success) return reply.status(400).send({ error: 'Invalid project fields' })
+    const { name, subjectId, description, visibility, imageId } = parsed.data
 
     const slug = await generateUniqueSlug(name, async (candidate) =>
       Boolean(
@@ -128,7 +143,7 @@ export async function createProject(fastify: FastifyInstance) {
     )
 
     const project = await prisma.project.create({
-      data: { userId: req.user.id, subjectId, name, slug, description, visibility },
+      data: { userId: req.user.id, subjectId, name, slug, description, visibility, imageId },
       select: PROJECT_SELECT,
     })
 
@@ -141,11 +156,20 @@ export async function updateProject(fastify: FastifyInstance) {
     '/projects/:slug',
     async (req, reply) => {
       const { slug } = req.params
-      const { name, description, visibility, imageId } = req.body
+      const parsed = z
+        .object({
+          name: z.string().trim().min(1).max(100).optional(),
+          description: z.string().optional(),
+          visibility: z.enum(['PUBLIC', 'PRIVATE']).optional(),
+          imageId: z.string().min(1).nullable().optional(),
+        })
+        .safeParse(req.body)
+      if (!parsed.success) return reply.status(400).send({ error: 'Invalid project fields' })
+      const { name, description, visibility, imageId } = parsed.data
 
       const existing = await prisma.project.findFirst({
         where: { slug, deletedAt: null },
-        select: { id: true, userId: true },
+        select: { id: true, userId: true, name: true },
       })
 
       if (!existing) {
@@ -162,7 +186,14 @@ export async function updateProject(fastify: FastifyInstance) {
       const data: Record<string, unknown> = {}
       if (name !== undefined) {
         data.name = name
-        data.slug = generateSlug(name)
+        if (name !== existing.name)
+          data.slug = await generateUniqueSlug(name, async (candidate) => {
+            const match = await prisma.project.findUnique({
+              where: { slug: candidate },
+              select: { id: true },
+            })
+            return Boolean(match && match.id !== existing.id)
+          })
       }
       if (description !== undefined) data.description = description
       if (visibility !== undefined) data.visibility = visibility

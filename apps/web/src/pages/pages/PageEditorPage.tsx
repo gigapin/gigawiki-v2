@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useBlocker, useNavigate, useParams } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -146,6 +146,7 @@ export function PageForm({
   const [editorStatus, setEditorStatus] = useState({ uploading: false, invalid: false })
   const editorBusy = editorStatus.uploading || editorStatus.invalid
   const [saved, setSaved] = useState(false)
+  const savedForNavigation = useRef(false)
   const [baseline, setBaseline] = useState(initial)
   const [activeSlug, setActiveSlug] = useState(slug)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
@@ -158,8 +159,9 @@ export function PageForm({
       setInput(payload)
       setLastSaved(new Date())
       setSaved(true)
+      savedForNavigation.current = true
       setActiveSlug(page.slug)
-      if (automatic && activeSlug) {
+      if ((automatic || payload.isDraft) && activeSlug) {
         const previous = client.getQueryData(['page', activeSlug])
         if (previous) client.setQueryData(['page', page.slug], { ...previous, ...payload, ...page })
       }
@@ -179,11 +181,11 @@ export function PageForm({
           'activities',
         ].map((key) => client.invalidateQueries({ queryKey: [key], refetchType: 'none' })),
       )
-      if (automatic) {
+      if (!automatic) toast.success(page.isDraft ? 'Draft saved' : 'Page published')
+      if (automatic || payload.isDraft) {
         if (page.slug !== activeSlug)
           await navigate({ to: '/pages/$slug/edit', params: { slug: page.slug }, replace: true })
       } else {
-        toast.success(page.isDraft ? 'Draft saved' : 'Page published')
         await navigate({ to: '/pages/$slug', params: { slug: page.slug } })
       }
     },
@@ -200,7 +202,8 @@ export function PageForm({
   const save = (isDraft: boolean) =>
     mutation.mutate({ payload: { ...input, title: input.title.trim(), isDraft }, automatic: false })
   const blocker = useBlocker({
-    shouldBlockFn: () => editorStatus.uploading || (!saved && (dirty || mutation.isPending)),
+    shouldBlockFn: () =>
+      editorStatus.uploading || (!savedForNavigation.current && (dirty || mutation.isPending)),
     enableBeforeUnload: editorStatus.uploading || (!saved && (dirty || mutation.isPending)),
     withResolver: true,
   })
@@ -214,6 +217,7 @@ export function PageForm({
       </div>
     )
   const change = (patch: Partial<PageInput>) => {
+    savedForNavigation.current = false
     setSaved(false)
     setInput((value) => ({ ...value, ...patch }))
   }
@@ -234,7 +238,9 @@ export function PageForm({
             disabled={mutation.isPending || editorBusy || !input.title.trim()}
             onClick={() => save(true)}
           >
-            Save draft
+            {mutation.isPending && mutation.variables?.payload.isDraft
+              ? 'Saving draft…'
+              : 'Save draft'}
           </Button>
           <Button
             disabled={mutation.isPending || editorBusy || !input.title.trim()}

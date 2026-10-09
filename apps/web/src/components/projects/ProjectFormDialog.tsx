@@ -3,6 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Project } from '@shared/types/project'
 import { toast } from 'sonner'
 
+import { useCover } from '@/lib/use-cover'
+import { CoverField } from '@/components/shared/CoverField'
 import { createProject, updateProject } from '@/api/projects'
 import { ResourceFields, type ResourceValues } from '@/components/shared/ResourceFields'
 import { Button } from '@/components/ui/button'
@@ -30,14 +32,20 @@ export function ProjectFormDialog({
   onSaved?: (project: Project) => void
 }) {
   const client = useQueryClient()
+  const cover = useCover(project?.image, project?.imageId)
   const [values, setValues] = useState<ResourceValues>({
     name: project?.name ?? '',
     description: project?.description ?? '',
     visibility: project?.visibility ?? 'PUBLIC',
   })
   const mutation = useMutation({
-    mutationFn: () => {
-      const input = { ...values, name: values.name.trim(), description: values.description.trim() }
+    mutationFn: async () => {
+      const input = {
+        ...values,
+        name: values.name.trim(),
+        description: values.description.trim(),
+        imageId: await cover.resolveImageId(),
+      }
       return project ? updateProject(project.slug, input) : createProject({ ...input, subjectId })
     },
     onSuccess: async (saved) => {
@@ -67,6 +75,7 @@ export function ProjectFormDialog({
       }}
     >
       <DialogContent
+        className="max-h-[90dvh] overflow-y-auto"
         onEscapeKeyDown={(event) => {
           if (mutation.isPending) event.preventDefault()
         }}
@@ -87,10 +96,12 @@ export function ProjectFormDialog({
         >
           <ResourceFields
             id="project"
+            maxNameLength={100}
             values={values}
             onChange={setValues}
             disabled={mutation.isPending}
           />
+          <CoverField cover={cover} disabled={mutation.isPending} />
           {mutation.isError && (
             <p role="alert" className="text-sm text-destructive">
               {apiErrorMessage(mutation.error)}

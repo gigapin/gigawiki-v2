@@ -6,6 +6,7 @@ export const CreateSubjectSchema = z.object({
   color: z.string().optional(),
   icon: z.string().optional(),
   visibility: z.enum(['PUBLIC', 'PRIVATE']).default('PUBLIC'),
+  imageId: z.string().min(1).nullable().optional(),
 })
 
 export const UpdateSubjectSchema = z.object({

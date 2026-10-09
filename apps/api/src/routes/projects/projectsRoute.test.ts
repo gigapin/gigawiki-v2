@@ -386,3 +386,47 @@ describe('GET /projects/:slug/activity', () => {
     )
   })
 })
+
+describe('Project cover contracts', () => {
+  it('accepts a cover during creation', async () => {
+    mockProject.findFirst.mockResolvedValue(null)
+    mockProject.create.mockResolvedValue({ ...fakeProject, imageId: 'cover' } as never)
+    const app = buildAuthApp('EDITOR')
+    const res = await app.inject({
+      method: 'POST',
+      url: '/projects',
+      payload: { name: 'Resource', imageId: 'cover', subjectId: 'subject' },
+    })
+    expect(res.statusCode).toBe(201)
+    expect(mockProject.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ imageId: 'cover' }) }),
+    )
+    await app.close()
+  })
+  it('unlinks a cover without changing the slug when the name is unchanged', async () => {
+    mockProject.findFirst.mockResolvedValue(fakeProject as never)
+    mockProject.update.mockResolvedValue({ ...fakeProject, imageId: null } as never)
+    const app = buildAuthApp('ADMIN')
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/projects/' + fakeProject.slug,
+      payload: { name: fakeProject.name, imageId: null },
+    })
+    expect(res.statusCode).toBe(200)
+    expect(mockProject.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { name: fakeProject.name, imageId: null } }),
+    )
+    await app.close()
+  })
+  it('rejects empty names and malformed image IDs before writing', async () => {
+    const app = buildAuthApp('ADMIN')
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/projects/resource',
+      payload: { name: ' ', imageId: 42 },
+    })
+    expect(res.statusCode).toBe(400)
+    expect(mockProject.update).not.toHaveBeenCalled()
+    await app.close()
+  })
+})

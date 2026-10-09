@@ -16,11 +16,13 @@ export function ResourceFields({
   values,
   onChange,
   disabled,
+  maxNameLength = 200,
 }: {
   id: string
   values: ResourceValues
   onChange: (values: ResourceValues) => void
   disabled: boolean
+  maxNameLength?: number
 }) {
   return (
     <fieldset disabled={disabled} className="space-y-4">
@@ -30,7 +32,7 @@ export function ResourceFields({
           id={`${id}-name`}
           autoFocus
           required
-          maxLength={200}
+          maxLength={maxNameLength}
           value={values.name}
           onChange={(event) => onChange({ ...values, name: event.target.value })}
         />

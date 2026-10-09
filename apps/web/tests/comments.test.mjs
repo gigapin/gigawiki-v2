@@ -34,7 +34,7 @@ afterEach(() => {
   cleanup()
   client?.clear()
 })
-function mount(type = 'pages') {
+async function mount(type = 'pages', open = true) {
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
     createElement(
@@ -43,13 +43,14 @@ function mount(type = 'pages') {
       createElement(CommentSection, { resource: { ...resource, type } }),
     ),
   )
+  if (open) await userEvent.click(screen.getByText('Comments', { selector: 'summary' }))
 }
 async function thread() {
   return screen.findByRole('article', { name: 'Comment by Alex' })
 }
 it('renders safe formatting, lets guests comment and enforces own edit/delete controls', async () => {
   session.user.id = 'other'
-  mount()
+  await mount()
   const item = await thread()
   expect(item.querySelector('strong').textContent).toBe('wiki')
   expect(item.querySelector('script')).toBeNull()
@@ -66,7 +67,7 @@ it('shows a new comment optimistically and restores cache and draft after failur
         reject = fail
       }),
   )
-  mount()
+  await mount()
   await thread()
   await userEvent.type(screen.getByRole('textbox', { name: 'New comment' }), 'Draft text')
   await userEvent.click(screen.getByRole('button', { name: 'Post comment' }))
@@ -87,7 +88,7 @@ it('posts replies to roots and does not offer nested replies', async () => {
     data.comments[0].replies.push(reply)
     return { data: reply }
   })
-  mount()
+  await mount()
   await userEvent.click(within(await thread()).getByRole('button', { name: 'Reply' }))
   await userEvent.type(screen.getByRole('textbox', { name: 'Reply to Alex' }), 'Reply text')
   await userEvent.click(screen.getByRole('button', { name: 'Post reply' }))
@@ -106,7 +107,7 @@ it('preserves an edit draft on failure and allows retry', async () => {
       data.comments[0].body = input.body
       return { data: data.comments[0] }
     })
-  mount()
+  await mount()
   await userEvent.click(within(await thread()).getByRole('button', { name: 'Edit' }))
   const input = screen.getByRole('textbox', { name: 'Edit comment' })
   await userEvent.clear(input)
@@ -123,7 +124,7 @@ it('requires delete confirmation, allows cancellation and removes the root and r
     data = { ...data, comments: [], total: 0 }
     return { data: {} }
   })
-  mount()
+  await mount()
   await userEvent.click(within(await thread()).getByRole('button', { name: 'Delete' }))
   await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel' }))
   expect(apiClient.delete).not.toHaveBeenCalled()
@@ -134,14 +135,14 @@ it('requires delete confirmation, allows cancellation and removes the root and r
 })
 it('allows admins to delete other comments but not edit them', async () => {
   session.user = { ...session.user, id: 'admin', role: 'ADMIN' }
-  mount()
+  await mount()
   const item = await thread()
   expect(within(item).getByRole('button', { name: 'Delete' })).toBeTruthy()
   expect(within(item).queryByRole('button', { name: 'Edit' })).toBeNull()
 })
 it('retries loading failures and supports project resources', async () => {
   apiClient.get.mockRejectedValueOnce(new Error('offline'))
-  mount('projects')
+  await mount('projects')
   await screen.findByRole('alert')
   await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
   await thread()
@@ -152,7 +153,7 @@ it('retries loading failures and supports project resources', async () => {
 })
 it('uses root pagination without creating a new thread on the wrong page', async () => {
   data = { ...data, total: 11 }
-  mount()
+  await mount()
   await thread()
   await userEvent.click(screen.getByRole('button', { name: 'Next' }))
   await waitFor(() =>
@@ -165,7 +166,7 @@ it('uses root pagination without creating a new thread on the wrong page', async
 it('restores a deleted thread and its replies on failure', async () => {
   data.comments[0].replies = [{ ...root, id: 'r', parentId: 'c', body: 'Existing reply' }]
   apiClient.delete.mockRejectedValue(new Error('offline'))
-  mount()
+  await mount()
   await userEvent.click(within(await thread()).getByRole('button', { name: 'Delete' }))
   await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }))
   await screen.findByRole('alert')
@@ -186,7 +187,7 @@ it('returns to the preceding page after deleting its final thread', async () => 
     data.comments = []
     return { data: {} }
   })
-  mount()
+  await mount()
   await thread()
   await userEvent.click(screen.getByRole('button', { name: 'Next' }))
   await waitFor(() =>
@@ -200,4 +201,19 @@ it('returns to the preceding page after deleting its final thread', async () => 
       expect.objectContaining({ params: { page: 1, limit: 10 } }),
     ),
   )
+})
+
+it('starts collapsed and toggles the comments without losing a draft', async () => {
+  await mount('pages', false)
+  const toggle = screen.getByText('Comments', { selector: 'summary' })
+  const details = toggle.closest('details')
+  expect(details.open).toBe(false)
+  expect(screen.queryByRole('textbox', { name: 'New comment' })).toBeNull()
+  await userEvent.click(toggle)
+  await thread()
+  await userEvent.type(screen.getByRole('textbox', { name: 'New comment' }), 'Saved draft')
+  await userEvent.click(toggle)
+  expect(details.open).toBe(false)
+  await userEvent.click(toggle)
+  expect(screen.getByRole('textbox', { name: 'New comment' }).value).toBe('Saved draft')
 })

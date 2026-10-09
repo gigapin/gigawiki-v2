@@ -20,6 +20,7 @@ export function usePages(sectionSlug: string | undefined, page = 1, limit = 10) 
   return useQuery({
     queryKey: ['pages', 'section', sectionSlug, page, limit],
     enabled: Boolean(sectionSlug),
+    refetchOnMount: 'always',
     queryFn: () =>
       apiClient
         .get<PagesResponse>(`/api/v2/sections/${sectionSlug}/pages`, { params: { page, limit } })
