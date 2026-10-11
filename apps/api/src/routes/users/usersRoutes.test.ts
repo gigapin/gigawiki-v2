@@ -36,7 +36,12 @@ vi.mock('../../lib/prisma.js', () => ({
 }))
 
 vi.mock('../../lib/queue.js', () => ({ emailQueue: { add: vi.fn().mockResolvedValue(undefined) } }))
-vi.mock('../../config/env.js', () => ({ env: { FRONTEND_URL: 'http://localhost:5173' } }))
+vi.mock('../../config/env.js', () => ({
+  env: { FRONTEND_URL: 'http://localhost:5173', API_URL: 'http://localhost:3001' },
+}))
+
+vi.mock('../../lib/storage.js', () => ({ uploadFile: vi.fn(), deleteFile: vi.fn() }))
+vi.mock('../../lib/verification-email.js', () => ({ queueVerificationEmail: vi.fn() }))
 
 vi.mock('argon2', () => ({
   default: {
@@ -365,5 +370,108 @@ it('rejects malformed invitations before saving or queuing them', async () => {
   expect(res.statusCode).toBe(400)
   expect(mockPrismaEmailInvite.create).not.toHaveBeenCalled()
   expect(emailQueue.add).not.toHaveBeenCalled()
+  await app.close()
+})
+
+it('validates profile fields before writing', async () => {
+  const app = buildApp('GUEST')
+  for (const payload of [{ name: ' ' }, { email: 'invalid' }, { unexpected: true }]) {
+    const result = await app.inject({ method: 'PATCH', url: '/users/me', payload })
+    expect(result.statusCode).toBe(400)
+  }
+  expect(mockPrismaUser.update).not.toHaveBeenCalled()
+  await app.close()
+})
+it('normalizes a changed email and requires verification', async () => {
+  const { queueVerificationEmail } = await import('../../lib/verification-email.js')
+  mockPrismaUser.findUnique.mockResolvedValueOnce(fakeUser).mockResolvedValueOnce(null)
+  mockPrismaUser.update.mockResolvedValue({ ...fakeUser, email: 'new@example.com' })
+  const app = buildApp('GUEST')
+  const result = await app.inject({
+    method: 'PATCH',
+    url: '/users/me',
+    payload: { email: ' NEW@Example.com ' },
+  })
+  expect(result.statusCode).toBe(200)
+  expect(mockPrismaUser.update).toHaveBeenCalledWith(
+    expect.objectContaining({
+      data: { email: 'new@example.com', emailConfirmed: false, emailVerifiedAt: null },
+    }),
+  )
+  expect(queueVerificationEmail).toHaveBeenCalled()
+  await app.close()
+})
+it('preserves verification when the email stays the same', async () => {
+  const { queueVerificationEmail } = await import('../../lib/verification-email.js')
+  mockPrismaUser.findUnique.mockResolvedValue(fakeUser)
+  mockPrismaUser.update.mockResolvedValue(fakeUser)
+  const app = buildApp('GUEST')
+  await app.inject({ method: 'PATCH', url: '/users/me', payload: { email: fakeUser.email } })
+  expect(mockPrismaUser.update).toHaveBeenCalledWith(expect.objectContaining({ data: {} }))
+  expect(queueVerificationEmail).not.toHaveBeenCalled()
+  await app.close()
+})
+it('rejects an email already belonging to another account', async () => {
+  mockPrismaUser.findUnique
+    .mockResolvedValueOnce(fakeUser)
+    .mockResolvedValueOnce({ ...fakeUser, id: 'other' })
+  const app = buildApp('GUEST')
+  const result = await app.inject({
+    method: 'PATCH',
+    url: '/users/me',
+    payload: { email: 'other@example.com' },
+  })
+  expect(result.statusCode).toBe(409)
+  expect(mockPrismaUser.update).not.toHaveBeenCalled()
+  await app.close()
+})
+it('returns the saved profile when verification delivery fails', async () => {
+  const { queueVerificationEmail } = await import('../../lib/verification-email.js')
+  vi.mocked(queueVerificationEmail).mockRejectedValueOnce(new Error('offline'))
+  mockPrismaUser.findUnique.mockResolvedValueOnce(fakeUser).mockResolvedValueOnce(null)
+  mockPrismaUser.update.mockResolvedValue({ ...fakeUser, email: 'new@example.com' })
+  const app = buildApp('GUEST')
+  const result = await app.inject({
+    method: 'PATCH',
+    url: '/users/me',
+    payload: { email: 'new@example.com' },
+  })
+  expect(result.statusCode).toBe(200)
+  expect(result.json().verificationDeliveryFailed).toBe(true)
+  await app.close()
+})
+it('uploads a real avatar for a Guest before linking the image', async () => {
+  const sharp = (await import('sharp')).default
+  const { uploadFile } = await import('../../lib/storage.js')
+  const buffer = await sharp({
+    create: { width: 2, height: 2, channels: 3, background: '#ff0000' },
+  })
+    .png()
+    .toBuffer()
+  mockPrismaUser.findUnique.mockResolvedValue(fakeUser)
+  vi.mocked(prisma.image.create).mockResolvedValue({ id: 'avatar' } as never)
+  mockPrismaUser.update.mockResolvedValue({ ...fakeUser, avatarId: 'avatar' })
+  const app = buildApp('GUEST')
+  const result = await app.inject({
+    method: 'POST',
+    url: '/users/me/avatar',
+    headers: { 'content-type': 'multipart/form-data; boundary=avatar-test' },
+    payload: Buffer.concat([
+      Buffer.from(
+        '--avatar-test\r\nContent-Disposition: form-data; name="file"; filename="avatar.png"\r\nContent-Type: image/png\r\n\r\n',
+      ),
+      buffer,
+      Buffer.from('\r\n--avatar-test--\r\n'),
+    ]),
+  })
+  expect(result.statusCode).toBe(200)
+  expect(uploadFile).toHaveBeenCalledWith(
+    expect.stringContaining('/avatars/'),
+    expect.any(Buffer),
+    'image/webp',
+  )
+  expect(mockPrismaUser.update).toHaveBeenCalledWith(
+    expect.objectContaining({ data: { avatarId: 'avatar' } }),
+  )
   await app.close()
 })

@@ -334,7 +334,12 @@ describe('Registration and email verification', () => {
     expect(url.pathname).toBe('/verify-email')
     const token = url.searchParams.get('token')
     expect(token).toHaveLength(32)
-    expect(redis.set).toHaveBeenCalledWith(`verify:${token}`, 'user-1', 'EX', 86400)
+    expect(redis.set).toHaveBeenCalledWith(
+      `verify:${token}`,
+      JSON.stringify({ id: 'user-1', email: 'alice@example.com' }),
+      'EX',
+      86400,
+    )
   })
 
   it.each([
@@ -390,7 +395,10 @@ describe('Registration and email verification', () => {
   })
 
   it('confirms a valid token once and permits subsequent sign-in', async () => {
-    vi.mocked(redis.getdel).mockResolvedValueOnce('user-1').mockResolvedValueOnce(null)
+    vi.mocked(redis.getdel)
+      .mockResolvedValueOnce(JSON.stringify({ id: 'user-1', email: fakeUser.email }))
+      .mockResolvedValueOnce(null)
+    mockUser.findUnique.mockResolvedValue(fakeUser)
     mockUser.update.mockResolvedValue(fakeUser)
     const app = buildApp()
     const verified = await app.inject({
@@ -400,7 +408,7 @@ describe('Registration and email verification', () => {
     })
     expect(verified.statusCode).toBe(200)
     expect(mockUser.update).toHaveBeenCalledWith({
-      where: { id: 'user-1' },
+      where: { id: 'user-1', email: fakeUser.email },
       data: { emailConfirmed: true, emailVerifiedAt: expect.any(Date) },
     })
     const reused = await app.inject({
@@ -758,4 +766,20 @@ describe('Development session persistence', () => {
     })
     await app.close()
   })
+})
+
+it('rejects verification links issued for a previous email address', async () => {
+  vi.mocked(redis.getdel).mockResolvedValueOnce(
+    JSON.stringify({ id: 'user-1', email: 'previous@example.com' }),
+  )
+  mockUser.findUnique.mockResolvedValue(fakeUser)
+  const app = buildApp()
+  const result = await app.inject({
+    method: 'POST',
+    url: '/auth/verify-email',
+    payload: { token: 'old-token' },
+  })
+  expect(result.statusCode).toBe(400)
+  expect(mockUser.update).not.toHaveBeenCalled()
+  await app.close()
 })

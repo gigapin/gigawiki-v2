@@ -30,10 +30,9 @@ export function InvitesPage() {
       </div>
     )
   return (
-    <div className="mx-auto max-w-2xl space-y-6 p-4 sm:p-6 lg:p-9">
+    <div className="space-y-6">
       <header>
-        <p className="text-sm text-muted-foreground">Settings</p>
-        <h1 className="text-3xl font-semibold">Invitations</h1>
+        <h1 className="text-xl font-semibold">Invitations</h1>
       </header>
       <Card>
         <CardHeader>

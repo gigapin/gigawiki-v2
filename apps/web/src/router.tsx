@@ -1,5 +1,7 @@
 import { createRootRoute, createRoute, createRouter, redirect } from '@tanstack/react-router'
 
+import { SettingsLayout } from '@/pages/settings/SettingsLayout'
+import { ProfilePage } from '@/pages/settings/ProfilePage'
 import { InvitesPage } from '@/pages/settings/InvitesPage'
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage'
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage'
@@ -149,9 +151,27 @@ const editPageRoute = createRoute({
   component: EditPagePage,
 })
 
-const invitesRoute = createRoute({
+const settingsRoute = createRoute({
   getParentRoute: () => authLayout,
-  path: '/settings/invites',
+  path: '/settings',
+  component: SettingsLayout,
+})
+const settingsIndexRoute = createRoute({
+  getParentRoute: () => settingsRoute,
+  path: '/',
+  beforeLoad: () => {
+    throw redirect({ to: '/settings/profile' })
+  },
+})
+const profileRoute = createRoute({
+  getParentRoute: () => settingsRoute,
+  path: '/profile',
+  staticData: { title: 'Profile' },
+  component: ProfilePage,
+})
+const invitesRoute = createRoute({
+  getParentRoute: () => settingsRoute,
+  path: '/invites',
   staticData: { title: 'Invitations' },
   beforeLoad: () => {
     if (useAuthStore.getState().user?.role !== 'ADMIN') throw redirect({ to: '/' })
@@ -168,7 +188,7 @@ const routeTree = rootRoute.addChildren([
   acceptInviteRoute,
   authLayout.addChildren([
     indexRoute,
-    invitesRoute,
+    settingsRoute.addChildren([settingsIndexRoute, profileRoute, invitesRoute]),
     subjectsRoute,
     subjectDetailRoute,
     projectDetailRoute,

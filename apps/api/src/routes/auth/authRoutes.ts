@@ -269,11 +269,23 @@ export async function verifyEmail(fastify: FastifyInstance) {
         return reply.status(400).send({ error: 'Invalid or expired verification token' })
       const { token } = parsed.data
 
-      const userId = await redis.getdel(`verify:${token}`)
-      if (!userId) return reply.status(400).send({ error: 'Invalid or expired verification token' })
-
+      const value = await redis.getdel(`verify:${token}`)
+      if (!value) return reply.status(400).send({ error: 'Invalid or expired verification token' })
+      let verification: { id: string; email: string }
+      try {
+        verification = JSON.parse(value)
+      } catch {
+        return reply.status(400).send({ error: 'Request a new verification email.' })
+      }
+      if (!verification?.id || !verification?.email)
+        return reply.status(400).send({ error: 'Invalid verification token' })
+      const current = await prisma.user.findUnique({ where: { id: verification.id } })
+      if (!current || current.email !== verification.email)
+        return reply
+          .status(400)
+          .send({ error: 'This verification link is for a previous email address.' })
       await prisma.user.update({
-        where: { id: userId },
+        where: { id: verification.id, email: verification.email },
         data: { emailConfirmed: true, emailVerifiedAt: new Date() },
       })
 

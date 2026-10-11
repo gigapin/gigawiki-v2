@@ -9,7 +9,12 @@ export async function queueVerificationEmail(user: { id: string; name: string; e
   const token = nanoid(32)
   const url = new URL('/verify-email', env.FRONTEND_URL)
   url.searchParams.set('token', token)
-  await redis.set(`verify:${token}`, user.id, 'EX', 86400)
+  await redis.set(
+    `verify:${token}`,
+    JSON.stringify({ id: user.id, email: user.email }),
+    'EX',
+    86400,
+  )
   await emailQueue.add('verify-email', {
     to: user.email,
     template: 'verify',

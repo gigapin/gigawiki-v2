@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useMatches } from '@tanstack/react-router'
+import { Link, useNavigate, useMatches } from '@tanstack/react-router'
 
 import { SearchModal } from './SearchModal'
 
@@ -71,7 +71,9 @@ function AvatarDropdown({ onClose }: { onClose: () => void }) {
         { icon: 'user' as IconName, label: 'Profile', color: 'var(--db-ink-2)' },
         { icon: 'settings' as IconName, label: 'Settings', color: 'var(--db-ink-2)' },
       ].map(({ icon, label, color }) => (
-        <div
+        <Link
+          to="/settings/profile"
+          onClick={onClose}
           key={label}
           style={{ ...itemStyle, color }}
           onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--db-bg-2)')}
@@ -79,7 +81,7 @@ function AvatarDropdown({ onClose }: { onClose: () => void }) {
         >
           <Icon name={icon} size={14} />
           {label}
-        </div>
+        </Link>
       ))}
       <InviteUsersLink onClick={onClose} />
       <div style={{ height: 1, background: 'var(--db-line)', margin: '5px 4px' }} />
@@ -513,7 +515,15 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
               }}
               title={user?.name ?? ''}
             >
-              {avatarInitials}
+              {user?.avatar?.url ? (
+                <img
+                  src={user.avatar.url}
+                  alt=""
+                  style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                />
+              ) : (
+                avatarInitials
+              )}
             </button>
             {avatarOpen && <AvatarDropdown onClose={() => setAvatarOpen(false)} />}
           </div>

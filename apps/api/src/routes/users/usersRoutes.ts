@@ -1,7 +1,11 @@
 import { FastifyInstance } from 'fastify'
 import argon2 from 'argon2'
 import { z } from 'zod'
+import sharp from 'sharp'
+import { nanoid } from 'nanoid'
 
+import { uploadFile, deleteFile } from '../../lib/storage.js'
+import { queueVerificationEmail } from '../../lib/verification-email.js'
 import { env } from '../../config/env.js'
 import { emailQueue } from '../../lib/queue.js'
 import { prisma } from '../../lib/prisma.js'
@@ -13,6 +17,7 @@ const USER_SELECT = {
   slug: true,
   role: true,
   avatarId: true,
+  avatar: true,
   emailConfirmed: true,
   createdAt: true,
   updatedAt: true,
@@ -93,7 +98,17 @@ export async function fetchUser(fastify: FastifyInstance) {
 export async function updateUser(fastify: FastifyInstance) {
   fastify.patch<{ Params: UserParams; Body: PatchUserBody }>('/users/:id', async (req, reply) => {
     const targetId = req.params.id === 'me' ? req.user.id : req.params.id
-    const { name, email, password, role } = req.body
+    const parsed = z
+      .object({
+        name: z.string().trim().min(1).max(100).optional(),
+        email: z.string().trim().toLowerCase().pipe(z.email()).optional(),
+        password: z.string().min(8).max(128).optional(),
+        role: z.enum(['ADMIN', 'EDITOR', 'GUEST']).optional(),
+      })
+      .strict()
+      .safeParse(req.body)
+    if (!parsed.success) return reply.status(400).send({ error: 'Invalid profile fields' })
+    const { name, email, password, role } = parsed.data
     const isAdmin = req.user.role === 'ADMIN'
     const isSelf = req.user.id === targetId
 
@@ -107,7 +122,19 @@ export async function updateUser(fastify: FastifyInstance) {
 
     const data: Record<string, unknown> = {}
     if (name !== undefined) data.name = name
-    if (email !== undefined) data.email = email
+    let emailChanged = false
+    if (email !== undefined) {
+      const current = await prisma.user.findUnique({ where: { id: targetId } })
+      if (!current) return reply.status(404).send({ error: 'User not found' })
+      emailChanged = email !== current.email
+      if (emailChanged) {
+        const existing = await prisma.user.findUnique({ where: { email } })
+        if (existing) return reply.status(409).send({ error: 'Email is already registered' })
+        data.email = email
+        data.emailConfirmed = false
+        data.emailVerifiedAt = null
+      }
+    }
     if (password !== undefined) {
       data.password = await argon2.hash(password, {
         type: argon2.argon2id,
@@ -118,13 +145,24 @@ export async function updateUser(fastify: FastifyInstance) {
     }
     if (role !== undefined && isAdmin) data.role = role
 
-    const user = await prisma.user.update({
-      where: { id: targetId },
-      data,
-      select: USER_SELECT,
-    })
-
-    return reply.status(200).send(user)
+    try {
+      const user = await prisma.user.update({ where: { id: targetId }, data, select: USER_SELECT })
+      if (emailChanged) {
+        try {
+          await queueVerificationEmail(user)
+        } catch (error) {
+          req.log.error(error, 'Unable to queue profile verification')
+          return reply.status(200).send({ ...user, verificationDeliveryFailed: true })
+        }
+      }
+      return reply.status(200).send(user)
+    } catch (error) {
+      if ((error as { code?: string }).code === 'P2002')
+        return reply.status(409).send({ error: 'Email is already registered' })
+      if ((error as { code?: string }).code === 'P2025')
+        return reply.status(404).send({ error: 'User not found' })
+      throw error
+    }
   })
 }
 
@@ -155,31 +193,56 @@ export async function uploadAvatar(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'No file uploaded' })
     }
 
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.mimetype))
+      return reply.status(400).send({ error: 'Choose a JPEG, PNG, WebP or GIF image.' })
     const currentUser = await prisma.user.findUnique({
       where: { id: targetId },
-      select: { avatarId: true },
+      select: { id: true },
     })
-
-    if (currentUser?.avatarId) {
-      // Delete old avatar record; actual S3 object removal handled by images service
-      await prisma.image.delete({ where: { id: currentUser.avatarId } }).catch(() => {})
+    if (!currentUser) return reply.status(404).send({ error: 'User not found' })
+    const buffer = await file.toBuffer()
+    if (file.file.truncated || buffer.length > 10 * 1024 * 1024)
+      return reply.status(413).send({ error: 'Images must be at most 10 MB.' })
+    let processed: Buffer
+    try {
+      processed = await sharp(buffer)
+        .rotate()
+        .resize(200, 200, { fit: 'cover' })
+        .webp({ quality: 80 })
+        .toBuffer()
+    } catch {
+      return reply.status(400).send({ error: 'Unable to read this image.' })
     }
-
-    const image = await prisma.image.create({
-      data: {
-        name: file.filename,
-        url: '',
-        path: '',
-        type: 'AVATAR',
-        createdById: req.user.id,
-      },
-    })
-
-    const user = await prisma.user.update({
-      where: { id: targetId },
-      data: { avatarId: image.id },
-      select: USER_SELECT,
-    })
+    const key = `uploads/${targetId}/avatars/${nanoid(10)}.webp`
+    await uploadFile(key, processed, 'image/webp')
+    let image
+    try {
+      image = await prisma.image.create({
+        data: {
+          name: file.filename,
+          url: `${env.API_URL.replace(/\/$/, '')}/uploads/${key}`,
+          path: key,
+          type: 'AVATAR',
+          createdById: req.user.id,
+        },
+      })
+    } catch (error) {
+      await deleteFile(key).catch(() => {})
+      throw error
+    }
+    let user
+    try {
+      user = await prisma.user.update({
+        where: { id: targetId },
+        data: { avatarId: image.id },
+        select: USER_SELECT,
+      })
+    } catch (error) {
+      await prisma.image.delete({ where: { id: image.id } }).catch(() => {})
+      await deleteFile(key).catch(() => {})
+      throw error
+    }
+    // Preserve old assets, which may still be referenced by existing content.
 
     return reply.status(200).send(user)
   })
