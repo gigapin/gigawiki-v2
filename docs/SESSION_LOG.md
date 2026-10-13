@@ -20,13 +20,13 @@
 |---|---|
 | Branch di lavoro | `dev` (il default remoto è `main`) |
 | Remote | `git@github.com:gigapin/gigawiki-v2.git` |
-| Task completati | 36 / 40 completati; 3 parziali; 1 non iniziato (conteggio dalla tabella sotto) |
+| Task completati | 37 / 40 completati; 2 parziali; 1 non iniziato (conteggio dalla tabella sotto) |
 | Fase corrente | **Fase 5 — Test e CI/CD**, task 34 e 35 implementati. Base shadcn, Project detail e registrazione implementati; reader/editor con immagini ridimensionabili, autosave, revisioni, menzioni e menu contestuale |
-| Backend | Completo (task 5–23). 20 file di test, 323 test verdi; 3 test Settings PostgreSQL superati sul database dell’app |
+| Backend | Completo (task 5–23). 323 test ordinari verdi; 8 test di integrazione e 3 test Settings PostgreSQL superati sul database dell’app |
 | Frontend | Login, Register, Verify email, ForgotPassword, ResetPassword, AcceptInvite, Dashboard, Subjects, Project detail, scelta destinazione nuova pagina, reader ed editor Tiptap. Bozza/pubblicazione, breadcrumb, tema light/dark, upload e resize immagini, link, syntax highlighting, autosave, drawer revisioni, menzioni e menu contestuale implementati. Tag/preferiti nelle pagine implementati; commenti riusabili integrati nel reader; Settings complete (Profile, Password, Appearance, Users, Invites, App Settings) |
 | CI/CD | Non iniziata (task 39) |
 
-**Ultimo commit presente:** `e3c499a` (`feat: add settings area`), su `dev`. Il working tree era pulito all'inizio della sessione del 13 ottobre; il task 35 e i relativi aggiornamenti documentali sono ora nel working tree, senza commit creati dall’assistente. `.claude/settings.local.json` è ancora tracciato, anche se escluso da `.gitignore`.
+**Ultimo commit presente:** `02a8137` (`feat: hook api`), su `dev`. Il working tree era pulito all’inizio dell’intervento; la suite PostgreSQL del task 36 e i relativi aggiornamenti documentali sono ora nel working tree, senza commit creati dall’assistente. `.claude/settings.local.json` è ancora tracciato, anche se escluso da `.gitignore`.
 
 **Ultime verifiche:** 193 test frontend su 27 file e 323 test API superati; build/lint frontend, typecheck API/shared superati. Rimangono il warning bundle >500 kB e il warning React Compiler/TanStack Table preesistente. Test Node/jsdom: non equivalgono a prove browser. Dopo l’applicazione della migrazione da parte dell’utente, tutti e tre i test Settings PostgreSQL sono superati sul database dell’app. Tutte le scritture di prova sono state annullate. La suite emette un warning non bloccante di `pg` sulle query concorrenti. Autosave e registrazione con Mailtrap già confermati dall’utente nelle sessioni precedenti.
 
@@ -95,7 +95,7 @@ Legenda: ✅ fatto · 🟡 parziale · ⬜ non iniziato
 
 | # | Task | Stato | Note |
 |---|---|---|---|
-| 36 | Test backend | 🟡 | 323 test verdi su 20 file con Prisma mockato; suite Settings PostgreSQL con 3 test superati il 13 ottobre sul DB dell’app dopo la migrazione. Restano test di integrazione su PostgreSQL dedicato: migrazioni, ricerca full-text, revisioni e soft delete |
+| 36 | Test backend | ✅ | 323 test ordinari; 8 integrazioni PostgreSQL per auth, ricerca full-text, revisioni, permessi e soft delete; 3 integrazioni Settings. Tutti superati sul DB dell’app con rollback. Migrazioni gestite dall’utente; vedere scostamenti e DATABASE_TESTS.md |
 | 37 | Test componenti frontend | 🟡 | 193 test Vitest Node/jsdom su 27 file, inclusi test Testing Library delle interazioni auth, commenti, cover, permessi e autosave/Save draft. Login coperto con Testing Library; restano prove browser dei flussi e copertura dell’editor reale |
 | 38 | Dockerfile per l'API | ✅ | Implementato meglio della specifica: `pnpm deploy --prod` + rimozione mirata di dipendenze non raggiungibili a runtime |
 | 39 | GitHub Actions CI | ⬜ | `.github/` non esiste |
@@ -107,7 +107,7 @@ Legenda: ✅ fatto · 🟡 parziale · ⬜ non iniziato
 
 Punti in cui il codice si discosta da `GIGAWIKI_V2_TASKS.md`. Vanno **letti prima** di «completare» il task corrispondente, altrimenti si rischia di riscrivere scelte già prese di proposito.
 
-1. **Test backend (task 36) — mockati, non su database reale.** La specifica chiede `src/__tests__/`, un database `gigawiki_test`, `prisma migrate deploy` in `beforeAll` e truncate dopo ogni test. L'implementazione usa invece file `*.test.ts` accanto alle rotte, con Prisma e argon2 mockati via `vi.mock` e `app.inject()`. È più veloce e non richiede infrastruttura, ma non copre le query SQL reali — in particolare la full-text search del task 8, che è proprio ciò che un test su DB vero verificherebbe. Il canone da seguire per nuovi test è `usersRoutes.test.ts`.
+1. **Test backend (task 36) — database dell’app e rollback su richiesta dell’utente.** Alle 323 prove ordinarie con dipendenze mockate si aggiungono 8 integrazioni in `src/__tests__/` e 3 Settings con SQL PostgreSQL reale. Invece del database dedicato, migrazioni automatiche e truncate previsti dalla specifica, le fixture casuali sono sempre annullate; le impostazioni singleton sono isolate. Redis e coda email restano mockati. Le transazioni delle rotte sono adattate a savepoint: non si verificano conflitti fra commit concorrenti né l’applicazione delle migrazioni da zero. Vedere `DATABASE_TESTS.md`.
 2. **Doppio file di env.** Esistono sia `apps/api/src/config/env.ts` (previsto dal task 5) sia `apps/api/src/lib/env.ts` (quello effettivamente documentato in `CLAUDE.md` e importato per primo in `server.ts`). Da consolidare in uno solo.
 3. **Rotte pubbliche disabilitate.** In `src/routes/index.ts` il blocco delle rotte pubbliche è commentato: letture di subjects, projects, sections, pages, revisioni, commenti, tag e view sono tutte dietro autenticazione. Va deciso se `Visibility.PUBLIC` deve essere davvero raggiungibile senza login — al momento non lo è.
 4. **Meilisearch nel compose ma inutilizzato.** La ricerca è implementata con la full-text search di Postgres (task 8). Il servizio `meilisearch` in `docker-compose.yml` non è previsto dalla specifica e non è referenziato da alcun codice: o si usa o si rimuove.
@@ -121,17 +121,17 @@ Punti in cui il codice si discosta da `GIGAWIKI_V2_TASKS.md`. Vanno **letti prim
 
 ## Prossimi passi — ripresa del lavoro
 
-**Migrazione authVersion applicata dall’utente e test Settings PostgreSQL superati sul database dell’app.** Task 35 completato. Prossimo incremento: verifiche Settings nel browser e integrazioni PostgreSQL aggiuntive.
+**Task 35 e 36 completati; 8 integrazioni API e 3 Settings PostgreSQL superate.** L’utente esegue personalmente i test nel browser. Prossimo incremento di codice: copertura dell’editor reale (task 37), poi CI.
 
 Ordine degli incrementi successivi:
 
 1. **Task 34, verifica:** provare password/sessioni, tema, ruoli, anteprima eliminazione, inviti e App Settings nel browser. `test:settings:db` già superato dopo la migrazione.
-2. **Task 36:** aggiungere test di integrazione su un PostgreSQL separato, ad esempio `gigawiki_test`, con migrazioni e pulizia dei dati. Per la nuova suite Settings l’utente ha chiesto di usare il database dell’app: solo fixture casuali in transazioni sempre annullate, nessun truncate/migrazione automatica. Le altre integrazioni richiedono ancora un DB dedicato. I 323 test ordinari simulano Prisma.
+2. **Task 36 completato:** suite opzionali `test:integration:db` e `test:settings:db`; istruzioni e limiti in `DATABASE_TESTS.md`. Nessuna migrazione aggiuntiva richiesta da questo intervento.
 3. **Task 37:** estendere le prove dell’editor reale (login ora coperto) e provare nel browser creazione bozza, salvataggi successivi, pubblicazione, autosave, upload, commenti, preferiti personali e revisioni con ruoli Guest/Editor/Admin.
 4. **Task 39:** GitHub Actions per lint, typecheck, test e build su `main`/`dev`. Aggiungere prima gli script typecheck frontend e lint API/shared mancanti; i job non devono saltare questi pacchetti.
 5. **Task 40:** `CONTRIBUTING.md`, verifica protezione `main` e strategia branch. Repo e remote esistono già.
 
-**Stato alla chiusura:** 36/40 completati, 3 parziali, 1 non iniziato. Ultime verifiche: 193 test frontend e 323 API, lint/build frontend e typecheck API/shared superati. Tre test Settings su DB reale superati dopo la migrazione; prove browser/SMTP/storage degli ultimi interventi ancora aperte. Le modifiche di questa sessione sono nel working tree e non sono state committate dall’assistente.
+**Stato alla chiusura:** 37/40 completati, 2 parziali, 1 non iniziato. Ultime verifiche: 193 test frontend e 323 API, lint/build frontend e typecheck API/shared superati. Otto integrazioni API e tre test Settings su DB reale superati; prove browser affidate all’utente, SMTP/storage ancora aperti. Le modifiche di questa sessione sono nel working tree e non sono state committate dall’assistente.
 
 **Comportamenti da preservare:** dettaglio Subject senza banner grande, icona/titolo a sinistra e azioni a destra; commenti richiusi inizialmente sotto “Comments” con freccia, bozze mantenute alla chiusura; Save draft mantiene l’editor aperto e usa la stessa pagina nei salvataggi successivi, Publish apre il reader. Guest senza cronologia, preferiti personali per account e temporizzazione login disattivata in development come richiesto.
 
@@ -163,6 +163,15 @@ Chi clona il repo su una macchina nuova deve ricreare `init.sh` (o avere Node su
 ---
 
 ## Log delle sessioni
+
+### 2026-10-13 — Task 36: integrazioni PostgreSQL
+
+- L’utente prende in carico le verifiche browser; nessuna dipendenza browser aggiunta.
+- Aggiunta `test:integration:db`: autenticazione/hash reali, refresh e logout, scadenza/revoca, registrazione e policy, recupero password, revisioni/ripristino, ricerca full-text, soft delete e permessi letti dal DB.
+- **8/8 test superati sul database dell’app**; fixture casuali in transazioni annullate e verifica esterna dell’assenza dei dati temporanei. Nessun truncate, migrazione o modifica alle impostazioni dell’app.
+- **323 test API ordinari**, typecheck API e lint della nuova suite superati. Le 11 prove DB sono saltate dal comando standard e richiedono i comandi dedicati. Warning `pg` concorrente non bloccante.
+- Redis/email mockati; migrazioni e concorrenza fra commit fuori dalla copertura. Istruzioni in `DATABASE_TESTS.md`. Nessun commit creato dall’assistente.
+
 
 ### 2026-10-13 — Verifica Settings dopo la migrazione
 
