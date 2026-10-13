@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { InviteSchema } from '@shared/schemas/auth.schema'
 import type { InviteDto } from '@shared/schemas/auth.schema'
 
+import { InviteList } from './InviteList'
+
 import { useInviteUser, invitationSavedWithoutEmail } from '@/api/users'
 import { useAuthStore } from '@/stores/auth.store'
 import { apiErrorMessage } from '@/lib/api-error'
@@ -62,7 +64,7 @@ export function InvitesPage() {
           ) : savedWithoutEmail ? (
             <p role="alert" className="text-sm text-destructive">
               The invitation was saved, but its email could not be queued. Contact the administrator
-              responsible for email delivery before creating another invitation for this address.
+              responsible for email delivery, then use Resend in the list below.
             </p>
           ) : (
             <form
@@ -140,6 +142,7 @@ export function InvitesPage() {
           )}
         </CardContent>
       </Card>
+      <InviteList />
     </div>
   )
 }

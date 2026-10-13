@@ -59,6 +59,7 @@ apiClient.interceptors.response.use(
     }
 
     isRefreshing = true
+    const refreshingAccountId = useAuthStore.getState().user?.id
 
     try {
       const { data } = await axios.post<{ accessToken: string }>(
@@ -68,6 +69,8 @@ apiClient.interceptors.response.use(
       )
       const { accessToken } = data
       const { user, setAuth } = useAuthStore.getState()
+      if (refreshingAccountId && user?.id !== refreshingAccountId)
+        throw new Error('Session changed during refresh')
       if (user) setAuth(user, accessToken)
       processQueue(null, accessToken)
       originalRequest.headers.Authorization = `Bearer ${accessToken}`

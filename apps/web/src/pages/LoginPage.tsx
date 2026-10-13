@@ -279,6 +279,11 @@ export function LoginPage() {
               <p>Welcome back. Pick up where you left off.</p>
             </div>
 
+            {search.passwordChanged && (
+              <p role="status" className="mb-4 text-sm text-primary">
+                Password changed. Sign in again on all devices.
+              </p>
+            )}
             {serverError && (
               <div className="gw-banner" role="alert">
                 <svg

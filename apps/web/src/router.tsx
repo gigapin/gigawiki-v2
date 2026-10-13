@@ -1,5 +1,9 @@
 import { createRootRoute, createRoute, createRouter, redirect } from '@tanstack/react-router'
 
+import { PasswordPage } from '@/pages/settings/PasswordPage'
+import { AppearancePage } from '@/pages/settings/AppearancePage'
+import { UsersPage } from '@/pages/settings/UsersPage'
+import { AppSettingsPage } from '@/pages/settings/AppSettingsPage'
 import { SettingsLayout } from '@/pages/settings/SettingsLayout'
 import { ProfilePage } from '@/pages/settings/ProfilePage'
 import { InvitesPage } from '@/pages/settings/InvitesPage'
@@ -31,8 +35,11 @@ const rootRoute = createRootRoute({
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/login',
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { redirect: string; passwordChanged?: boolean } => ({
     redirect: (search.redirect as string) ?? '',
+    passwordChanged: search.passwordChanged === true || search.passwordChanged === 'true',
   }),
   component: LoginPage,
 })
@@ -169,6 +176,36 @@ const profileRoute = createRoute({
   staticData: { title: 'Profile' },
   component: ProfilePage,
 })
+const passwordRoute = createRoute({
+  getParentRoute: () => settingsRoute,
+  path: '/password',
+  staticData: { title: 'Password' },
+  component: PasswordPage,
+})
+const appearanceRoute = createRoute({
+  getParentRoute: () => settingsRoute,
+  path: '/appearance',
+  staticData: { title: 'Appearance' },
+  component: AppearancePage,
+})
+const usersRoute = createRoute({
+  getParentRoute: () => settingsRoute,
+  path: '/users',
+  staticData: { title: 'Users' },
+  beforeLoad: () => {
+    if (useAuthStore.getState().user?.role !== 'ADMIN') throw redirect({ to: '/settings/profile' })
+  },
+  component: UsersPage,
+})
+const appSettingsRoute = createRoute({
+  getParentRoute: () => settingsRoute,
+  path: '/app',
+  staticData: { title: 'App Settings' },
+  beforeLoad: () => {
+    if (useAuthStore.getState().user?.role !== 'ADMIN') throw redirect({ to: '/settings/profile' })
+  },
+  component: AppSettingsPage,
+})
 const invitesRoute = createRoute({
   getParentRoute: () => settingsRoute,
   path: '/invites',
@@ -188,7 +225,15 @@ const routeTree = rootRoute.addChildren([
   acceptInviteRoute,
   authLayout.addChildren([
     indexRoute,
-    settingsRoute.addChildren([settingsIndexRoute, profileRoute, invitesRoute]),
+    settingsRoute.addChildren([
+      settingsIndexRoute,
+      profileRoute,
+      passwordRoute,
+      appearanceRoute,
+      usersRoute,
+      invitesRoute,
+      appSettingsRoute,
+    ]),
     subjectsRoute,
     subjectDetailRoute,
     projectDetailRoute,

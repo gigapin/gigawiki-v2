@@ -236,3 +236,18 @@ describe('PUT /settings/:key', () => {
     expect(res.statusCode).toBe(200)
   })
 })
+
+it.each([
+  ['ALLOW_SELF_REGISTRATION', 'yes'],
+  ['DEFAULT_USER_ROLE', 'ADMIN'],
+  ['SITE_NAME', '  '],
+  ['SITE_NAME', 'a'.repeat(101)],
+])('rejects invalid values for %s', async (key, value) => {
+  const result = await buildAuthApp().inject({
+    method: 'PUT',
+    url: `/settings/${key}`,
+    payload: { value },
+  })
+  expect(result.statusCode).toBe(400)
+  expect(mockSetting.upsert).not.toHaveBeenCalled()
+})

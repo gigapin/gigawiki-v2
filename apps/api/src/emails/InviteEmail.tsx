@@ -15,23 +15,25 @@ const btn = {
 }
 
 export function InviteEmail({
+  siteName = 'GiGaWiki',
   inviterName,
   role,
   acceptUrl,
   expiresAt,
 }: {
+  siteName?: string
   inviterName: string
   role: string
   acceptUrl: string
   expiresAt: string
 }) {
   return (
-    <BaseLayout>
+    <BaseLayout siteName={siteName}>
       <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginTop: 0 }}>
-        You&apos;ve been invited to GiGaWiki
+        You&apos;ve been invited to {siteName}
       </h1>
       <p>
-        Hi, <strong>{inviterName}</strong> has invited you to join GiGaWiki as{' '}
+        Hi, <strong>{inviterName}</strong> has invited you to join {siteName} as{' '}
         <strong>{role}</strong>.
       </p>
       <p style={{ color: '#71717a', fontSize: '13px' }}>This invitation expires on {expiresAt}.</p>

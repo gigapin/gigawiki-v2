@@ -1,5 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 
+import { deletionPreview } from './users/userDeletion.js'
+import { fetchInvites, resendInvite, cancelInvite } from './users/invitesRoutes.js'
 import {
   fetchProjectsBySubject,
   fetchProject,
@@ -164,6 +166,10 @@ export function registerRoutes(app: FastifyInstance) {
       instance.register(updateComment)
       instance.register(deleteComment)
 
+      instance.register(deletionPreview)
+      instance.register(fetchInvites)
+      instance.register(resendInvite)
+      instance.register(cancelInvite)
       instance.register(fetchAllUsers)
       instance.register(fetchMentionUsers)
       instance.register(fetchUser)

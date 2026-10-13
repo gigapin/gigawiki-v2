@@ -14,9 +14,17 @@ const btn = {
   marginTop: '24px',
 }
 
-export function VerifyEmailEmail({ name, verifyUrl }: { name: string; verifyUrl: string }) {
+export function VerifyEmailEmail({
+  siteName = 'GiGaWiki',
+  name,
+  verifyUrl,
+}: {
+  siteName?: string
+  name: string
+  verifyUrl: string
+}) {
   return (
-    <BaseLayout>
+    <BaseLayout siteName={siteName}>
       <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginTop: 0 }}>
         Verify your email address
       </h1>

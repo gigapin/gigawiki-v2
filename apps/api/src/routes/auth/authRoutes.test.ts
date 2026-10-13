@@ -115,6 +115,7 @@ beforeEach(() => {
 })
 
 const fakeUser = {
+  authVersion: 0,
   id: 'user-1',
   name: 'Alice',
   email: 'alice@example.com',
@@ -637,7 +638,7 @@ describe('Password and invitation validation', () => {
       acceptedAt: null,
       expiresAt: new Date(Date.now() + 86400000),
     } as never)
-    mockUser.findUnique.mockResolvedValue(null)
+    mockUser.findUnique.mockResolvedValueOnce(null).mockResolvedValue(fakeUser)
     mockUser.create.mockResolvedValue({
       ...fakeUser,
       email: 'invited@example.com',
@@ -667,7 +668,12 @@ describe('Password and invitation validation', () => {
       }),
     )
     expect(prisma.emailInvite.updateMany).toHaveBeenCalledWith({
-      where: { id: 'invite', acceptedAt: null, expiresAt: { gt: expect.any(Date) } },
+      where: {
+        id: 'invite',
+        token: 'invite',
+        acceptedAt: null,
+        expiresAt: { gt: expect.any(Date) },
+      },
       data: { acceptedAt: expect.any(Date) },
     })
     expect(res.json().accessToken).toBeTruthy()
@@ -781,5 +787,44 @@ it('rejects verification links issued for a previous email address', async () =>
   })
   expect(result.statusCode).toBe(400)
   expect(mockUser.update).not.toHaveBeenCalled()
+  await app.close()
+})
+
+it('assigns the configured Editor role only to new registrations', async () => {
+  mockSetting.findUnique.mockImplementation((async ({ where }: { where: { key: string } }) => ({
+    key: where.key,
+    value: where.key === 'DEFAULT_USER_ROLE' ? 'EDITOR' : 'true',
+  })) as never)
+  mockUser.findUnique.mockResolvedValue(null)
+  mockUser.create.mockResolvedValue(fakeUser)
+  const app = buildApp()
+  const result = await app.inject({
+    method: 'POST',
+    url: '/auth/register',
+    payload: { name: 'New user', email: 'new@example.com', password: 'password123' },
+  })
+  expect(result.statusCode).toBe(201)
+  expect(mockUser.create).toHaveBeenCalledWith(
+    expect.objectContaining({ data: expect.objectContaining({ role: 'EDITOR' }) }),
+  )
+  await app.close()
+})
+it('revokes sessions and increases the version on password reset', async () => {
+  vi.mocked(redis.getdel).mockResolvedValueOnce('user-1')
+  mockUser.update.mockResolvedValue(fakeUser)
+  const app = buildApp()
+  const result = await app.inject({
+    method: 'POST',
+    url: '/auth/reset-password',
+    payload: { token: 'reset', newPassword: 'newpassword' },
+  })
+  expect(result.statusCode).toBe(200)
+  expect(mockUser.update).toHaveBeenCalledWith({
+    where: { id: 'user-1' },
+    data: { password: 'hashed_password', authVersion: { increment: 1 } },
+  })
+  expect(mockRefreshToken.updateMany).toHaveBeenCalledWith(
+    expect.objectContaining({ where: { userId: 'user-1', revokedAt: null } }),
+  )
   await app.close()
 })

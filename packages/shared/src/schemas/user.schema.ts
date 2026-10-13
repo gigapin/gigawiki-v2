@@ -1,12 +1,14 @@
 import { z } from 'zod'
 
-export const UpdateUserSchema = z.object({
-  name: z.string().min(1).max(100).optional(),
-  email: z.string().email().optional(),
-  password: z.string().min(8).optional(),
-  currentPassword: z.string().min(1).optional(),
-  role: z.enum(['ADMIN', 'EDITOR', 'GUEST']).optional(),
-})
+export const UpdateUserSchema = z
+  .object({
+    name: z.string().trim().min(1).max(100).optional(),
+    email: z.string().trim().toLowerCase().email().optional(),
+    newPassword: z.string().min(8).max(128).optional(),
+    currentPassword: z.string().min(1).max(128).optional(),
+    role: z.enum(['ADMIN', 'EDITOR', 'GUEST']).optional(),
+  })
+  .strict()
 
 export const UserQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),

@@ -4,6 +4,9 @@ import { sendMail } from '../lib/mailer.js'
 
 import { deliverEmail } from './email.worker.js'
 
+vi.mock('../lib/prisma.js', () => ({
+  prisma: { setting: { findUnique: vi.fn().mockResolvedValue(null) } },
+}))
 vi.mock('../lib/mailer.js', () => ({ sendMail: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('../lib/redis.js', () => ({ redis: {} }))
 beforeEach(() => vi.clearAllMocks())
@@ -16,6 +19,7 @@ describe('Verification email delivery', () => {
     })
     expect(sendMail).toHaveBeenCalledWith({
       to: 'alice@example.com',
+      fromName: 'GiGaWiki',
       subject: 'Verify your email',
       html: expect.stringContaining(verifyUrl),
     })
@@ -55,8 +59,35 @@ it.each([
     })
     expect(sendMail).toHaveBeenCalledWith({
       to: 'alice@example.com',
+      fromName: 'GiGaWiki',
       subject,
       html: expect.stringContaining(url),
     })
   },
 )
+
+it('uses the configured site name in email branding and subject', async () => {
+  const { prisma } = await import('../lib/prisma.js')
+  vi.mocked(prisma.setting.findUnique).mockResolvedValueOnce({
+    key: 'SITE_NAME',
+    value: 'My Wiki',
+  } as never)
+  await deliverEmail({
+    data: {
+      to: 'alice@example.com',
+      template: 'invite',
+      data: {
+        inviterName: 'Admin',
+        role: 'GUEST',
+        acceptUrl: 'http://localhost/accept-invite?token=one',
+        expiresAt: 'tomorrow',
+      },
+    },
+  })
+  expect(sendMail).toHaveBeenCalledWith({
+    to: 'alice@example.com',
+    fromName: 'My Wiki',
+    subject: "You've been invited to My Wiki",
+    html: expect.stringContaining('My Wiki'),
+  })
+})

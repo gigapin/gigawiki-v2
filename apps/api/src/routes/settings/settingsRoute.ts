@@ -72,10 +72,20 @@ export async function updateSetting(fastify: FastifyInstance) {
         return reply.status(400).send({ error: 'value is required and must be a string' })
       }
 
+      const valid =
+        key === 'ALLOW_SELF_REGISTRATION'
+          ? ['true', 'false'].includes(value)
+          : key === 'DEFAULT_USER_ROLE'
+            ? ['GUEST', 'EDITOR'].includes(value)
+            : key === 'SITE_NAME'
+              ? value.trim().length > 0 && value.trim().length <= 100
+              : true
+      if (!valid) return reply.status(400).send({ error: 'Invalid setting value' })
+      const normalized = key === 'SITE_NAME' ? value.trim() : value
       await prisma.setting.upsert({
         where: { key },
-        update: { value },
-        create: { key, value },
+        update: { value: normalized },
+        create: { key, value: normalized },
       })
 
       try {
@@ -84,7 +94,7 @@ export async function updateSetting(fastify: FastifyInstance) {
         req.log.warn({ err }, 'settings cache invalidation failed')
       }
 
-      return reply.status(200).send({ key, value })
+      return reply.status(200).send({ key, value: normalized })
     },
   )
 }

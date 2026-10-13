@@ -8,6 +8,7 @@ import { prisma } from '../../lib/prisma.js'
 import { redis } from '../../lib/redis.js'
 import { emailQueue } from '../../lib/queue.js'
 import { env } from '../../config/env.js'
+import { adminTransaction } from '../../lib/admin-transaction.js'
 import { queueVerificationEmail } from '../../lib/verification-email.js'
 
 type LoginBody = { email: string; password: string }
@@ -48,13 +49,21 @@ function setRefreshCookie(reply: FastifyReply, token: string, expiresAt: Date) {
   })
 }
 
-async function createRefreshToken(reply: FastifyReply, userId: string) {
+async function createRefreshToken(reply: FastifyReply, userId: string, authVersion: number) {
   const token = nanoid(64)
   const expiresAt =
     env.NODE_ENV === 'development'
       ? new Date('9999-12-31T23:59:59.000Z')
       : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-  await prisma.refreshToken.create({ data: { userId, token, expiresAt } })
+  await adminTransaction(async (tx) => {
+    const current = await tx.user.findUnique({
+      where: { id: userId },
+      select: { authVersion: true },
+    })
+    if (!current || current.authVersion !== authVersion)
+      throw Object.assign(new Error('Account changed. Sign in again.'), { statusCode: 401 })
+    await tx.refreshToken.create({ data: { userId, token, expiresAt } })
+  })
   setRefreshCookie(reply, token, expiresAt)
 
   return token
@@ -75,9 +84,14 @@ export async function login(fastify: FastifyInstance) {
         .send({ code: 'EMAIL_NOT_VERIFIED', error: 'Please verify your email before signing in.' })
     }
 
-    const accessToken = fastify.jwt.sign({ id: user.id, email: user.email, role: user.role })
+    const accessToken = fastify.jwt.sign({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      authVersion: user.authVersion,
+    })
     reply.clearCookie(REFRESH_COOKIE, { path: '/api/v2/auth/refresh' })
-    await createRefreshToken(reply, user.id)
+    await createRefreshToken(reply, user.id, user.authVersion)
 
     return reply.status(200).send({ accessToken })
   })
@@ -104,23 +118,36 @@ export async function refresh(fastify: FastifyInstance) {
     const token = request.cookies[REFRESH_COOKIE]
     if (!token) return reply.status(401).send({ error: 'Missing refresh token' })
 
-    const stored = await prisma.refreshToken.findFirst({
-      where: {
-        token,
-        revokedAt: null,
-        ...(env.NODE_ENV === 'development' ? {} : { expiresAt: { gt: new Date() } }),
-      },
+    const result = await adminTransaction(async (tx) => {
+      const stored = await tx.refreshToken.findFirst({
+        where: {
+          token,
+          revokedAt: null,
+          ...(env.NODE_ENV === 'development' ? {} : { expiresAt: { gt: new Date() } }),
+        },
+      })
+      if (!stored) return null
+      const user = await tx.user.findUnique({ where: { id: stored.userId } })
+      if (!user) return null
+      await tx.refreshToken.delete({ where: { id: stored.id } })
+      const nextToken = nanoid(64)
+      const expiresAt =
+        env.NODE_ENV === 'development'
+          ? new Date('9999-12-31T23:59:59.000Z')
+          : new Date(Date.now() + 30 * 86400000)
+      await tx.refreshToken.create({ data: { userId: user.id, token: nextToken, expiresAt } })
+      return { user, nextToken, expiresAt }
     })
-    if (!stored) return reply.status(401).send({ error: 'Invalid or expired refresh token' })
-
-    const user = await prisma.user.findUnique({ where: { id: stored.userId } })
-    if (!user) return reply.status(401).send({ error: 'User not found' })
-
-    await prisma.refreshToken.delete({ where: { id: stored.id } })
-
-    const accessToken = fastify.jwt.sign({ id: user.id, email: user.email, role: user.role })
+    if (!result) return reply.status(401).send({ error: 'Invalid or expired refresh token' })
+    const { user, nextToken, expiresAt } = result
+    const accessToken = fastify.jwt.sign({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      authVersion: user.authVersion,
+    })
     reply.clearCookie(REFRESH_COOKIE, { path: '/api/v2/auth/refresh' })
-    await createRefreshToken(reply, user.id)
+    setRefreshCookie(reply, nextToken, expiresAt)
 
     return reply.status(200).send({ accessToken })
   })
@@ -141,6 +168,7 @@ export async function register(fastify: FastifyInstance) {
       if (setting?.value === 'false')
         return reply.status(403).send({ error: 'Registration is disabled' })
 
+      const defaultRole = await prisma.setting.findUnique({ where: { key: 'DEFAULT_USER_ROLE' } })
       const hashedPassword = await argon2.hash(password, ARGON2_OPTIONS)
       const slug = await generateUniqueSlug(name, async (candidate) =>
         Boolean(await prisma.user.findUnique({ where: { slug: candidate }, select: { id: true } })),
@@ -153,7 +181,7 @@ export async function register(fastify: FastifyInstance) {
             email,
             password: hashedPassword,
             slug,
-            role: 'GUEST',
+            role: defaultRole?.value === 'EDITOR' ? 'EDITOR' : 'GUEST',
             emailConfirmed: false,
           },
         })
@@ -252,7 +280,18 @@ export async function resetPassword(fastify: FastifyInstance) {
       if (!userId) return reply.status(400).send({ error: 'Invalid or expired reset token' })
 
       const hashedPassword = await argon2.hash(newPassword, ARGON2_OPTIONS)
-      await prisma.user.update({ where: { id: userId }, data: { password: hashedPassword } })
+      await adminTransaction(async (tx) => {
+        await tx.user.update({
+          where: { id: userId },
+          data: { password: hashedPassword, authVersion: { increment: 1 } },
+        })
+        await tx.refreshToken.updateMany({
+          where: { userId, revokedAt: null },
+          data: { revokedAt: new Date() },
+        })
+      })
+      reply.clearCookie(REFRESH_COOKIE, { path: REFRESH_COOKIE_PATH })
+      reply.clearCookie(REFRESH_COOKIE, { path: '/api/v2/auth/refresh' })
 
       return reply.status(200).send({ message: 'Password reset successfully.' })
     },
@@ -324,7 +363,7 @@ export async function acceptInvite(fastify: FastifyInstance) {
 
       const user = await prisma.$transaction(async (tx) => {
         const claimed = await tx.emailInvite.updateMany({
-          where: { id: invite.id, acceptedAt: null, expiresAt: { gt: new Date() } },
+          where: { id: invite.id, token, acceptedAt: null, expiresAt: { gt: new Date() } },
           data: { acceptedAt: new Date() },
         })
         if (claimed.count !== 1) {
@@ -343,8 +382,13 @@ export async function acceptInvite(fastify: FastifyInstance) {
         })
       })
 
-      const accessToken = fastify.jwt.sign({ id: user.id, email: user.email, role: user.role })
-      await createRefreshToken(reply, user.id)
+      const accessToken = fastify.jwt.sign({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        authVersion: user.authVersion,
+      })
+      await createRefreshToken(reply, user.id, user.authVersion)
 
       return reply.status(201).send({ accessToken })
     },

@@ -8,6 +8,12 @@ import { uploadFile, deleteFile } from '../../lib/storage.js'
 import { queueVerificationEmail } from '../../lib/verification-email.js'
 import { env } from '../../config/env.js'
 import { emailQueue } from '../../lib/queue.js'
+import {
+  adminTransaction,
+  apiError,
+  requireAdmin,
+  protectLastAdmin,
+} from '../../lib/admin-transaction.js'
 import { prisma } from '../../lib/prisma.js'
 
 const USER_SELECT = {
@@ -35,7 +41,8 @@ type FetchUsersQuery = {
 type PatchUserBody = {
   name?: string
   email?: string
-  password?: string
+  currentPassword?: string
+  newPassword?: string
   role?: 'ADMIN' | 'EDITOR' | 'GUEST'
 }
 
@@ -50,9 +57,17 @@ export async function fetchAllUsers(fastify: FastifyInstance) {
       return reply.status(403).send({ error: 'Admin access required' })
     }
 
-    const { role, search, page = '1', limit = '20' } = req.query
-    const skip = (parseInt(page) - 1) * parseInt(limit)
-    const take = parseInt(limit)
+    const parsed = z
+      .object({
+        role: z.enum(['ADMIN', 'EDITOR', 'GUEST']).optional(),
+        search: z.string().trim().max(100).optional(),
+        page: z.coerce.number().int().min(1).default(1),
+        limit: z.coerce.number().int().min(1).max(100).default(20),
+      })
+      .safeParse(req.query)
+    if (!parsed.success) return reply.status(400).send({ error: 'Invalid user query' })
+    const { role, search, page, limit: take } = parsed.data
+    const skip = (page - 1) * take
 
     const where: Record<string, unknown> = {}
     if (role) where.role = role
@@ -69,12 +84,12 @@ export async function fetchAllUsers(fastify: FastifyInstance) {
         select: USER_SELECT,
         skip,
         take,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
       }),
       prisma.user.count({ where }),
     ])
 
-    return reply.status(200).send({ users, total, page: parseInt(page), limit: take })
+    return reply.status(200).send({ users, total, page, limit: take })
   })
 }
 
@@ -102,13 +117,14 @@ export async function updateUser(fastify: FastifyInstance) {
       .object({
         name: z.string().trim().min(1).max(100).optional(),
         email: z.string().trim().toLowerCase().pipe(z.email()).optional(),
-        password: z.string().min(8).max(128).optional(),
+        currentPassword: z.string().min(1).max(128).optional(),
+        newPassword: z.string().min(8).max(128).optional(),
         role: z.enum(['ADMIN', 'EDITOR', 'GUEST']).optional(),
       })
       .strict()
       .safeParse(req.body)
     if (!parsed.success) return reply.status(400).send({ error: 'Invalid profile fields' })
-    const { name, email, password, role } = parsed.data
+    const { name, email, currentPassword, newPassword, role } = parsed.data
     const isAdmin = req.user.role === 'ADMIN'
     const isSelf = req.user.id === targetId
 
@@ -135,18 +151,56 @@ export async function updateUser(fastify: FastifyInstance) {
         data.emailVerifiedAt = null
       }
     }
-    if (password !== undefined) {
-      data.password = await argon2.hash(password, {
+    if (newPassword !== undefined || currentPassword !== undefined) {
+      if (
+        !isSelf ||
+        !newPassword ||
+        !currentPassword ||
+        name !== undefined ||
+        email !== undefined ||
+        role !== undefined
+      )
+        return reply
+          .status(400)
+          .send({ error: 'Provide current and new password separately from profile changes.' })
+      const current = await prisma.user.findUnique({ where: { id: targetId } })
+      if (!current || !(await argon2.verify(current.password, currentPassword)))
+        return reply.status(400).send({ error: 'Current password is incorrect.' })
+      const password = await argon2.hash(newPassword, {
         type: argon2.argon2id,
         memoryCost: 65536,
         timeCost: 3,
         parallelism: 4,
       })
+      await adminTransaction(async (tx) => {
+        const changed = await tx.user.updateMany({
+          where: { id: targetId, password: current.password, authVersion: current.authVersion },
+          data: { password, authVersion: { increment: 1 } },
+        })
+        if (changed.count !== 1)
+          throw apiError(409, 'Password changed concurrently. Sign in again.')
+        await tx.refreshToken.updateMany({
+          where: { userId: targetId, revokedAt: null },
+          data: { revokedAt: new Date() },
+        })
+      })
+      reply.clearCookie('refreshToken', { path: '/api/v2/auth' })
+      reply.clearCookie('refreshToken', { path: '/api/v2/auth/refresh' })
+      return reply.send({ message: 'Password changed. Sign in again on all devices.' })
     }
     if (role !== undefined && isAdmin) data.role = role
 
     try {
-      const user = await prisma.user.update({ where: { id: targetId }, data, select: USER_SELECT })
+      const user =
+        role !== undefined
+          ? await adminTransaction(async (tx) => {
+              await requireAdmin(tx, req.user.id)
+              const current = await tx.user.findUnique({ where: { id: targetId } })
+              if (!current) throw apiError(404, 'User not found')
+              if (current.role === 'ADMIN' && role !== 'ADMIN') await protectLastAdmin(tx, targetId)
+              return tx.user.update({ where: { id: targetId }, data, select: USER_SELECT })
+            })
+          : await prisma.user.update({ where: { id: targetId }, data, select: USER_SELECT })
       if (emailChanged) {
         try {
           await queueVerificationEmail(user)
@@ -166,17 +220,7 @@ export async function updateUser(fastify: FastifyInstance) {
   })
 }
 
-export async function deleteUser(fastify: FastifyInstance) {
-  fastify.delete<{ Params: UserParams }>('/users/:id', async (req, reply) => {
-    if (req.user.role !== 'ADMIN') {
-      return reply.status(403).send({ error: 'Admin access required' })
-    }
-
-    await prisma.user.delete({ where: { id: req.params.id } })
-
-    return reply.status(200).send({ message: 'User deleted successfully' })
-  })
-}
+export { deleteUser } from './userDeletion.js'
 
 export async function uploadAvatar(fastify: FastifyInstance) {
   fastify.post<{ Params: UserParams }>('/users/:id/avatar', async (req, reply) => {
@@ -272,10 +316,43 @@ export async function inviteUser(fastify: FastifyInstance) {
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 7)
 
-    const invite = await prisma.emailInvite.create({
-      // Legacy invite records require a name; the account name is chosen on acceptance.
-      data: { email, name: '', role, sentById: req.user.id, expiresAt },
-    })
+    const previous = await prisma.emailInvite.findUnique({ where: { email } })
+    if (previous && !previous.acceptedAt)
+      return reply
+        .status(409)
+        .send({ error: 'An invitation already exists for this email. Resend it from the list.' })
+    let invite
+    if (previous) {
+      // A deleted account may be invited again; reuse its accepted historical row.
+      const token = nanoid(32)
+      const changed = await prisma.emailInvite.updateMany({
+        where: { id: previous.id, token: previous.token, acceptedAt: { not: null } },
+        data: { token, acceptedAt: null, name: '', role, sentById: req.user.id, expiresAt },
+      })
+      if (changed.count !== 1)
+        return reply.status(409).send({ error: 'Invitation changed. Refresh the list.' })
+      invite = {
+        ...previous,
+        token,
+        acceptedAt: null,
+        name: '',
+        role,
+        sentById: req.user.id,
+        expiresAt,
+      }
+    } else {
+      try {
+        invite = await prisma.emailInvite.create({
+          data: { email, name: '', role, sentById: req.user.id, expiresAt },
+        })
+      } catch (error) {
+        if ((error as { code?: string }).code === 'P2002')
+          return reply.status(409).send({
+            error: 'An invitation already exists for this email. Resend it from the list.',
+          })
+        throw error
+      }
+    }
 
     const acceptUrl = new URL('/accept-invite', env.FRONTEND_URL)
     acceptUrl.searchParams.set('token', invite.token)

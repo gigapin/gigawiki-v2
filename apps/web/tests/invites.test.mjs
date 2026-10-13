@@ -9,7 +9,7 @@ import { InviteUsersLink } from '../src/components/auth/InviteUsersLink'
 import apiClient from '../src/api/client'
 const session = vi.hoisted(() => ({ user: { role: 'ADMIN' } }))
 vi.mock('../src/stores/auth.store', () => ({ useAuthStore: (selector) => selector(session) }))
-vi.mock('../src/api/client', () => ({ default: { post: vi.fn() } }))
+vi.mock('../src/api/client', () => ({ default: { post: vi.fn(), get: vi.fn(), delete: vi.fn() } }))
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children, to, ...props }) => createElement('a', { href: to, ...props }, children),
 }))
@@ -19,6 +19,7 @@ beforeEach(() => {
   session.user = { role: 'ADMIN' }
   Element.prototype.hasPointerCapture = () => false
   Element.prototype.scrollIntoView = vi.fn()
+  apiClient.get.mockResolvedValue({ data: { invites: [], total: 0, limit: 20 } })
   apiClient.post.mockResolvedValue({
     data: { invite: { id: 'i', email: 'alice@example.com', role: 'GUEST' } },
   })
@@ -59,7 +60,9 @@ it('validates inputs, sends normalized data and allows another invitation', asyn
   expect(screen.queryByLabelText('Name')).toBeNull()
   await fill()
   await userEvent.click(screen.getByRole('button', { name: 'Send invitation' }))
-  expect((await screen.findByRole('status')).textContent).toContain('alice@example.com')
+  expect((await screen.findByText(/Invitation email queued for/)).textContent).toContain(
+    'alice@example.com',
+  )
   expect(apiClient.post).toHaveBeenCalledWith('/api/v2/users/invite', {
     email: 'alice@example.com',
     role: 'GUEST',

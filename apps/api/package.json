@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:settings:db": "RUN_SETTINGS_DB_TESTS=1 vitest run src/routes/users/settingsDatabase.integration.test.ts",
     "registration:enable": "node --import tsx src/scripts/enable-registration.ts"
   },
   "prisma": {

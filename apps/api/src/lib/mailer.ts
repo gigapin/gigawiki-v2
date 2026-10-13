@@ -16,17 +16,19 @@ export async function sendMail({
   to,
   subject,
   html,
+  fromName,
 }: {
   to: string
   subject: string
   html: string
+  fromName?: string
 }) {
   if (env.NODE_ENV === 'test') {
     console.log(`[mailer] would send to ${to}: ${subject}`)
     return
   }
   await transporter.sendMail({
-    from: { name: env.SMTP_FROM_NAME, address: env.SMTP_FROM },
+    from: { name: fromName || env.SMTP_FROM_NAME, address: env.SMTP_FROM },
     to,
     subject,
     html,

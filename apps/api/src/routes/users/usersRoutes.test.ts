@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import Fastify from 'fastify'
 import multipart from '@fastify/multipart'
+import cookie from '@fastify/cookie'
 import { Role } from '@prisma/client'
 
 import { emailQueue } from '../../lib/queue.js'
@@ -18,11 +19,14 @@ import {
 
 vi.mock('../../lib/prisma.js', () => ({
   prisma: {
+    $transaction: vi.fn(),
+    refreshToken: { updateMany: vi.fn() },
     user: {
       findUnique: vi.fn(),
       findMany: vi.fn(),
       count: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
       delete: vi.fn(),
     },
     image: {
@@ -30,6 +34,8 @@ vi.mock('../../lib/prisma.js', () => ({
       delete: vi.fn(),
     },
     emailInvite: {
+      findUnique: vi.fn(),
+      updateMany: vi.fn(),
       create: vi.fn(),
     },
   },
@@ -47,6 +53,7 @@ vi.mock('argon2', () => ({
   default: {
     hash: vi.fn().mockResolvedValue('hashed_password'),
     argon2id: 2,
+    verify: vi.fn().mockResolvedValue(true),
   },
 }))
 
@@ -56,6 +63,7 @@ const mockPrismaEmailInvite = vi.mocked(prisma.emailInvite)
 function buildApp(userRole: string = 'ADMIN', userId: string = 'user-1') {
   const app = Fastify()
   app.register(multipart)
+  app.register(cookie)
   app.decorateRequest('user', null as unknown as { id: string; email: string; role: string })
   app.addHook('preHandler', (req, _reply, done) => {
     req.user = { id: userId, email: 'test@example.com', role: userRole }
@@ -73,9 +81,16 @@ function buildApp(userRole: string = 'ADMIN', userId: string = 'user-1') {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.mocked(prisma.$transaction).mockImplementation((async (
+    callback: (tx: typeof prisma) => unknown,
+  ) => callback(prisma)) as never)
+  vi.mocked(prisma.emailInvite.findUnique).mockResolvedValue(null)
+  mockPrismaUser.findUnique.mockResolvedValue(fakeUser)
+  mockPrismaUser.updateMany.mockResolvedValue({ count: 1 })
 })
 
 const fakeUser = {
+  authVersion: 0,
   id: 'user-1',
   name: 'John Doe',
   email: 'john@example.com',
@@ -196,6 +211,9 @@ describe('PATCH /users/:id', () => {
   it('allows admin to change another user role', async () => {
     const updated = { ...fakeUser, role: Role.EDITOR }
     mockPrismaUser.update.mockResolvedValue(updated)
+    mockPrismaUser.findUnique
+      .mockResolvedValueOnce({ ...fakeUser, id: 'admin-1', role: 'ADMIN' })
+      .mockResolvedValueOnce(fakeUser)
 
     const app = buildApp('ADMIN', 'admin-1')
     const res = await app.inject({
@@ -209,14 +227,11 @@ describe('PATCH /users/:id', () => {
 })
 
 describe('DELETE /users/:id', () => {
-  it('deletes a user as admin', async () => {
-    mockPrismaUser.delete.mockResolvedValue(fakeUser)
-
-    const app = buildApp('ADMIN')
+  it('requires a reviewed deletion preview', async () => {
+    const app = buildApp('ADMIN', 'admin-1')
     const res = await app.inject({ method: 'DELETE', url: '/users/user-1' })
-
-    expect(res.statusCode).toBe(200)
-    expect(res.json()).toEqual({ message: 'User deleted successfully' })
+    expect(res.statusCode).toBe(400)
+    expect(mockPrismaUser.delete).not.toHaveBeenCalled()
   })
 
   it('returns 403 for non-admin', async () => {
@@ -473,5 +488,81 @@ it('uploads a real avatar for a Guest before linking the image', async () => {
   expect(mockPrismaUser.update).toHaveBeenCalledWith(
     expect.objectContaining({ data: { avatarId: 'avatar' } }),
   )
+  await app.close()
+})
+
+it('changes own password, revokes refresh tokens and increments the session version', async () => {
+  const app = buildApp('GUEST')
+  const result = await app.inject({
+    method: 'PATCH',
+    url: '/users/me',
+    payload: { currentPassword: 'oldpassword', newPassword: 'newpassword' },
+  })
+  expect(result.statusCode).toBe(200)
+  expect(prisma.user.updateMany).toHaveBeenCalledWith({
+    where: { id: 'user-1', password: 'hashed', authVersion: 0 },
+    data: { password: 'hashed_password', authVersion: { increment: 1 } },
+  })
+  expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith(
+    expect.objectContaining({ where: { userId: 'user-1', revokedAt: null } }),
+  )
+  expect(result.headers['set-cookie']).toBeTruthy()
+  await app.close()
+})
+it('rejects password updates without the current password or through the legacy field', async () => {
+  const app = buildApp('GUEST')
+  for (const payload of [
+    { password: 'newpassword' },
+    { newPassword: 'newpassword' },
+    { currentPassword: 'oldpassword', newPassword: 'newpassword', name: 'Changed' },
+  ]) {
+    expect((await app.inject({ method: 'PATCH', url: '/users/me', payload })).statusCode).toBe(400)
+  }
+  expect(prisma.user.updateMany).not.toHaveBeenCalled()
+  await app.close()
+})
+it('rejects an incorrect current password', async () => {
+  const argon2 = (await import('argon2')).default
+  vi.mocked(argon2.verify).mockResolvedValueOnce(false)
+  const app = buildApp('GUEST')
+  const result = await app.inject({
+    method: 'PATCH',
+    url: '/users/me',
+    payload: { currentPassword: 'wrongpassword', newPassword: 'newpassword' },
+  })
+  expect(result.statusCode).toBe(400)
+  expect(prisma.user.updateMany).not.toHaveBeenCalled()
+  await app.close()
+})
+it('prevents demoting the last administrator', async () => {
+  mockPrismaUser.findUnique.mockResolvedValue({ ...fakeUser, role: 'ADMIN' })
+  mockPrismaUser.count.mockResolvedValue(1)
+  const app = buildApp('ADMIN')
+  const result = await app.inject({ method: 'PATCH', url: '/users/me', payload: { role: 'GUEST' } })
+  expect(result.statusCode).toBe(409)
+  expect(prisma.user.update).not.toHaveBeenCalled()
+  await app.close()
+})
+
+it('allows inviting a deleted account again without reusing its old token', async () => {
+  mockPrismaUser.findUnique.mockResolvedValue(null)
+  vi.mocked(prisma.emailInvite.findUnique).mockResolvedValue({
+    id: 'old-invite',
+    email: 'deleted@example.com',
+    token: 'old-token',
+    acceptedAt: new Date(),
+    expiresAt: new Date(0),
+  } as never)
+  vi.mocked(prisma.emailInvite.updateMany).mockResolvedValue({ count: 1 })
+  const app = buildApp('ADMIN')
+  const result = await app.inject({
+    method: 'POST',
+    url: '/users/invite',
+    payload: { email: 'deleted@example.com', role: 'GUEST' },
+  })
+  expect(result.statusCode).toBe(201)
+  expect(result.json().invite.token).not.toBe('old-token')
+  expect(result.json().invite.acceptedAt).toBeNull()
+  expect(prisma.emailInvite.create).not.toHaveBeenCalled()
   await app.close()
 })

@@ -14,11 +14,21 @@ const btn = {
   marginTop: '24px',
 }
 
-export function ResetPasswordEmail({ name, resetUrl }: { name: string; resetUrl: string }) {
+export function ResetPasswordEmail({
+  siteName = 'GiGaWiki',
+  name,
+  resetUrl,
+}: {
+  siteName?: string
+  name: string
+  resetUrl: string
+}) {
   return (
-    <BaseLayout>
+    <BaseLayout siteName={siteName}>
       <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginTop: 0 }}>Reset your password</h1>
-      <p>Hi {name}, we received a request to reset your GiGaWiki password.</p>
+      <p>
+        Hi {name}, we received a request to reset your {siteName} password.
+      </p>
       <p style={{ color: '#71717a', fontSize: '13px' }}>This link expires in 1 hour.</p>
       <a href={resetUrl} style={btn}>
         Reset password

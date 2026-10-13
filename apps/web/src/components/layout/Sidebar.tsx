@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import type { Subject } from '@shared/types/subject'
 import { BookOpen, ChevronRight, Folder } from 'lucide-react'
 
+import { SiteName } from '@/components/shared/SiteName'
 import { InviteUsersLink } from '@/components/auth/InviteUsersLink'
 import apiClient from '@/api/client'
 import { Button } from '@/components/ui/button'
@@ -273,7 +274,7 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
               overflow: 'hidden',
             }}
           >
-            GigaWiki{' '}
+            <SiteName />{' '}
             <span style={{ color: 'var(--db-muted)', fontWeight: 400 }}>/ {user?.role ?? ''}</span>
           </div>
         )}
@@ -625,7 +626,7 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
                     }}
                   />
                   {user?.role ? user.role.charAt(0) + user.role.slice(1).toLowerCase() : ''} ·
-                  GigaWiki
+                  <SiteName />
                 </div>
               </div>
               <div style={{ marginLeft: 'auto', color: 'var(--db-muted)' }}>
