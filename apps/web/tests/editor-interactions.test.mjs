@@ -2,6 +2,7 @@
 import { createElement } from 'react'
 import { render, screen, fireEvent, waitFor, act, cleanup, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { closeHistory } from '@tiptap/pm/history'
 
 import { PageEditor } from '../src/components/pages/PageEditor'
 import { PageContent } from '../src/components/pages/PageContent'
@@ -305,3 +306,25 @@ it('renders the reader without editing controls and ignores typing', async () =>
   await userEvent.keyboard('Unwanted edit')
   expect(content.textContent).toBe('PublishedRead me')
 })
+
+it.each([
+  ['Remove row', 2, 3],
+  ['Remove column', 3, 2],
+])(
+  'removes the selected table dimension with %s and supports undo',
+  async (label, rows, columns) => {
+    const { editor, onChange } = await mount('<p></p>')
+    const toolbar = within(screen.getByRole('toolbar', { name: 'Text formatting' }))
+    await userEvent.click(toolbar.getByRole('button', { name: 'Table' }))
+    act(() => editor.view.dispatch(closeHistory(editor.state.tr)))
+    await userEvent.click(toolbar.getByRole('button', { name: label }))
+    const table = document.querySelector('.tiptap table')
+    expect(table.rows).toHaveLength(rows)
+    for (const row of table.rows) expect(row.cells).toHaveLength(columns)
+    expect(onChange).toHaveBeenLastCalledWith(editor.getHTML())
+    await userEvent.click(toolbar.getByRole('button', { name: 'Undo' }))
+    expect(document.querySelector('.tiptap table').rows).toHaveLength(3)
+    for (const row of document.querySelector('.tiptap table').rows)
+      expect(row.cells).toHaveLength(3)
+  },
+)

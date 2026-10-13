@@ -60,7 +60,7 @@ The editor includes 30-second autosave, mentions, bubble menu and image resizing
 
 ## Verification
 
-The latest checks (2026-10-13) passed: **198 frontend tests in 27 files**, **323 API tests**, frontend lint/build and API/shared typecheck. After the operator applied the `authVersion` migration, all three PostgreSQL Settings tests passed on the app database. All fixture writes were rolled back. The suite reports a non-blocking `pg` concurrent-query deprecation warning. See [Settings instructions](../../docs/SETTINGS.md).
+The latest checks (2026-10-13) passed: **200 frontend tests in 27 files**, **323 API tests**, frontend lint/build and API/shared typecheck. After the operator applied the `authVersion` migration, all three PostgreSQL Settings tests passed on the app database. All fixture writes were rolled back. The suite reports a non-blocking `pg` concurrent-query deprecation warning. See [Settings instructions](../../docs/SETTINGS.md).
 
 The real Tiptap editor also has tests for initial HTML, typing/onChange, undo/redo, disabled/resumed editing and a read-only reader without toolbars. Changing editability does not emit a content change. PostgreSQL API integrations passed all eight scenarios; see [database test instructions](../../docs/DATABASE_TESTS.md).
 

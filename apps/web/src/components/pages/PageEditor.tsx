@@ -309,6 +309,24 @@ export function PageEditor({
               size="sm"
               variant="ghost"
               disabled={blocked}
+              onClick={() => editor?.chain().focus().deleteRow().run()}
+            >
+              Remove row
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              disabled={blocked}
+              onClick={() => editor?.chain().focus().deleteColumn().run()}
+            >
+              Remove column
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              disabled={blocked}
               onClick={() => editor?.chain().focus().deleteTable().run()}
             >
               Remove table

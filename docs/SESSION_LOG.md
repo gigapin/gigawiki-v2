@@ -28,7 +28,7 @@
 
 **Ultimo commit presente:** `02a8137` (`feat: hook api`), su `dev`. Il working tree era pulito all’inizio dell’intervento; la suite PostgreSQL del task 36 e i relativi aggiornamenti documentali sono ora nel working tree, senza commit creati dall’assistente. `.claude/settings.local.json` è ancora tracciato, anche se escluso da `.gitignore`.
 
-**Ultime verifiche:** 198 test frontend su 27 file e 323 test API superati; build/lint frontend, typecheck API/shared superati. Rimangono il warning bundle >500 kB e il warning React Compiler/TanStack Table preesistente. Test Node/jsdom: non equivalgono a prove browser. Dopo l’applicazione della migrazione da parte dell’utente, tutti e tre i test Settings PostgreSQL sono superati sul database dell’app. Tutte le scritture di prova sono state annullate. La suite emette un warning non bloccante di `pg` sulle query concorrenti. Autosave e registrazione con Mailtrap già confermati dall’utente nelle sessioni precedenti.
+**Ultime verifiche:** 200 test frontend su 27 file e 323 test API superati; build/lint frontend, typecheck API/shared superati. Rimangono il warning bundle >500 kB e il warning React Compiler/TanStack Table preesistente. Test Node/jsdom: non equivalgono a prove browser. Dopo l’applicazione della migrazione da parte dell’utente, tutti e tre i test Settings PostgreSQL sono superati sul database dell’app. Tutte le scritture di prova sono state annullate. La suite emette un warning non bloccante di `pg` sulle query concorrenti. Autosave e registrazione con Mailtrap già confermati dall’utente nelle sessioni precedenti.
 
 ---
 
@@ -96,7 +96,7 @@ Legenda: ✅ fatto · 🟡 parziale · ⬜ non iniziato
 | # | Task | Stato | Note |
 |---|---|---|---|
 | 36 | Test backend | ✅ | 323 test ordinari; 8 integrazioni PostgreSQL per auth, ricerca full-text, revisioni, permessi e soft delete; 3 integrazioni Settings. Tutti superati sul DB dell’app con rollback. Migrazioni gestite dall’utente; vedere scostamenti e DATABASE_TESTS.md |
-| 37 | Test componenti frontend | ✅ | 198 test Vitest Node/jsdom su 27 file. Login, commenti e vero Tiptap: contenuto iniziale, digitazione/onChange, undo/redo, blocco/ripresa, reader senza toolbar; coperti anche upload, link, menzioni e autosave. Prove browser affidate all’utente |
+| 37 | Test componenti frontend | ✅ | 200 test Vitest Node/jsdom su 27 file. Login, commenti e vero Tiptap: contenuto iniziale, digitazione/onChange, undo/redo, blocco/ripresa, reader senza toolbar; coperti anche upload, link, menzioni e autosave. Prove browser affidate all’utente |
 | 38 | Dockerfile per l'API | ✅ | Implementato meglio della specifica: `pnpm deploy --prod` + rimozione mirata di dipendenze non raggiungibili a runtime |
 | 39 | GitHub Actions CI | ⬜ | `.github/` non esiste |
 | 40 | Init repo GitHub | 🟡 | Repo e remote esistono. Manca `CONTRIBUTING.md`; il branch di sviluppo si chiama `dev`, non `develop` come da specifica; la branch protection su `main` è da verificare |
@@ -131,7 +131,7 @@ Ordine degli incrementi successivi:
 4. **Task 39:** GitHub Actions per lint, typecheck, test e build su `main`/`dev`. Aggiungere prima gli script typecheck frontend e lint API/shared mancanti; i job non devono saltare questi pacchetti.
 5. **Task 40:** `CONTRIBUTING.md`, verifica protezione `main` e strategia branch. Repo e remote esistono già.
 
-**Stato alla chiusura:** 38/40 completati, 1 parziale, 1 non iniziato. Ultime verifiche: 198 test frontend e 323 API, lint/build frontend e typecheck API/shared superati. Otto integrazioni API e tre test Settings su DB reale superati; prove browser affidate all’utente, SMTP/storage ancora aperti. Le modifiche di questa sessione sono nel working tree e non sono state committate dall’assistente.
+**Stato alla chiusura:** 38/40 completati, 1 parziale, 1 non iniziato. Ultime verifiche: 200 test frontend e 323 API, lint/build frontend e typecheck API/shared superati. Otto integrazioni API e tre test Settings su DB reale superati; prove browser affidate all’utente, SMTP/storage ancora aperti. Le modifiche di questa sessione sono nel working tree e non sono state committate dall’assistente.
 
 **Comportamenti da preservare:** dettaglio Subject senza banner grande, icona/titolo a sinistra e azioni a destra; commenti richiusi inizialmente sotto “Comments” con freccia, bozze mantenute alla chiusura; Save draft mantiene l’editor aperto e usa la stessa pagina nei salvataggi successivi, Publish apre il reader. Guest senza cronologia, preferiti personali per account e temporizzazione login disattivata in development come richiesto.
 
@@ -163,6 +163,12 @@ Chi clona il repo su una macchina nuova deve ricreare `init.sh` (o avere Node su
 ---
 
 ## Log delle sessioni
+
+### 2026-10-13 — Editor: eliminazione righe e colonne
+
+- Aggiunti Remove row e Remove column alla toolbar quando il cursore è in una tabella; agiscono sulla riga/colonna della cella selezionata e rispettano il blocco del salvataggio/upload.
+- Due test sul vero Tiptap verificano dimensioni residue, callback HTML e annullamento. Tutti i 200 test frontend superati; build e lint superati con warning preesistenti.
+
 
 ### 2026-10-13 — Sidebar: rimozione delle voci senza destinazione
 
