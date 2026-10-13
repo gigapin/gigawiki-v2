@@ -51,6 +51,6 @@ Dopo aver applicato la migrazione, usare il database configurato dell'app come r
 ./bin/pnpm --filter gigawiki-v2-api test:settings:db
 ```
 
-La suite crea solo account/risorse temporanei con identificatori casuali e annulla **tutte** le scritture al termine di ciascun test, anche in caso di errore. Non esegue migrazioni, truncate o pulizia delle tabelle esistenti. Le prove su DB sono disattivate nella suite standard e non sono state eseguite durante questa implementazione.
+La suite crea solo account/risorse temporanei con identificatori casuali e annulla **tutte** le scritture al termine di ciascun test, anche in caso di errore. Non esegue migrazioni, truncate o pulizia delle tabelle esistenti. Le prove su DB sono disattivate nella suite standard. Il 13 ottobre 2026, dopo la migrazione applicata dall’utente, tutti e tre i test sono superati sul database dell’app. La suite emette un warning non bloccante di `pg` sulle query concorrenti sullo stesso client.
 
 Appearance usa il tema light/dark locale già esistente, condiviso con la Topbar. Nessuna modifica del profilo per il tema; gestione logo esclusa.

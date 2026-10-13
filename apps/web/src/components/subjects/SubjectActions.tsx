@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import type { Subject } from '@shared/types/subject'
 import { Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { SubjectFormDialog } from './SubjectFormDialog'
 
-import { deleteSubject } from '@/api/subjects'
+import { queryKeys } from '@/api/query-keys'
+import { useDeleteSubject } from '@/api/subjects'
 import { useAuthStore } from '@/stores/auth.store'
 import { apiErrorMessage } from '@/lib/api-error'
 import { Button } from '@/components/ui/button'
@@ -19,27 +20,10 @@ export function SubjectActions({ subject }: { subject: Subject }) {
   const client = useQueryClient()
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
-  const deletion = useMutation({
-    mutationFn: () => deleteSubject(subject.slug),
+  const deletion = useDeleteSubject(subject.slug, {
     onSuccess: async () => {
-      await client.cancelQueries({ queryKey: ['subject', subject.slug] })
-      await Promise.all(
-        [
-          'subject',
-          'subjects',
-          'project',
-          'projects',
-          'pages',
-          'page',
-          'views',
-          'favorites',
-          'favorites-count',
-          'stats',
-        ].map((key) => client.invalidateQueries({ queryKey: [key], refetchType: 'none' })),
-      )
       toast.success('Subject deleted')
       await navigate({ to: '/subjects' })
-      client.removeQueries({ queryKey: ['subject', subject.slug] })
     },
   })
   const canEdit = user && (user.id === subject.userId || user.role === 'ADMIN')
@@ -77,7 +61,7 @@ export function SubjectActions({ subject }: { subject: Subject }) {
           onSaved={(saved) => {
             if (saved.slug !== subject.slug)
               void navigate({ to: '/subjects/$slug', params: { slug: saved.slug } })
-            else void client.invalidateQueries({ queryKey: ['subject', subject.slug] })
+            else void client.invalidateQueries({ queryKey: queryKeys.subject(subject.slug) })
           }}
         />
       )}

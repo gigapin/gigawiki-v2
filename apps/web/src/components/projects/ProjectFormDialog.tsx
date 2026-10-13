@@ -1,11 +1,10 @@
 import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Project } from '@shared/types/project'
 import { toast } from 'sonner'
 
 import { useCover } from '@/lib/use-cover'
 import { CoverField } from '@/components/shared/CoverField'
-import { createProject, updateProject } from '@/api/projects'
+import { useSaveProject } from '@/api/projects'
 import { ResourceFields, type ResourceValues } from '@/components/shared/ResourceFields'
 import { Button } from '@/components/ui/button'
 import {
@@ -31,42 +30,32 @@ export function ProjectFormDialog({
   onClose: () => void
   onSaved?: (project: Project) => void
 }) {
-  const client = useQueryClient()
   const cover = useCover(project?.image, project?.imageId)
   const [values, setValues] = useState<ResourceValues>({
     name: project?.name ?? '',
     description: project?.description ?? '',
     visibility: project?.visibility ?? 'PUBLIC',
   })
-  const mutation = useMutation({
-    mutationFn: async () => {
+  const mutation = useSaveProject(
+    async () => {
       const input = {
         ...values,
         name: values.name.trim(),
         description: values.description.trim(),
         imageId: await cover.resolveImageId(),
       }
-      return project ? updateProject(project.slug, input) : createProject({ ...input, subjectId })
+      return { ...input, subjectId }
     },
-    onSuccess: async (saved) => {
-      if (project) {
-        client.setQueryData(['project', saved.slug], {
-          ...client.getQueryData<Project>(['project', project.slug]),
-          ...saved,
-        })
-      }
-      await Promise.all([
-        client.invalidateQueries({ queryKey: ['project'], refetchType: 'none' }),
-        client.invalidateQueries({
-          queryKey: subjectSlug ? ['subject', subjectSlug] : ['subject'],
-        }),
-        client.invalidateQueries({ queryKey: ['subjects'] }),
-      ])
-      toast.success(project ? 'Project updated' : 'Project created')
-      onSaved?.(saved)
-      onClose()
+    project?.slug,
+    subjectSlug,
+    {
+      onSuccess: async (saved) => {
+        toast.success(project ? 'Project updated' : 'Project created')
+        onSaved?.(saved)
+        onClose()
+      },
     },
-  })
+  )
   return (
     <Dialog
       open

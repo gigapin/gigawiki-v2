@@ -6,14 +6,16 @@ import userEvent from '@testing-library/user-event'
 import { PageEditor } from '../src/components/pages/PageEditor'
 import { PageContent } from '../src/components/pages/PageContent'
 import apiClient from '../src/api/client'
-import { uploadInlineImage } from '../src/api/images'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+const uploadInlineImage = vi.hoisted(() => vi.fn())
 
-vi.mock('../src/api/client', () => ({ default: { get: vi.fn() } }))
-
-vi.mock('../src/api/images', () => ({
-  uploadInlineImage: vi.fn(),
-  IMAGE_TYPES: ['image/png', 'image/jpeg'],
+vi.mock('../src/api/client', () => ({
+  default: {
+    get: vi.fn(),
+    post: vi.fn(async (_url, form) => ({ data: await uploadInlineImage(form.get('file')) })),
+  },
 }))
+let client
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -29,12 +31,22 @@ beforeEach(() => {
   })
   Element.prototype.scrollIntoView = vi.fn()
 })
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  client?.clear()
+})
 
 async function mount(content = '<p>Welcome</p>') {
   const onChange = vi.fn()
   const onStatusChange = vi.fn()
-  render(createElement(PageEditor, { content, onChange, onStatusChange, disabled: false }))
+  client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
+  render(
+    createElement(
+      QueryClientProvider,
+      { client },
+      createElement(PageEditor, { content, onChange, onStatusChange, disabled: false }),
+    ),
+  )
   const textbox = await screen.findByRole('textbox', { name: 'Page content' })
   return { editor: textbox.editor, textbox, onChange, onStatusChange }
 }

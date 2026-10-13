@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 
-import { updateProfile, uploadAvatar } from '@/api/users'
+import { useSaveProfile } from '@/api/users'
 import { IMAGE_TYPES, MAX_IMAGE_SIZE } from '@/api/images'
 import { useAuthStore } from '@/stores/auth.store'
 import { apiErrorMessage } from '@/lib/api-error'
@@ -13,7 +12,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export function ProfilePage() {
   const user = useAuthStore((s) => s.user)
-  const queryClient = useQueryClient()
   const [name, setName] = useState(user?.name ?? '')
   const [email, setEmail] = useState(user?.email ?? '')
   const [file, setFile] = useState<File | null>(null)
@@ -23,17 +21,8 @@ export function ProfilePage() {
   useEffect(() => {
     if (preview) return () => URL.revokeObjectURL(preview)
   }, [preview])
-  const mutation = useMutation({
-    mutationFn: async () => {
-      const accountId = user?.id
-      const sync = (updated: Awaited<ReturnType<typeof updateProfile>>) => {
-        const state = useAuthStore.getState()
-        if (state.user?.id === accountId && state.accessToken)
-          state.setAuth(updated, state.accessToken)
-        void queryClient.invalidateQueries()
-      }
-      const updated = await updateProfile({ name: name.trim(), email: email.trim().toLowerCase() })
-      sync(updated)
+  const mutation = useSaveProfile({
+    onProfileSaved: (updated) => {
       setName(updated.name)
       setEmail(updated.email)
       setNotice(
@@ -43,17 +32,13 @@ export function ProfilePage() {
             ? 'Profile saved. Verify your email before your next sign-in.'
             : 'Profile saved.',
       )
-      if (file) {
-        try {
-          sync(await uploadAvatar(file))
-          setFile(null)
-          setPreview('')
-        } catch (cause) {
-          setError(`Profile saved. Avatar upload failed: ${apiErrorMessage(cause)}`)
-          throw cause
-        }
-      }
     },
+    onAvatarSaved: () => {
+      setFile(null)
+      setPreview('')
+    },
+    onAvatarError: (cause) =>
+      setError(`Profile saved. Avatar upload failed: ${apiErrorMessage(cause)}`),
   })
   if (!user) return null
   return (
@@ -73,7 +58,7 @@ export function ProfilePage() {
               return setError('Enter a name between 1 and 100 characters.')
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
               return setError('Enter a valid email address.')
-            if (!mutation.isPending) mutation.mutate()
+            if (!mutation.isPending) mutation.mutate({ name, email, file })
           }}
         >
           <fieldset disabled={mutation.isPending} className="space-y-5">

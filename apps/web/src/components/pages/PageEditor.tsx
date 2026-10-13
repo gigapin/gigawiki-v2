@@ -7,7 +7,7 @@ import { TextSelection, type SelectionBookmark } from '@tiptap/pm/state'
 import { Button } from '@/components/ui/button'
 import { prepareWikiContent, wikiExtensions, CODE_LANGUAGES } from '@/lib/wiki-extensions'
 import { normalizeLink } from '@/lib/editor-link'
-import { uploadInlineImage, IMAGE_TYPES } from '@/api/images'
+import { useUploadImage, IMAGE_TYPES } from '@/api/images'
 import { apiErrorMessage } from '@/lib/api-error'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -31,6 +31,7 @@ export function PageEditor({
   disabled: boolean
   onStatusChange: (status: { uploading: boolean; invalid: boolean }) => void
 }) {
+  const upload = useUploadImage('INLINE')
   const fileInput = useRef<HTMLInputElement>(null)
   const uploadingRef = useRef(false)
   const [uploading, setUploading] = useState(false)
@@ -157,7 +158,7 @@ export function PageEditor({
     setUploading(true)
     setUploadError('')
     try {
-      const image = await uploadInlineImage(file)
+      const image = await upload.mutateAsync(file)
       if (!editor.isDestroyed) {
         editor.chain().focus().setImage({ src: image.url, alt: file.name }).run()
       }

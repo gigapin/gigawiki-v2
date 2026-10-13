@@ -28,7 +28,7 @@ The reorder operation sends all section positions to `PATCH /api/v2/sections/:sl
 
 ## Registration and verification
 
-`/register` submits a validated name, email, password and confirmation. Registration is gated by the public `ALLOW_SELF_REGISTRATION` setting. New accounts have the `GUEST` role and cannot sign in until email verification.
+`/register` submits a validated name, email, password and confirmation. Registration is gated by the public `ALLOW_SELF_REGISTRATION` setting. New accounts receive the configured `DEFAULT_USER_ROLE` (Guest/Editor) and cannot sign in until email verification.
 
 The backend queues a verification email with a full `/verify-email?token=…` URL using `FRONTEND_URL`. The email worker renders it and sends it through the SMTP credentials in the root `.env`. When using Mailtrap Email Sandbox, open the message in the Mailtrap inbox rather than the recipient's real inbox. Tokens expire after 24 hours and can be used once.
 
@@ -40,7 +40,7 @@ To enable registration temporarily for local tests, with PostgreSQL and Redis ru
 ./bin/pnpm --filter gigawiki-v2-api registration:enable
 ```
 
-This upserts `ALLOW_SELF_REGISTRATION=true` in PostgreSQL and clears the Redis public-settings cache. It does not rerun the seed or reset existing users. Restart the API after changing SMTP credentials. Set the setting back to `false` in Prisma Studio when testing is complete.
+This upserts `ALLOW_SELF_REGISTRATION=true` in PostgreSQL and clears the Redis public-settings cache. It does not rerun the seed or reset existing users. Restart the API after changing SMTP credentials. Set the setting back to `false` in Admin App Settings when testing is complete.
 
 ## Design decisions and remaining work
 
@@ -48,21 +48,31 @@ The implementation follows tasks 30–34 when older design prompts conflict:
 
 - Sections are inline in Project detail; no Section detail route.
 - Project starts with sections and pages; Activity/Comments tabs are not part of this first iteration.
-- Revision history will use a drawer with preview/restore. A side-by-side diff is an optional later extension.
-- Settings will use Profile, Password, Appearance and the admin Users, Invites, App Settings areas. Dark is the default; a sun/moon button in the topbar and auth screens switches to light. The choice is stored locally in the browser and applied before React loads, including toast notifications.
+- Revision history uses a drawer with preview/restore. A side-by-side diff is an optional later extension.
+- Settings use Profile, Password, Appearance and the admin Users, Invites, App Settings areas. Dark is the default; a sun/moon button in the topbar and auth screens switches to light. The choice is stored locally in the browser and applied before React loads, including toast notifications.
 - Use Lucide for new icons and icon/typography based empty states. Existing custom icons remain during migration.
 
 Page rows open `/pages/:slug`; `/new-page` selects a subject, project and section before creating a page. Contextual creation uses `/projects/:projectSlug/sections/:sectionSlug/pages/new`; editing uses `/pages/:slug/edit`. Tiptap supports formatting, headings, lists, quotes, code and tables, with draft/publish actions, visibility and an unsaved-changes guard. Content is saved as HTML; reader/editor also recognize serialized Tiptap JSON documents and preserve plain text as text nodes. Unsupported JSON nodes/marks show an error and disable saving. Reader/editor share `styles/wiki-content.css` (Georgia for prose, Geist for headings, Geist Mono for code).
 
-Breadcrumb ancestors are links; a section links to `/projects/:slug?section=:sectionSlug`, restoring the originating section. Editing also links back to the reader. Cover uploads and subject reassignment are not implemented by these project forms. The backend does not currently support project reassignment in its update contract.
+Breadcrumb ancestors are links; a section links to `/projects/:slug?section=:sectionSlug`, restoring the originating section. Editing also links back to the reader. Subject and Project forms support cover upload, replacement and removal. Project reassignment is not implemented. The backend does not currently support project reassignment in its update contract.
 
-Advanced editor features (30-second autosave, mentions and bubble menu), password recovery, invitation acceptance, revisions, comments, favorites and settings remain to be implemented. Tags/favorite controls are also pending in the reader. Saving uses POST for creation and PATCH for content/title/publication settings in one request; title changes preserve unique slugs. The shared schema validates legacy JSON before editing; supported documents retain their formatting. Existing Dashboard/Subject markup is migrated incrementally; it still includes inline layout styles.
+The editor includes 30-second autosave, mentions, bubble menu and image resizing. Password recovery, invitation acceptance, revisions, comments, personal favorites, reader tags and Settings are implemented. Save draft keeps the editor open and reuses the created page on subsequent saves; Publish opens the reader. Saving uses POST for creation and PATCH for content/title/publication settings in one request; title changes preserve unique slugs. The shared schema validates legacy JSON before editing; supported documents retain their formatting. Existing Dashboard/Subject markup is migrated incrementally; it still includes inline layout styles.
 
 ## Verification
 
-The latest checks passed: 35 frontend tests in 7 files, frontend lint/build, 234 API tests in 17 files and API typecheck. Vite reports a bundle-size warning; code splitting is pending. Registration with Mailtrap was confirmed by the user.
+The latest checks (2026-10-13) passed: **193 frontend tests in 27 files**, **323 API tests**, frontend lint/build and API/shared typecheck. After the operator applied the `authVersion` migration, all three PostgreSQL Settings tests passed on the app database. All fixture writes were rolled back. The suite reports a non-blocking `pg` concurrent-query deprecation warning. See [Settings instructions](../../docs/SETTINGS.md).
 
-`test` runs Vitest in Node: registration validation and API contracts, registration/verification UI states, project API contracts, section ordering, API error formats, session/settings response shapes, legacy page-content conversion, breadcrumb destinations and server-rendered role-dependent project controls. It does not exercise browser interactions or replace future Testing Library/end-to-end coverage for dialogs, dragging and navigation.
+Tests use Vitest in Node/jsdom, including Testing Library interactions for login, editor, comments, resource forms, Settings and cache/session behavior. They do not replace browser, SMTP or real-storage verification. Vite still reports a bundle-size warning; frontend lint reports the existing React Compiler/TanStack Table warning. The dated sections below record earlier milestones, not current test totals.
+
+## Typed API hooks — task 35
+
+All HTTP transport and TanStack Query hook definitions live in `src/api`. Pages, components and stores use typed hooks/adapters; ESLint enforces this boundary while allowing named Axios error helpers. Query keys live in `api/query-keys.ts`: list keys include filters and pagination, mutations invalidate resource prefixes, and account/role changes cancel pending reads and clear private caches.
+
+Resource hooks expose CRUD operations for Subjects, Projects, Sections, Pages, users, tags and images. Existing aggregated hooks remain for Section forms and reader tags. Save hooks accept async preparation for cover uploads, keeping the form pending across upload and resource save. Profile orchestration synchronizes successful profile changes before trying the avatar and preserves the selected file after an upload error.
+
+`useLogin` establishes the session only after reading the account with the new token; both menus use `useLogout`. Bootstrap and the refresh interceptor use pure adapters in `api/session.ts`, without importing the store or intercepted client. Email verification remains in the route loader. Tiptap mentions use an API adapter, and uploads use `useUploadImage().mutateAsync`.
+
+Search uses the actual page-only PostgreSQL response, a 300 ms debounce and cancellation; previous matches disappear immediately when typing a different term. Admin settings update public/admin caches and the branding store. Browser/SMTP/storage checks, broader PostgreSQL integration and CI remain next steps in [the session log](../../docs/SESSION_LOG.md).
 
 ## Theme verification — 2026-10-08
 

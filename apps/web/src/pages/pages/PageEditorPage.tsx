@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useBlocker, useNavigate, useParams } from '@tanstack/react-router'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
-import { fetchPage, savePage, type PageInput } from '@/api/pages'
-import { fetchProject } from '@/api/projects'
+import { usePage, useSavePage, type PageInput } from '@/api/pages'
+import { useProject } from '@/api/projects'
 import { useSections } from '@/api/sections'
 import { ProjectBreadcrumb } from '@/components/shared/ProjectBreadcrumb'
 import { PageEditor } from '@/components/pages/PageEditor'
@@ -43,10 +42,7 @@ export function NewPagePage() {
   const { projectSlug, sectionSlug } = useParams({
     from: '/_auth/projects/$projectSlug/sections/$sectionSlug/pages/new',
   })
-  const project = useQuery({
-    queryKey: ['project', projectSlug],
-    queryFn: () => fetchProject(projectSlug),
-  })
+  const project = useProject(projectSlug)
   const sections = useSections(projectSlug)
   const section = sections.data?.find((item) => item.slug === sectionSlug)
   if (project.isPending || sections.isPending)
@@ -90,11 +86,7 @@ export function NewPagePage() {
 
 export function EditPagePage() {
   const { slug } = useParams({ from: '/_auth/pages/$slug/edit' })
-  const page = useQuery({
-    queryKey: ['page', slug],
-    queryFn: () => fetchPage(slug),
-    refetchOnWindowFocus: false,
-  })
+  const page = usePage(slug, { refetchOnWindowFocus: false })
   if (page.isPending)
     return (
       <div className="p-6">
@@ -141,7 +133,6 @@ export function PageForm({
 }) {
   const user = useAuthStore((s) => s.user)
   const navigate = useNavigate()
-  const client = useQueryClient()
   const [input, setInput] = useState(initial)
   const [editorStatus, setEditorStatus] = useState({ uploading: false, invalid: false })
   const editorBusy = editorStatus.uploading || editorStatus.invalid
@@ -151,45 +142,26 @@ export function PageForm({
   const [activeSlug, setActiveSlug] = useState(slug)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const dirty = !saved && JSON.stringify(input) !== JSON.stringify(baseline)
-  const mutation = useMutation({
-    mutationFn: ({ payload }: { payload: PageInput; automatic: boolean }) =>
-      savePage(payload, activeSlug ? { slug: activeSlug } : { sectionId: context.sectionId }),
-    onSuccess: async (page, { payload, automatic }) => {
-      setBaseline(payload)
-      setInput(payload)
-      setLastSaved(new Date())
-      setSaved(true)
-      savedForNavigation.current = true
-      setActiveSlug(page.slug)
-      if ((automatic || payload.isDraft) && activeSlug) {
-        const previous = client.getQueryData(['page', activeSlug])
-        if (previous) client.setQueryData(['page', page.slug], { ...previous, ...payload, ...page })
-      }
-      // A title change can change the URL: do not refetch the old slug.
-      client.removeQueries({ queryKey: ['page', activeSlug], exact: true, type: 'inactive' })
-      await Promise.all(
-        [
-          'page',
-          'pages',
-          'revisions',
-          'revision',
-          'sections',
-          'project',
-          'subject',
-          'subjects',
-          'stats',
-          'activities',
-        ].map((key) => client.invalidateQueries({ queryKey: [key], refetchType: 'none' })),
-      )
-      if (!automatic) toast.success(page.isDraft ? 'Draft saved' : 'Page published')
-      if (automatic || payload.isDraft) {
-        if (page.slug !== activeSlug)
-          await navigate({ to: '/pages/$slug/edit', params: { slug: page.slug }, replace: true })
-      } else {
-        await navigate({ to: '/pages/$slug', params: { slug: page.slug } })
-      }
+  const mutation = useSavePage(
+    activeSlug ? { slug: activeSlug } : { sectionId: context.sectionId },
+    {
+      onSuccess: async (page, { payload, automatic }) => {
+        setBaseline(payload)
+        setInput(payload)
+        setLastSaved(new Date())
+        setSaved(true)
+        savedForNavigation.current = true
+        setActiveSlug(page.slug)
+        if (!automatic) toast.success(page.isDraft ? 'Draft saved' : 'Page published')
+        if (automatic || payload.isDraft) {
+          if (page.slug !== activeSlug)
+            await navigate({ to: '/pages/$slug/edit', params: { slug: page.slug }, replace: true })
+        } else {
+          await navigate({ to: '/pages/$slug', params: { slug: page.slug } })
+        }
+      },
     },
-  })
+  )
   const { mutate, isPending } = mutation
   const allowed = user?.role === 'EDITOR' || user?.role === 'ADMIN'
   useEffect(() => {

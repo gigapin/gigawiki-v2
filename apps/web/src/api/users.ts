@@ -2,6 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
 import type { InviteDto } from '@shared/schemas/auth.schema'
 
+import { queryKeys } from './query-keys'
+import type { MutationOptions } from './hook-options'
+import { invalidateResources, subjectDependencies } from './cache'
 import apiClient from './client'
 
 import { useAuthStore } from '@/stores/auth.store'
@@ -20,7 +23,7 @@ export function useInviteUser() {
           }
         }>('/api/v2/users/invite', input)
         .then((r) => r.data.invite),
-    onSettled: () => client.invalidateQueries({ queryKey: ['admin-invites'] }),
+    onSettled: () => client.invalidateQueries({ queryKey: queryKeys.root('admin-invites') }),
   })
 }
 export function invitationSavedWithoutEmail(error: unknown) {
@@ -61,14 +64,22 @@ export interface DeletionPreview {
   fingerprint: string
   counts: Record<string, number>
 }
-export function useUsers(page: number, search: string) {
+export type UsersParams = {
+  page?: number
+  limit?: number
+  search?: string
+  role?: AdminUser['role']
+}
+export function useUsers(pageOrParams: number | UsersParams = {}, search = '') {
+  const params =
+    typeof pageOrParams === 'number'
+      ? { page: pageOrParams, limit: 20, search }
+      : { page: 1, limit: 20, ...pageOrParams }
   return useQuery({
     enabled: useAuthStore((s) => s.user?.role === 'ADMIN'),
-    queryKey: ['admin-users', page, search],
-    queryFn: () =>
-      apiClient
-        .get<UserList>('/api/v2/users', { params: { page, limit: 20, search } })
-        .then((r) => r.data),
+    queryKey: queryKeys.users(params),
+    queryFn: ({ signal }) =>
+      apiClient.get<UserList>('/api/v2/users', { params, signal }).then((r) => r.data),
   })
 }
 export function useUpdateRole() {
@@ -79,17 +90,19 @@ export function useUpdateRole() {
     onSuccess: (user) => {
       const state = useAuthStore.getState()
       if (state.user?.id === user.id && state.accessToken) state.setAuth(user, state.accessToken)
-      void client.invalidateQueries({ queryKey: ['admin-users'] })
+      void client.invalidateQueries({ queryKey: queryKeys.root('admin-users') })
     },
   })
 }
 export function useDeletionPreview(id: string | null) {
   return useQuery({
-    queryKey: ['user-deletion-preview', id],
+    queryKey: queryKeys.deletionPreview(id),
     enabled: Boolean(id),
     staleTime: 0,
-    queryFn: () =>
-      apiClient.get<DeletionPreview>(`/api/v2/users/${id}/deletion-preview`).then((r) => r.data),
+    queryFn: ({ signal }) =>
+      apiClient
+        .get<DeletionPreview>(`/api/v2/users/${id}/deletion-preview`, { signal })
+        .then((r) => r.data),
   })
 }
 export function useDeleteUser() {
@@ -97,7 +110,23 @@ export function useDeleteUser() {
   return useMutation({
     mutationFn: ({ id, fingerprint }: { id: string; fingerprint: string }) =>
       apiClient.delete(`/api/v2/users/${id}`, { data: { fingerprint } }),
-    onSuccess: () => client.invalidateQueries(),
+    onSuccess: () =>
+      invalidateResources(
+        client,
+        [
+          ...subjectDependencies,
+          'admin-users',
+          'user',
+          'me',
+          'comments',
+          'revisions',
+          'revision',
+          'tags',
+          'admin-invites',
+          'user-deletion-preview',
+        ],
+        'active',
+      ),
   })
 }
 export function useChangePassword() {
@@ -109,14 +138,14 @@ export function useChangePassword() {
 export function useInvites(page: number) {
   return useQuery({
     enabled: useAuthStore((s) => s.user?.role === 'ADMIN'),
-    queryKey: ['admin-invites', page],
-    queryFn: () =>
+    queryKey: queryKeys.invites(page),
+    queryFn: ({ signal }) =>
       apiClient
         .get<{
           invites: InviteItem[]
           total: number
           limit: number
-        }>('/api/v2/users/invites', { params: { page, limit: 20 } })
+        }>('/api/v2/users/invites', { params: { page, limit: 20 }, signal })
         .then((r) => r.data),
   })
 }
@@ -125,13 +154,99 @@ export function useResendInvite() {
   return useMutation({
     mutationFn: (id: string) =>
       apiClient.post<{ message: string }>(`/api/v2/users/invites/${id}/resend`).then((r) => r.data),
-    onSettled: () => client.invalidateQueries({ queryKey: ['admin-invites'] }),
+    onSettled: () => client.invalidateQueries({ queryKey: queryKeys.root('admin-invites') }),
   })
 }
 export function useCancelInvite() {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => apiClient.delete(`/api/v2/users/invites/${id}`),
-    onSuccess: () => client.invalidateQueries({ queryKey: ['admin-invites'] }),
+    onSuccess: () => client.invalidateQueries({ queryKey: queryKeys.root('admin-invites') }),
   })
+}
+
+export type ProfileInput = { name: string; email: string; file?: File | null }
+export function useSaveProfile(
+  options: {
+    onProfileSaved?: (user: ProfileResult) => void
+    onAvatarSaved?: () => void
+    onAvatarError?: (error: unknown) => void
+  } = {},
+) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ name, email, file }: ProfileInput) => {
+      const accountId = useAuthStore.getState().user?.id
+      const sync = (updated: ProfileResult) => {
+        const state = useAuthStore.getState()
+        if (state.user?.id !== accountId || !state.accessToken) return false
+        state.setAuth(updated, state.accessToken)
+        client.setQueryData(queryKeys.me(accountId), updated)
+        void invalidateResources(
+          client,
+          [
+            'me',
+            'user',
+            'admin-users',
+            'comments',
+            'activities',
+            'activities-count',
+            'pages',
+            'page',
+          ],
+          'active',
+        )
+        return true
+      }
+      const updated = await updateProfile({ name: name.trim(), email: email.trim().toLowerCase() })
+      if (!sync(updated)) return updated
+      options.onProfileSaved?.(updated)
+      if (file) {
+        try {
+          const avatar = await uploadAvatar(file)
+          if (sync(avatar)) options.onAvatarSaved?.()
+          return avatar
+        } catch (cause) {
+          if (useAuthStore.getState().user?.id === accountId) options.onAvatarError?.(cause)
+          throw cause
+        }
+      }
+      return updated
+    },
+  })
+}
+export function useUser(id: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.user(id),
+    enabled: Boolean(id),
+    queryFn: ({ signal }) =>
+      apiClient.get<AdminUser>(`/api/v2/users/${id}`, { signal }).then((r) => r.data),
+  })
+}
+export function useUpdateUser(
+  id: string,
+  options: MutationOptions<AdminUser, Partial<Pick<AdminUser, 'name' | 'email' | 'role'>>> = {},
+) {
+  const client = useQueryClient()
+  return useMutation({
+    ...options,
+    mutationFn: (input: Partial<Pick<AdminUser, 'name' | 'email' | 'role'>>) =>
+      apiClient.patch<AdminUser>(`/api/v2/users/${id}`, input).then((r) => r.data),
+    onSuccess: async (data, variables, result, context) => {
+      const state = useAuthStore.getState()
+      if (state.user?.id === data.id && state.accessToken) state.setAuth(data, state.accessToken)
+      await invalidateResources(
+        client,
+        ['admin-users', 'user', 'me', 'comments', 'activities'],
+        'active',
+      )
+      await options.onSuccess?.(data, variables, result, context)
+    },
+  })
+}
+export type MentionCandidate = { id: string; name: string; unavailable?: boolean }
+export function fetchMentionUsers(search: string, signal?: AbortSignal) {
+  return apiClient
+    .get<{ users: MentionCandidate[] }>('/api/v2/users/mentions', { params: { search }, signal })
+    .then((r) => r.data.users)
 }

@@ -1,3 +1,5 @@
+import { useMutation } from '@tanstack/react-query'
+
 import apiClient from './client'
 
 export const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
@@ -19,3 +21,7 @@ async function uploadImage(
 
 export const uploadInlineImage = (file: File) => uploadImage(file, 'INLINE')
 export const uploadCoverImage = (file: File) => uploadImage(file, 'COVER')
+
+export function useUploadImage(type: 'INLINE' | 'COVER' = 'INLINE') {
+  return useMutation({ mutationFn: (file: File) => uploadImage(file, type) })
+}

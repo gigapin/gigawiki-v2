@@ -1,10 +1,13 @@
-import axios from 'axios'
 import type { User } from '@shared/types/user'
 import { useMutation, useQuery } from '@tanstack/react-query'
 
-import { API_BASE_URL } from './config'
+import { fetchSessionUser } from './session'
+import { queryKeys } from './query-keys'
+import type { MutationOptions } from './hook-options'
+import { publicSettingsOptions } from './settings'
 import apiClient from './client'
 
+import { useAuthStore } from '@/stores/auth.store'
 import { apiErrorMessage } from '@/lib/api-error'
 
 export type RegisterInput = { name: string; email: string; password: string }
@@ -21,12 +24,7 @@ export function resendVerificationEmail(email: string) {
     .then((response) => response.data)
 }
 export function useRegistrationSettings() {
-  return useQuery({
-    queryKey: ['settings', 'public'],
-    queryFn: () =>
-      apiClient.get<Record<string, string>>('/api/v2/settings').then((response) => response.data),
-    staleTime: 0,
-  })
+  return useQuery(publicSettingsOptions())
 }
 export function useRegister() {
   return useMutation({ mutationFn: registerAccount })
@@ -73,13 +71,54 @@ export function useAcceptInvite() {
 export function useInvitationSession() {
   return useMutation({
     mutationFn: (accessToken: string) =>
-      axios
-        .get<{
-          user: User
-        }>(`${API_BASE_URL}/api/v2/auth/me`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-          withCredentials: true,
-        })
-        .then((r) => ({ user: r.data.user, accessToken })),
+      fetchSessionUser(accessToken).then((user) => ({ user, accessToken })),
+  })
+}
+
+export type LoginInput = { email: string; password: string }
+export type AuthSession = { user: User; accessToken: string }
+export function useMe() {
+  const userId = useAuthStore((s) => s.user?.id)
+  return useQuery({
+    queryKey: queryKeys.me(userId),
+    enabled: Boolean(userId),
+    queryFn: ({ signal }) =>
+      apiClient.get<{ user: User }>('/api/v2/auth/me', { signal }).then((r) => r.data.user),
+  })
+}
+export function useLogin(options: MutationOptions<AuthSession, LoginInput> = {}) {
+  return useMutation({
+    ...options,
+    mutationFn: async (input: LoginInput) => {
+      const previousAccount = useAuthStore.getState().user?.id
+      const { data } = await apiClient.post<{ accessToken: string }>('/api/v2/auth/login', {
+        ...input,
+        email: input.email.trim().toLowerCase(),
+      })
+      const {
+        data: { user },
+      } = await apiClient.get<{ user: User }>('/api/v2/auth/me', {
+        headers: { Authorization: `Bearer ${data.accessToken}` },
+      })
+      if (useAuthStore.getState().user?.id !== previousAccount)
+        throw new Error('Session changed during login')
+      return { user, accessToken: data.accessToken }
+    },
+    onSuccess: async (session, variables, result, context) => {
+      useAuthStore.getState().setAuth(session.user, session.accessToken)
+      await options.onSuccess?.(session, variables, result, context)
+    },
+  })
+}
+export function useLogout() {
+  return useMutation({
+    mutationFn: async () => {
+      const accountId = useAuthStore.getState().user?.id
+      try {
+        await apiClient.post('/api/v2/auth/logout')
+      } finally {
+        if (useAuthStore.getState().user?.id === accountId) useAuthStore.getState().clearAuth()
+      }
+    },
   })
 }

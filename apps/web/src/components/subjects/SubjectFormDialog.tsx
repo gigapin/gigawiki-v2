@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Subject } from '@shared/types/subject'
 import { toast } from 'sonner'
 
-import { createSubject, updateSubject } from '@/api/subjects'
+import { useSaveSubject } from '@/api/subjects'
 import { CoverField } from '@/components/shared/CoverField'
 import { useCover } from '@/lib/use-cover'
 import { ResourceFields } from '@/components/shared/ResourceFields'
@@ -43,7 +42,6 @@ export function SubjectFormDialog({
   onClose: () => void
   onSaved?: (subject: Subject) => void
 }) {
-  const client = useQueryClient()
   const cover = useCover(subject?.image, subject?.imageId)
   const [values, setValues] = useState({
     name: subject?.name ?? '',
@@ -52,8 +50,8 @@ export function SubjectFormDialog({
   })
   const [color, setColor] = useState(subject?.color ?? 'emerald')
   const [icon, setIcon] = useState(subject?.icon ?? 'book')
-  const mutation = useMutation({
-    mutationFn: async () => {
+  const mutation = useSaveSubject(
+    async () => {
       const input = {
         ...values,
         name: values.name.trim(),
@@ -62,29 +60,17 @@ export function SubjectFormDialog({
         icon,
         imageId: await cover.resolveImageId(),
       }
-      return subject ? updateSubject(subject.slug, input) : createSubject(input)
+      return input
     },
-    onSuccess: async (saved) => {
-      await Promise.all(
-        [
-          'subject',
-          'subjects',
-          'project',
-          'projects',
-          'pages',
-          'page',
-          'views',
-          'favorites',
-          'stats',
-        ].map((key) => client.invalidateQueries({ queryKey: [key], refetchType: 'none' })),
-      )
-      if (subject) client.removeQueries({ queryKey: ['subject', subject.slug], type: 'inactive' })
-      await client.invalidateQueries({ queryKey: ['subjects'] })
-      toast.success(subject ? 'Subject updated' : 'Subject created')
-      onSaved?.(saved)
-      onClose()
+    subject?.slug,
+    {
+      onSuccess: async (saved) => {
+        toast.success(subject ? 'Subject updated' : 'Subject created')
+        onSaved?.(saved)
+        onClose()
+      },
     },
-  })
+  )
   return (
     <Dialog
       open

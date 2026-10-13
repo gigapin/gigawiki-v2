@@ -1,6 +1,7 @@
 import axios from 'axios'
 
 import { API_BASE_URL } from './config'
+import { refreshAccessToken } from './session'
 
 import { useAuthStore } from '@/stores/auth.store'
 
@@ -62,12 +63,7 @@ apiClient.interceptors.response.use(
     const refreshingAccountId = useAuthStore.getState().user?.id
 
     try {
-      const { data } = await axios.post<{ accessToken: string }>(
-        `${API_BASE_URL}/api/v2/auth/refresh`,
-        {},
-        { withCredentials: true },
-      )
-      const { accessToken } = data
+      const accessToken = await refreshAccessToken()
       const { user, setAuth } = useAuthStore.getState()
       if (refreshingAccountId && user?.id !== refreshingAccountId)
         throw new Error('Session changed during refresh')

@@ -1,11 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearch } from '@tanstack/react-router'
-import type { User } from '@shared/types/user'
 
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
-import apiClient from '@/api/client'
+import { useLogin } from '@/api/auth'
 import { apiErrorMessage } from '@/lib/api-error'
-import { useAuthStore } from '@/stores/auth.store'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -13,7 +11,7 @@ export function LoginPage() {
   const navigate = useNavigate()
   const search = useSearch({ from: '/login' })
 
-  const setAuth = useAuthStore((s) => s.setAuth)
+  const login = useLogin()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -21,7 +19,7 @@ export function LoginPage() {
   const [emailError, setEmailError] = useState('')
   const [pwError, setPwError] = useState('')
   const [serverError, setServerError] = useState('')
-  const [submitting, setSubmitting] = useState(false)
+  const submitting = login.isPending
 
   function validateEmail(value: string) {
     if (!value.trim()) {
@@ -52,21 +50,11 @@ export function LoginPage() {
     const okPw = validatePw(password)
     if (!okEmail || !okPw) return
 
-    setSubmitting(true)
     try {
-      const { data: loginData } = await apiClient.post<{ accessToken: string }>(
-        '/api/v2/auth/login',
-        { email: email.trim().toLowerCase(), password },
-      )
-      const { data: meData } = await apiClient.get<{ user: User }>('/api/v2/auth/me', {
-        headers: { Authorization: `Bearer ${loginData.accessToken}` },
-      })
-      setAuth(meData.user, loginData.accessToken)
+      await login.mutateAsync({ email, password })
       navigate({ to: (search as { redirect?: string }).redirect || '/' })
     } catch (error) {
       setServerError(apiErrorMessage(error))
-    } finally {
-      setSubmitting(false)
     }
   }
 

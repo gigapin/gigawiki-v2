@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 
+import { queryKeys } from './query-keys'
 import apiClient from './client'
 
 import { useAuthStore } from '@/stores/auth.store'
@@ -22,7 +23,7 @@ export interface ViewsResponse {
 export function useRecentViews(limit = 6) {
   const userId = useAuthStore((s) => s.user?.id)
   return useQuery({
-    queryKey: ['views', userId, 1, limit],
+    queryKey: queryKeys.views(userId, limit),
     enabled: Boolean(userId),
     staleTime: 0,
     queryFn: ({ signal }) =>

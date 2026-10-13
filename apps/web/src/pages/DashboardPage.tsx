@@ -1,9 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
-
 import { RecentlyVisited } from '@/components/dashboard/RecentlyVisited'
-import { fetchSubjects } from '@/api/subjects'
+import { useSubjects } from '@/api/subjects'
 import { useFavorites } from '@/api/favorites'
-import { fetchActivities } from '@/api/activities'
+import { useActivities } from '@/api/activities'
 import { useAuthStore } from '@/stores/auth.store'
 import { Icon, type IconName } from '@/components/ui/icon'
 
@@ -98,16 +96,9 @@ function Sparkline({ tone = 'em' }: { tone?: string }) {
 
 /* ── stat cards ── */
 function StatCards() {
-  const { data: subjectsData } = useQuery({
-    queryKey: ['subjects'],
-    queryFn: () => fetchSubjects({ limit: 1 }),
-  })
+  const { data: subjectsData } = useSubjects({ limit: 1 })
   const { data: favsData } = useFavorites({ limit: 1 }, true)
-  const { data: activitiesData } = useQuery({
-    queryKey: ['activities-count'],
-    queryFn: () => fetchActivities({ limit: 1 }),
-    retry: false,
-  })
+  const { data: activitiesData } = useActivities({ limit: 1 }, true)
 
   const stats = [
     {
@@ -270,11 +261,7 @@ const VERB_LABEL: Record<string, string> = {
 }
 
 function ActivityFeed() {
-  const { data, isError, isLoading } = useQuery({
-    queryKey: ['activities'],
-    queryFn: () => fetchActivities({ limit: 10 }),
-    retry: false,
-  })
+  const { data, isError, isLoading } = useActivities({ limit: 10 })
 
   const avatarGradients = [
     'linear-gradient(135deg,oklch(0.7 0.13 30),oklch(0.55 0.15 350))',

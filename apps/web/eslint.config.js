@@ -27,4 +27,27 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    files: ['src/{pages,components,lib,stores}/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            { name: '@/api/client', message: 'Use typed hooks/adapters from src/api.' },
+            {
+              name: 'axios',
+              importNames: ['default'],
+              message: 'HTTP transport belongs in src/api; named error helpers are allowed.',
+            },
+            {
+              name: '@tanstack/react-query',
+              importNames: ['useQuery', 'useMutation'],
+              message: 'Define API query and mutation hooks in src/api.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ])

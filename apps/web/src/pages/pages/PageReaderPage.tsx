@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { History, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { deletePage, fetchPage } from '@/api/pages'
+import { useDeletePage, usePage } from '@/api/pages'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { ProjectBreadcrumb } from '@/components/shared/ProjectBreadcrumb'
 import { CommentSection } from '@/components/comments/CommentSection'
@@ -19,40 +18,15 @@ import { useAuthStore } from '@/stores/auth.store'
 
 export function PageReaderPage() {
   const { slug } = useParams({ from: '/_auth/pages/$slug' })
-  const query = useQuery({
-    queryKey: ['page', slug],
-    queryFn: () => fetchPage(slug),
-    refetchOnMount: 'always',
-  })
+  const query = usePage(slug, { refetchOnMount: 'always' })
   const user = useAuthStore((s) => s.user)
   const canViewHistory = user?.role === 'EDITOR' || user?.role === 'ADMIN'
   const page = query.data
   const navigate = useNavigate()
-  const client = useQueryClient()
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
-  const deletion = useMutation({
-    mutationFn: () => deletePage(slug),
+  const deletion = useDeletePage(slug, {
     onSuccess: async () => {
-      await client.cancelQueries({ queryKey: ['page', slug], exact: true })
-      await Promise.all(
-        [
-          'pages',
-          'sections',
-          'section',
-          'project',
-          'projects',
-          'subject',
-          'subjects',
-          'stats',
-          'activities',
-          'favorites',
-          'favorites-count',
-          'activities-count',
-          'views',
-          'search',
-        ].map((key) => client.invalidateQueries({ queryKey: [key], refetchType: 'none' })),
-      )
       toast.success('Page deleted')
       if (page) {
         await navigate({
@@ -61,7 +35,6 @@ export function PageReaderPage() {
           search: { section: page.section.slug },
         })
       }
-      client.removeQueries({ queryKey: ['page', slug], exact: true })
     },
   })
   return (

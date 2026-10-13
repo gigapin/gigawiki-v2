@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+import { queryKeys } from './query-keys'
 import apiClient from './client'
 
 import { useAuthStore } from '@/stores/auth.store'
@@ -28,7 +29,7 @@ export type CommentAction =
 
 export function useComments(resource: CommentResource, page = 1, limit = 10) {
   return useQuery({
-    queryKey: ['comments', resource.type, resource.slug, page, limit],
+    queryKey: queryKeys.comments(resource.type, resource.slug, page, limit),
     queryFn: ({ signal }) =>
       apiClient
         .get<CommentsResponse>(`/api/v2/${resource.type}/${resource.slug}/comments`, {
@@ -42,7 +43,7 @@ export function useComments(resource: CommentResource, page = 1, limit = 10) {
 export function useCommentMutation(resource: CommentResource) {
   const client = useQueryClient()
   const user = useAuthStore((s) => s.user)
-  const prefix = ['comments', resource.type, resource.slug]
+  const prefix = queryKeys.comments(resource.type, resource.slug)
   return useMutation({
     mutationFn: async (action: CommentAction) => {
       if (action.type === 'delete')
@@ -135,8 +136,8 @@ export function useCommentMutation(resource: CommentResource) {
           ],
           exact: true,
         }),
-        client.invalidateQueries({ queryKey: ['activities'] }),
-        client.invalidateQueries({ queryKey: ['activities-count'] }),
+        client.invalidateQueries({ queryKey: queryKeys.root('activities') }),
+        client.invalidateQueries({ queryKey: queryKeys.root('activities-count') }),
       ])
     },
   })

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { uploadCoverImage, IMAGE_TYPES, MAX_IMAGE_SIZE } from '@/api/images'
+import { useUploadImage, IMAGE_TYPES, MAX_IMAGE_SIZE } from '@/api/images'
 
 export function useCover(initial?: { id: string; url: string } | null, initialId?: string | null) {
+  const upload = useUploadImage('COVER')
   const [preview, setPreview] = useState(initial?.url ?? '')
   const [imageId, setImageId] = useState(initialId ?? initial?.id ?? null)
   const [error, setError] = useState('')
@@ -42,7 +43,7 @@ export function useCover(initial?: { id: string; url: string } | null, initialId
     const file = pendingFile.current
     if (!file) return imageId
     if (uploaded.current?.file === file) return uploaded.current.id
-    const asset = await uploadCoverImage(file)
+    const asset = await upload.mutateAsync(file)
     uploaded.current = { file, id: asset.id }
     return asset.id
   }

@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowDown,
   ArrowUp,
@@ -15,7 +14,7 @@ import {
 import { isAxiosError } from 'axios'
 import { toast } from 'sonner'
 
-import { deleteProject, fetchProject } from '@/api/projects'
+import { useDeleteProject, useProject } from '@/api/projects'
 import { usePages } from '@/api/pages'
 import { useSectionMutations, useSections, type SectionWithCount } from '@/api/sections'
 import { ProjectFormDialog } from '@/components/projects/ProjectFormDialog'
@@ -42,13 +41,8 @@ export function ProjectDetailPage() {
 
 export function ProjectDetail({ slug, sectionSlug }: { slug: string; sectionSlug?: string }) {
   const navigate = useNavigate()
-  const client = useQueryClient()
   const user = useAuthStore((state) => state.user)
-  const projectQuery = useQuery({
-    queryKey: ['project', slug],
-    queryFn: () => fetchProject(slug),
-    refetchOnMount: 'always',
-  })
+  const projectQuery = useProject(slug, { refetchOnMount: 'always' })
   const sectionsQuery = useSections(slug)
   const { remove, reorder } = useSectionMutations(slug)
   const [selectedId, setSelectedId] = useState<string>()
@@ -68,12 +62,8 @@ export function ProjectDetail({ slug, sectionSlug }: { slug: string; sectionSlug
   const canCreate = user?.role === 'ADMIN' || user?.role === 'EDITOR'
   const canManage = Boolean(project && (user?.role === 'ADMIN' || user?.id === project.userId))
   const isAdmin = user?.role === 'ADMIN'
-  const deletion = useMutation({
-    mutationFn: () => deleteProject(slug),
+  const deletion = useDeleteProject(slug, {
     onSuccess: async () => {
-      client.removeQueries({ queryKey: ['project', slug], exact: true })
-      await client.invalidateQueries({ queryKey: ['subject'] })
-      await client.invalidateQueries({ queryKey: ['subjects'] })
       toast.success('Project deleted')
       await navigate({ to: '/subjects' })
     },

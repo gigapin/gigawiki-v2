@@ -1,15 +1,13 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
-import type { Subject } from '@shared/types/subject'
 
 import { SubjectActions } from '@/components/subjects/SubjectActions'
 import { CARD_TONES, toneForColor } from '@/styles/cover-colors'
-import apiClient from '@/api/client'
+import { useSubject } from '@/api/subjects'
 import { Icon, type IconName } from '@/components/ui/icon'
 import { useAuthStore } from '@/stores/auth.store'
 import { CreateProjectModal } from '@/components/subjects/CreateProjectModal'
-import { fetchProjectsBySubject, type ProjectWithMeta } from '@/api/projects'
+import { useProjects, type ProjectWithMeta } from '@/api/projects'
 
 const TONE_KEYS = Object.keys(CARD_TONES)
 
@@ -41,14 +39,6 @@ function initials(name: string): string {
 }
 
 /* ── subject response type ── */
-type SubjectDetail = Subject & {
-  user: { id: string; name: string }
-  _count: { projects: number }
-}
-
-function fetchSubjectBySlug(slug: string) {
-  return apiClient.get<SubjectDetail>(`/api/v2/subjects/${slug}`).then((r) => r.data)
-}
 
 /* ── project card ── */
 interface ProjectCardProps {
@@ -333,16 +323,13 @@ export function SubjectDetailPage() {
   const [page, setPage] = useState(1)
   const [createOpen, setCreateOpen] = useState(false)
 
-  const subjectQuery = useQuery({
-    queryKey: ['subject', slug],
-    queryFn: () => fetchSubjectBySlug(slug),
-  })
+  const subjectQuery = useSubject(slug)
 
-  const projectsQuery = useQuery({
-    queryKey: ['subject', slug, 'projects', page],
-    queryFn: () => fetchProjectsBySubject(slug, { page, limit: PROJECTS_PER_PAGE }),
-    placeholderData: (prev) => prev,
-  })
+  const projectsQuery = useProjects(
+    slug,
+    { page, limit: PROJECTS_PER_PAGE },
+    { keepPreviousData: true },
+  )
 
   const subject = subjectQuery.data
   const projectsData = projectsQuery.data

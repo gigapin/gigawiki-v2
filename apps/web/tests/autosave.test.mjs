@@ -3,7 +3,7 @@ import { createElement } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, fireEvent, act, cleanup } from '@testing-library/react'
 import { PageForm } from '../src/pages/pages/PageEditorPage'
-import { savePage } from '../src/api/pages'
+const savePage = vi.hoisted(() => vi.fn())
 
 const session = vi.hoisted(() => ({
   user: { role: 'EDITOR' },
@@ -19,7 +19,16 @@ vi.mock('@tanstack/react-router', () => ({
   },
   useParams: vi.fn(),
 }))
-vi.mock('../src/api/pages', () => ({ savePage: vi.fn(), fetchPage: vi.fn() }))
+vi.mock('../src/api/client', () => ({
+  default: {
+    patch: vi.fn(async (url, payload) => ({
+      data: await savePage(payload, { slug: url.split('/').at(-1) }),
+    })),
+    post: vi.fn(async (_url, { sectionId, ...payload }) => ({
+      data: await savePage(payload, { sectionId }),
+    })),
+  },
+}))
 vi.mock('../src/components/shared/ProjectBreadcrumb', () => ({ ProjectBreadcrumb: () => null }))
 vi.mock('../src/components/pages/PageEditor', () => ({
   PageEditor: ({ onChange, disabled, onStatusChange }) =>
@@ -150,11 +159,17 @@ it('saves a draft without opening the reader and preserves draft status in later
   change()
   fireEvent.click(screen.getByRole('button', { name: 'Save draft' }))
   await tick(1)
-  expect(savePage).toHaveBeenCalledWith({ ...initial, content: '<p>Changed</p>', isDraft: true }, { slug: 'title' })
+  expect(savePage).toHaveBeenCalledWith(
+    { ...initial, content: '<p>Changed</p>', isDraft: true },
+    { slug: 'title' },
+  )
   expect(session.navigate).not.toHaveBeenCalled()
   change('<p>More work</p>')
   await tick(30_000)
-  expect(savePage).toHaveBeenLastCalledWith({ ...initial, content: '<p>More work</p>', isDraft: true }, { slug: 'title' })
+  expect(savePage).toHaveBeenLastCalledWith(
+    { ...initial, content: '<p>More work</p>', isDraft: true },
+    { slug: 'title' },
+  )
 })
 it('creates a draft once, opens its edit URL and updates it on subsequent saves', async () => {
   mount(null)
@@ -162,7 +177,11 @@ it('creates a draft once, opens its edit URL and updates it on subsequent saves'
   fireEvent.click(screen.getByRole('button', { name: 'Save draft' }))
   await tick(1)
   expect(savePage.mock.calls[0][1]).toEqual({ sectionId: 'section' })
-  expect(session.navigate).toHaveBeenCalledWith({ to: '/pages/$slug/edit', params: { slug: 'title' }, replace: true })
+  expect(session.navigate).toHaveBeenCalledWith({
+    to: '/pages/$slug/edit',
+    params: { slug: 'title' },
+    replace: true,
+  })
   change()
   fireEvent.click(screen.getByRole('button', { name: 'Save draft' }))
   await tick(1)
@@ -171,7 +190,12 @@ it('creates a draft once, opens its edit URL and updates it on subsequent saves'
 it('allows navigation immediately after saving even with the blocker callback from before the response', async () => {
   mount(null)
   let finish
-  savePage.mockImplementation(() => new Promise((resolve) => { finish = resolve }))
+  savePage.mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve
+      }),
+  )
   change()
   fireEvent.click(screen.getByRole('button', { name: 'Save draft' }))
   await tick(1)
@@ -180,12 +204,17 @@ it('allows navigation immediately after saving even with the blocker callback fr
   session.navigate.mockImplementation(() => {
     expect(guard()).toBe(false)
   })
-  await act(async () => { finish({ slug: 'title', isDraft: true }); await vi.advanceTimersByTimeAsync(1) })
+  await act(async () => {
+    finish({ slug: 'title', isDraft: true })
+    await vi.advanceTimersByTimeAsync(1)
+  })
   expect(session.navigate).toHaveBeenCalled()
 })
 it('retains changes after a failed manual draft save and allows retry', async () => {
   mount()
-  savePage.mockRejectedValueOnce(new Error('offline')).mockImplementation(async (payload) => ({ ...payload, slug: 'title' }))
+  savePage
+    .mockRejectedValueOnce(new Error('offline'))
+    .mockImplementation(async (payload) => ({ ...payload, slug: 'title' }))
   change()
   fireEvent.click(screen.getByRole('button', { name: 'Save draft' }))
   await tick(1)
@@ -194,6 +223,9 @@ it('retains changes after a failed manual draft save and allows retry', async ()
   expect(session.navigate).not.toHaveBeenCalled()
   fireEvent.click(screen.getByRole('button', { name: 'Save draft' }))
   await tick(1)
-  expect(savePage).toHaveBeenLastCalledWith({ ...initial, content: '<p>Changed</p>', isDraft: true }, { slug: 'title' })
+  expect(savePage).toHaveBeenLastCalledWith(
+    { ...initial, content: '<p>Changed</p>', isDraft: true },
+    { slug: 'title' },
+  )
   expect(screen.queryByRole('alert')).toBeNull()
 })

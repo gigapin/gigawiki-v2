@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
 
-import { fetchSubjects } from '@/api/subjects'
-import { fetchProjectsBySubject } from '@/api/projects'
+import { useSubjects } from '@/api/subjects'
+import { useProjects } from '@/api/projects'
 import { useSections } from '@/api/sections'
 import { EmptyState, ErrorState, ListSkeleton } from '@/components/shared/ResourceState'
 import { Pagination } from '@/components/shared/Pagination'
@@ -16,16 +15,12 @@ export function NewPageLocationPage() {
   const [subject, setSubject] = useState<{ slug: string; name: string }>()
   const [project, setProject] = useState<{ slug: string; name: string }>()
   const [page, setPage] = useState(1)
-  const subjects = useQuery({
-    queryKey: ['subjects', 'page-picker', page],
-    queryFn: () => fetchSubjects({ page, limit: 20 }),
-    enabled: !subject,
-  })
-  const projects = useQuery({
-    queryKey: ['subject', subject?.slug, 'page-picker', page],
-    queryFn: () => fetchProjectsBySubject(subject!.slug, { page, limit: 20 }),
-    enabled: Boolean(subject && !project),
-  })
+  const subjects = useSubjects({ page, limit: 20 }, { enabled: !subject })
+  const projects = useProjects(
+    subject?.slug,
+    { page, limit: 20 },
+    { enabled: Boolean(subject && !project) },
+  )
   const sections = useSections(project?.slug ?? '')
   if (!user || user.role === 'GUEST')
     return (

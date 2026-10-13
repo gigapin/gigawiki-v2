@@ -77,10 +77,15 @@ it('shows the current version and fetches a previous revision only when selected
   await screen.findByRole('button', { name: /Revision 0 · Original title/ })
   expect(apiClient.get).toHaveBeenCalledWith('/api/v2/pages/current-title/revisions', {
     params: { page: 1, limit: 10 },
+    signal: expect.any(AbortSignal),
   })
-  expect(apiClient.get).not.toHaveBeenCalledWith('/api/v2/pages/current-title/revisions/0')
+  expect(apiClient.get).not.toHaveBeenCalledWith('/api/v2/pages/current-title/revisions/0', {
+    signal: expect.any(AbortSignal),
+  })
   await selectRevision()
-  expect(apiClient.get).toHaveBeenCalledWith('/api/v2/pages/current-title/revisions/0')
+  expect(apiClient.get).toHaveBeenCalledWith('/api/v2/pages/current-title/revisions/0', {
+    signal: expect.any(AbortSignal),
+  })
   expect(screen.getByRole('button', { name: 'Restore this revision' })).toBeTruthy()
 })
 
@@ -171,6 +176,7 @@ it('loads the next history page with the API pagination contract', async () => {
   await waitFor(() =>
     expect(apiClient.get).toHaveBeenCalledWith('/api/v2/pages/current-title/revisions', {
       params: { page: 2, limit: 10 },
+      signal: expect.any(AbortSignal),
     }),
   )
 })

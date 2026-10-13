@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { queryKeys } from '@/api/query-keys'
 import type { PageDetail } from '@/api/pages'
 import { useRevision, useRevisions, useRestoreRevision } from '@/api/revisions'
 import { PageContent } from '@/components/pages/PageContent'
@@ -57,9 +58,9 @@ function RevisionsDrawerContent({ page, onClose }: { page: PageDetail; onClose: 
       onClose()
       if (restored.slug !== page.slug) {
         await navigate({ to: '/pages/$slug', params: { slug: restored.slug }, replace: true })
-        client.removeQueries({ queryKey: ['page', page.slug], exact: true })
+        client.removeQueries({ queryKey: queryKeys.page(page.slug), exact: true })
       } else {
-        await client.invalidateQueries({ queryKey: ['page', page.slug], exact: true })
+        await client.invalidateQueries({ queryKey: queryKeys.page(page.slug), exact: true })
       }
     } catch {
       // The confirmation dialog keeps the API error visible and allows retry.

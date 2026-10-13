@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+import { queryKeys } from './query-keys'
 import apiClient from './client'
 
 export function useTagSearch(prefix: string) {
   return useQuery({
-    queryKey: ['tags', prefix],
+    queryKey: queryKeys.tags(prefix),
     enabled: Boolean(prefix.trim()),
     queryFn: ({ signal }) =>
       apiClient
@@ -14,22 +15,35 @@ export function useTagSearch(prefix: string) {
         .then((r) => r.data),
   })
 }
-export function usePageTags(slug: string, pageId: string) {
+
+function useTagInvalidation(slug: string) {
   const client = useQueryClient()
-  const refresh = async () => {
-    await Promise.all([
-      client.invalidateQueries({ queryKey: ['page', slug], exact: true }),
-      client.invalidateQueries({ queryKey: ['tags'] }),
+  return () =>
+    Promise.all([
+      client.invalidateQueries({ queryKey: queryKeys.page(slug), exact: true }),
+      client.invalidateQueries({ queryKey: queryKeys.root('tags') }),
     ])
-  }
-  const create = useMutation({
+}
+export function useCreateTag(slug: string, pageId: string) {
+  const refresh = useTagInvalidation(slug)
+  return useMutation({
     mutationFn: (name: string) =>
-      apiClient.post('/api/v2/tags', { name: name.trim().toLowerCase(), pageId }),
+      apiClient
+        .post<{
+          id: string
+          name: string
+        }>('/api/v2/tags', { name: name.trim().toLowerCase(), pageId })
+        .then((r) => r.data),
     onSuccess: refresh,
   })
-  const remove = useMutation({
-    mutationFn: (id: string) => apiClient.delete(`/api/v2/tags/${id}`),
+}
+export function useDeleteTag(slug: string) {
+  const refresh = useTagInvalidation(slug)
+  return useMutation({
+    mutationFn: (id: string) => apiClient.delete(`/api/v2/tags/${id}`).then(() => undefined),
     onSuccess: refresh,
   })
-  return { create, remove }
+}
+export function usePageTags(slug: string, pageId: string) {
+  return { create: useCreateTag(slug, pageId), remove: useDeleteTag(slug) }
 }

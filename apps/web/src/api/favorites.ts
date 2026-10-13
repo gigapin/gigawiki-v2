@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Favorite } from '@shared/types/favorite'
 
+import { queryKeys } from './query-keys'
 import type { PageDetail } from './pages'
 import apiClient from './client'
 
@@ -20,7 +21,7 @@ export function useFavorites(params: { page?: number; limit?: number } = {}, cou
   const userId = useAuthStore((state) => state.user?.id)
   const { page = 1, limit = 20 } = params
   return useQuery({
-    queryKey: [countOnly ? 'favorites-count' : 'favorites', userId, page, limit],
+    queryKey: queryKeys.favorites(countOnly, userId, page, limit),
     enabled: Boolean(userId),
     queryFn: ({ signal }) => fetchFavorites({ page, limit }, signal),
   })
@@ -34,9 +35,9 @@ export function useToggleFavorite(slug: string, pageId: string) {
       apiClient.post<{ favorited: boolean }>('/api/v2/favorites', { pageId }).then((r) => r.data),
     onSuccess: async ({ favorited }) => {
       if (useAuthStore.getState().user?.id !== userId) return
-      await client.cancelQueries({ queryKey: ['page', slug], exact: true })
+      await client.cancelQueries({ queryKey: queryKeys.page(slug), exact: true })
       if (useAuthStore.getState().user?.id !== userId) return
-      client.setQueryData<PageDetail>(['page', slug], (current) =>
+      client.setQueryData<PageDetail>(queryKeys.page(slug), (current) =>
         current
           ? {
               ...current,
@@ -50,7 +51,7 @@ export function useToggleFavorite(slug: string, pageId: string) {
       )
       await Promise.all(
         ['favorites', 'favorites-count'].map((key) =>
-          client.invalidateQueries({ queryKey: [key] }),
+          client.invalidateQueries({ queryKey: queryKeys.root(key) }),
         ),
       )
     },

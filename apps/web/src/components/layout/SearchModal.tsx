@@ -1,21 +1,8 @@
 import { useNavigate } from '@tanstack/react-router'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
-import apiClient from '@/api/client'
+import { useSearch } from '@/api/pages'
 import { Icon } from '@/components/ui/icon'
-
-interface SearchResult {
-  id: string
-  title: string
-  type?: 'PAGE' | 'PROJECT' | 'SECTION'
-  project?: { name: string }
-  subject?: { name: string }
-  slug: string
-}
-
-interface SearchResponse {
-  results: SearchResult[]
-}
 
 interface Props {
   open: boolean
@@ -29,9 +16,15 @@ export function SearchModal({ open, onClose }: Props) {
 function SearchDialog({ onClose }: Omit<Props, 'open'>) {
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<SearchResult[]>([])
+  const [debouncedQuery, setDebouncedQuery] = useState('')
+  const searchQuery = useSearch(debouncedQuery)
+  const results = useMemo(
+    () => (query.trim() === debouncedQuery.trim() ? (searchQuery.data?.results ?? []) : []),
+    [query, debouncedQuery, searchQuery.data],
+  )
   const [focusedIndex, setFocusedIndex] = useState(0)
-  const [loading, setLoading] = useState(false)
+  const loading =
+    searchQuery.isFetching || (query.trim().length >= 2 && query.trim() !== debouncedQuery.trim())
   const inputRef = useRef<HTMLInputElement>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -43,28 +36,12 @@ function SearchDialog({ onClose }: Omit<Props, 'open'>) {
     }
   }, [])
 
-  const search = useCallback(async (q: string) => {
-    if (!q.trim()) {
-      setResults([])
-      return
-    }
-    setLoading(true)
-    try {
-      const res = await apiClient.get<SearchResponse>(`/api/v2/search?q=${encodeURIComponent(q)}`)
-      setResults(res.data.results ?? [])
-      setFocusedIndex(0)
-    } catch {
-      setResults([])
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const val = e.target.value
     setQuery(val)
+    setFocusedIndex(0)
     if (timerRef.current) clearTimeout(timerRef.current)
-    timerRef.current = setTimeout(() => search(val), 300)
+    timerRef.current = setTimeout(() => setDebouncedQuery(val), 300)
   }
 
   useEffect(() => {
@@ -90,13 +67,6 @@ function SearchDialog({ onClose }: Omit<Props, 'open'>) {
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [results, focusedIndex, onClose, navigate])
-
-  const typeIcon = (type: SearchResult['type']) =>
-    !type || type === 'PAGE'
-      ? ('doc' as const)
-      : type === 'PROJECT'
-        ? ('folder' as const)
-        : ('hash' as const)
 
   return (
     <div
@@ -217,7 +187,7 @@ function SearchDialog({ onClose }: Omit<Props, 'open'>) {
                     color: 'var(--db-em-deep)',
                   }}
                 >
-                  <Icon name={typeIcon(r.type)} size={13} />
+                  <Icon name="doc" size={13} />
                 </span>
                 <div style={{ minWidth: 0 }}>
                   <div
@@ -232,15 +202,6 @@ function SearchDialog({ onClose }: Omit<Props, 'open'>) {
                   >
                     {r.title}
                   </div>
-                  {(r.project || r.subject) && (
-                    <div style={{ fontSize: 11.5, color: 'var(--db-muted)', marginTop: 1 }}>
-                      {r.subject?.name && <span>{r.subject.name}</span>}
-                      {r.subject?.name && r.project?.name && (
-                        <span style={{ margin: '0 5px', color: 'var(--db-muted-2)' }}>›</span>
-                      )}
-                      {r.project?.name && <span>{r.project.name}</span>}
-                    </div>
-                  )}
                 </div>
                 <span
                   style={{
@@ -253,15 +214,21 @@ function SearchDialog({ onClose }: Omit<Props, 'open'>) {
                     flexShrink: 0,
                   }}
                 >
-                  {(r.type ?? 'PAGE').toLowerCase()}
+                  page
                 </span>
               </div>
             ))}
           </div>
         )}
 
+        {searchQuery.isError && query.trim() === debouncedQuery.trim() && (
+          <p role="alert" className="p-4 text-sm text-destructive">
+            Search unavailable. <button onClick={() => void searchQuery.refetch()}>Retry</button>
+          </p>
+        )}
+
         {/* empty state */}
-        {!loading && query.trim() !== '' && results.length === 0 && (
+        {!searchQuery.isError && !loading && query.trim().length >= 2 && results.length === 0 && (
           <div
             style={{
               padding: '24px 16px',

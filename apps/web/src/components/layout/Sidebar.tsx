@@ -1,15 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
 import type { Subject } from '@shared/types/subject'
 import { BookOpen, ChevronRight, Folder } from 'lucide-react'
 
 import { SiteName } from '@/components/shared/SiteName'
 import { InviteUsersLink } from '@/components/auth/InviteUsersLink'
-import apiClient from '@/api/client'
+import { useLogout } from '@/api/auth'
 import { Button } from '@/components/ui/button'
-import { fetchProjectsBySubject } from '@/api/projects'
-import { fetchSubjects } from '@/api/subjects'
+import { useProjects } from '@/api/projects'
+import { useSubjects } from '@/api/subjects'
 import { useFavorites } from '@/api/favorites'
 import { useAuthStore } from '@/stores/auth.store'
 import { Icon, type IconName } from '@/components/ui/icon'
@@ -28,11 +27,7 @@ type SubjectNode = Subject & { _count: { projects: number } }
 function SubjectItem({ subject }: { subject: SubjectNode }) {
   const [open, setOpen] = useState(false)
   const pathname = useRouterState({ select: (state) => state.location.pathname })
-  const projects = useQuery({
-    queryKey: ['subject', subject.slug, 'projects', 'navigation'],
-    queryFn: () => fetchProjectsBySubject(subject.slug, { limit: 20 }),
-    enabled: open,
-  })
+  const projects = useProjects(subject.slug, { limit: 20 }, { enabled: open })
   return (
     <div>
       <div className="flex items-center gap-1 rounded-md">
@@ -103,7 +98,7 @@ function SubjectItem({ subject }: { subject: SubjectNode }) {
 function UserMenu({ onClose }: { onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
-  const clearAuth = useAuthStore((s) => s.clearAuth)
+  const logout = useLogout()
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -115,12 +110,11 @@ function UserMenu({ onClose }: { onClose: () => void }) {
 
   async function handleLogout() {
     try {
-      await apiClient.post('/api/v2/auth/logout')
+      await logout.mutateAsync()
     } catch {
       /* ignore */
     }
-    clearAuth()
-    navigate({ to: '/login', search: { redirect: '' } })
+    if (!useAuthStore.getState().user) navigate({ to: '/login', search: { redirect: '' } })
   }
 
   const itemStyle = {
@@ -193,10 +187,7 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
   const [subjectsOpen, setSubjectsOpen] = useState(true)
   const pathname = useRouterState({ select: (s) => s.location.pathname })
 
-  const { data: subjectsData } = useQuery({
-    queryKey: ['subjects'],
-    queryFn: () => fetchSubjects({ limit: 50 }),
-  })
+  const { data: subjectsData } = useSubjects({ limit: 50 })
 
   const { data: favsData } = useFavorites({ limit: 1 }, true)
 

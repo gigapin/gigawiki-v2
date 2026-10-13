@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Revision } from '@shared/types/revision'
 
+import { queryKeys } from './query-keys'
 import apiClient from './client'
 import type { PageListItem } from './pages'
 
@@ -16,14 +17,26 @@ export interface RevisionsResponse {
   limit: number
 }
 
-export function fetchRevisions(slug: string, page = 1, limit = 10): Promise<RevisionsResponse> {
+export function fetchRevisions(
+  slug: string,
+  page = 1,
+  limit = 10,
+  signal?: AbortSignal,
+): Promise<RevisionsResponse> {
   return apiClient
-    .get<RevisionsResponse>(`/api/v2/pages/${slug}/revisions`, { params: { page, limit } })
+    .get<RevisionsResponse>(`/api/v2/pages/${slug}/revisions`, {
+      params: { page, limit },
+      ...(signal ? { signal } : {}),
+    })
     .then((response) => response.data)
 }
-export function fetchRevision(slug: string, number: number): Promise<RevisionDetail> {
+export function fetchRevision(
+  slug: string,
+  number: number,
+  signal?: AbortSignal,
+): Promise<RevisionDetail> {
   return apiClient
-    .get<RevisionDetail>(`/api/v2/pages/${slug}/revisions/${number}`)
+    .get<RevisionDetail>(`/api/v2/pages/${slug}/revisions/${number}`, { signal })
     .then((response) => response.data)
 }
 export function restoreRevision(slug: string, number: number): Promise<PageListItem> {
@@ -33,15 +46,16 @@ export function restoreRevision(slug: string, number: number): Promise<PageListI
 }
 export function useRevisions(slug: string, page = 1, limit = 10) {
   return useQuery({
-    queryKey: ['revisions', slug, page, limit],
-    queryFn: () => fetchRevisions(slug, page, limit),
+    queryKey: queryKeys.revisions(slug, page, limit),
+    enabled: Boolean(slug),
+    queryFn: ({ signal }) => fetchRevisions(slug, page, limit, signal),
   })
 }
 export function useRevision(slug: string, number: number | undefined) {
   return useQuery({
-    queryKey: ['revision', slug, number],
-    enabled: number !== undefined,
-    queryFn: () => fetchRevision(slug, number!),
+    queryKey: queryKeys.revision(slug, number),
+    enabled: Boolean(slug) && number !== undefined,
+    queryFn: ({ signal }) => fetchRevision(slug, number!, signal),
   })
 }
 export function useRestoreRevision(slug: string) {
@@ -50,7 +64,7 @@ export function useRestoreRevision(slug: string) {
     mutationFn: (number: number) => restoreRevision(slug, number),
     onSuccess: async (page) => {
       // Prevent a pending response from putting the pre-restore page back in cache.
-      await client.cancelQueries({ queryKey: ['page', slug], exact: true })
+      await client.cancelQueries({ queryKey: queryKeys.page(slug), exact: true })
       await Promise.all(
         [
           'page',
@@ -67,10 +81,12 @@ export function useRestoreRevision(slug: string) {
           'activities',
           'activities-count',
           'stats',
-        ].map((key) => client.invalidateQueries({ queryKey: [key], refetchType: 'none' })),
+        ].map((key) =>
+          client.invalidateQueries({ queryKey: queryKeys.root(key), refetchType: 'none' }),
+        ),
       )
       if (page.slug !== slug)
-        client.removeQueries({ queryKey: ['page', slug], exact: true, type: 'inactive' })
+        client.removeQueries({ queryKey: queryKeys.page(slug), exact: true, type: 'inactive' })
     },
   })
 }

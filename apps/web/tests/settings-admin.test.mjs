@@ -155,6 +155,7 @@ it('loads users, searches and sends role updates', async () => {
   await waitFor(() =>
     expect(apiClient.get).toHaveBeenCalledWith('/api/v2/users', {
       params: { page: 1, limit: 20, search: 'Alice' },
+      signal: expect.any(AbortSignal),
     }),
   )
   expect(screen.getByRole('button', { name: 'Delete Admin' }).disabled).toBe(true)
@@ -255,12 +256,14 @@ it('loads another users page and resets pagination when searching', async () => 
   await waitFor(() =>
     expect(apiClient.get).toHaveBeenCalledWith('/api/v2/users', {
       params: { page: 2, limit: 20, search: '' },
+      signal: expect.any(AbortSignal),
     }),
   )
   await userEvent.type(screen.getByLabelText('Search users'), 'Alice')
   await waitFor(() =>
     expect(apiClient.get).toHaveBeenCalledWith('/api/v2/users', {
       params: { page: 1, limit: 20, search: 'Alice' },
+      signal: expect.any(AbortSignal),
     }),
   )
 })
@@ -271,6 +274,7 @@ it('loads another page of invitations', async () => {
   await waitFor(() =>
     expect(apiClient.get).toHaveBeenCalledWith('/api/v2/users/invites', {
       params: { page: 2, limit: 20 },
+      signal: expect.any(AbortSignal),
     }),
   )
 })

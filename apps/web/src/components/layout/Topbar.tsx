@@ -5,7 +5,7 @@ import { SearchModal } from './SearchModal'
 
 import { InviteUsersLink } from '@/components/auth/InviteUsersLink'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
-import apiClient from '@/api/client'
+import { useLogout } from '@/api/auth'
 import { useAuthStore } from '@/stores/auth.store'
 import { Icon, type IconName } from '@/components/ui/icon'
 
@@ -21,7 +21,7 @@ function initials(name: string) {
 function AvatarDropdown({ onClose }: { onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
-  const clearAuth = useAuthStore((s) => s.clearAuth)
+  const logout = useLogout()
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -33,12 +33,11 @@ function AvatarDropdown({ onClose }: { onClose: () => void }) {
 
   async function handleLogout() {
     try {
-      await apiClient.post('/api/v2/auth/logout')
+      await logout.mutateAsync()
     } catch {
       /* ignore */
     }
-    clearAuth()
-    navigate({ to: '/login', search: { redirect: '' } })
+    if (!useAuthStore.getState().user) navigate({ to: '/login', search: { redirect: '' } })
   }
 
   const itemStyle: React.CSSProperties = {

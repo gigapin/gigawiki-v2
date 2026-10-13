@@ -1,5 +1,7 @@
 # API Endpoint Test Results
 
+> **Report storico del 27 maggio 2026.** Non descrive lo stato corrente. La ricerca usa ora la full-text search PostgreSQL (`search_vector`), ripristinata dalla migrazione di agosto; l’attribuzione del vecchio errore a Meilisearch qui sotto non va usata per pianificare nuove modifiche. Stato e verifiche aggiornati in [SESSION_LOG.md](./SESSION_LOG.md).
+
 **Date:** 2026-05-27  
 **Base URL:** `http://localhost:3001`  
 **Auth:** JWT Bearer token (admin@gigawiki.local / Admin1234!)  

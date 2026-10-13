@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Section } from '@shared/types/section'
 
+import { queryKeys } from './query-keys'
 import apiClient from './client'
 
 export type SectionWithCount = Section & { _count: { pages: number } }
@@ -8,24 +9,35 @@ export type SectionInput = { title: string; description: string; visibility: 'PU
 
 export function useSections(projectSlug: string) {
   return useQuery({
-    queryKey: ['sections', projectSlug],
+    queryKey: queryKeys.sections(projectSlug),
     enabled: Boolean(projectSlug),
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       apiClient
-        .get<{ sections: SectionWithCount[] }>(`/api/v2/projects/${projectSlug}/sections`)
+        .get<{
+          sections: SectionWithCount[]
+        }>(`/api/v2/projects/${projectSlug}/sections`, { signal })
         .then((response) => response.data.sections),
   })
 }
 
-export function useSectionMutations(projectSlug: string) {
+function useSectionInvalidation(projectSlug: string) {
   const client = useQueryClient()
-  const invalidate = async () => {
+  return async () => {
     await Promise.all([
-      client.invalidateQueries({ queryKey: ['sections', projectSlug] }),
-      client.invalidateQueries({ queryKey: ['project', projectSlug] }),
+      client.invalidateQueries({ queryKey: queryKeys.sections(projectSlug) }),
+      client.invalidateQueries({ queryKey: queryKeys.project(projectSlug) }),
+      client.invalidateQueries({ queryKey: queryKeys.root('section'), refetchType: 'none' }),
+      client.invalidateQueries({ queryKey: queryKeys.root('page'), refetchType: 'none' }),
+      client.invalidateQueries({ queryKey: queryKeys.root('views'), refetchType: 'none' }),
+      client.invalidateQueries({ queryKey: queryKeys.root('favorites'), refetchType: 'none' }),
+      client.invalidateQueries({ queryKey: queryKeys.root('subject'), refetchType: 'none' }),
+      client.invalidateQueries({ queryKey: queryKeys.root('subjects'), refetchType: 'none' }),
     ])
   }
-  const save = useMutation({
+}
+function useSaveSection(projectSlug: string) {
+  const invalidate = useSectionInvalidation(projectSlug)
+  return useMutation({
     mutationFn: ({
       slug,
       projectId,
@@ -34,19 +46,71 @@ export function useSectionMutations(projectSlug: string) {
       (slug
         ? apiClient.patch<Section>(`/api/v2/sections/${slug}`, input)
         : apiClient.post<Section>('/api/v2/sections', { ...input, projectId })
-      ).then((response) => response.data),
+      ).then((r) => r.data),
     onSuccess: invalidate,
   })
-  const remove = useMutation({
-    mutationFn: (slug: string) => apiClient.delete(`/api/v2/sections/${slug}`),
+}
+export function useSectionMutations(projectSlug: string) {
+  return {
+    save: useSaveSection(projectSlug),
+    remove: useDeleteSection(projectSlug),
+    reorder: useReorderSections(projectSlug),
+  }
+}
+export function useSection(slug: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.section(slug),
+    enabled: Boolean(slug),
+    queryFn: ({ signal }) =>
+      apiClient.get<SectionWithCount>(`/api/v2/sections/${slug}`, { signal }).then((r) => r.data),
+  })
+}
+export function useCreateSection(projectSlug: string) {
+  const invalidate = useSectionInvalidation(projectSlug)
+  return useMutation({
+    mutationFn: (input: SectionInput & { projectId: string }) =>
+      apiClient.post<Section>('/api/v2/sections', input).then((r) => r.data),
     onSuccess: invalidate,
   })
-  const reorder = useMutation({
-    mutationFn: (sections: SectionWithCount[]) =>
-      apiClient.patch(`/api/v2/sections/${sections[0].slug}/position`, {
-        positions: sections.map((section, position) => ({ id: section.id, position })),
-      }),
+}
+export function useUpdateSection(projectSlug: string) {
+  const invalidate = useSectionInvalidation(projectSlug)
+  return useMutation({
+    mutationFn: ({ slug, ...input }: SectionInput & { slug: string }) =>
+      apiClient.patch<Section>(`/api/v2/sections/${slug}`, input).then((r) => r.data),
     onSuccess: invalidate,
   })
-  return { save, remove, reorder }
+}
+export function useDeleteSection(projectSlug: string) {
+  const client = useQueryClient()
+  const invalidate = useSectionInvalidation(projectSlug)
+  return useMutation({
+    mutationFn: (slug: string) =>
+      apiClient.delete(`/api/v2/sections/${slug}`).then(() => undefined),
+    onSuccess: async (_, slug) => {
+      await client.cancelQueries({ queryKey: queryKeys.section(slug), exact: true })
+      client.removeQueries({ queryKey: queryKeys.section(slug), exact: true })
+      await invalidate()
+      await Promise.all(
+        ['pages', 'page', 'views', 'favorites', 'favorites-count', 'search', 'stats'].map(
+          (resource) =>
+            client.invalidateQueries({ queryKey: queryKeys.root(resource), refetchType: 'none' }),
+        ),
+      )
+    },
+  })
+}
+export function useReorderSections(projectSlug: string) {
+  const invalidate = useSectionInvalidation(projectSlug)
+  return useMutation({
+    mutationFn: (sections: SectionWithCount[]) => {
+      if (!sections.length) return Promise.resolve()
+      return apiClient
+        .patch(`/api/v2/sections/${sections[0].slug}/position`, {
+          positions: sections.map((section, position) => ({ id: section.id, position })),
+        })
+        .then(() => undefined)
+    },
+    onSuccess: invalidate,
+  })
 }

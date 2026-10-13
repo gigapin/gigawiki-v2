@@ -14,21 +14,21 @@
 
 ## Stato attuale
 
-**Aggiornato al:** 2026-10-11
+**Aggiornato al:** 2026-10-13
 
 | | |
 |---|---|
 | Branch di lavoro | `dev` (il default remoto è `main`) |
 | Remote | `git@github.com:gigapin/gigawiki-v2.git` |
-| Task completati | 35 / 40 completati; 4 parziali; 1 non iniziato (conteggio dalla tabella sotto) |
-| Fase corrente | **Fase 4 — Frontend**, task 34 implementato; task 35 parziale. Base shadcn, Project detail e registrazione implementati; reader/editor con immagini ridimensionabili, autosave, revisioni, menzioni e menu contestuale |
-| Backend | Completo (task 5–23). 20 file di test, 323 test verdi; 3 test PostgreSQL opzionali da eseguire |
+| Task completati | 36 / 40 completati; 3 parziali; 1 non iniziato (conteggio dalla tabella sotto) |
+| Fase corrente | **Fase 5 — Test e CI/CD**, task 34 e 35 implementati. Base shadcn, Project detail e registrazione implementati; reader/editor con immagini ridimensionabili, autosave, revisioni, menzioni e menu contestuale |
+| Backend | Completo (task 5–23). 20 file di test, 323 test verdi; 3 test Settings PostgreSQL superati sul database dell’app |
 | Frontend | Login, Register, Verify email, ForgotPassword, ResetPassword, AcceptInvite, Dashboard, Subjects, Project detail, scelta destinazione nuova pagina, reader ed editor Tiptap. Bozza/pubblicazione, breadcrumb, tema light/dark, upload e resize immagini, link, syntax highlighting, autosave, drawer revisioni, menzioni e menu contestuale implementati. Tag/preferiti nelle pagine implementati; commenti riusabili integrati nel reader; Settings complete (Profile, Password, Appearance, Users, Invites, App Settings) |
 | CI/CD | Non iniziata (task 39) |
 
-**Codice della sessione committato dall’utente in `c12f73a`** (`feat: add first implementation of frontend`), su branch `dev`. Il working tree era pulito prima di questo aggiornamento documentale; questa modifica non è stata committata. `.claude/settings.local.json` è ancora tracciato, anche se ora escluso da `.gitignore`.
+**Ultimo commit presente:** `e3c499a` (`feat: add settings area`), su `dev`. Il working tree era pulito all'inizio della sessione del 13 ottobre; il task 35 e i relativi aggiornamenti documentali sono ora nel working tree, senza commit creati dall’assistente. `.claude/settings.local.json` è ancora tracciato, anche se escluso da `.gitignore`.
 
-**Ultime verifiche eseguite:** build e lint frontend, typecheck API, 323 test backend e 174 test frontend superati. Test frontend in ambiente Node e jsdom: non equivalgono a una prova delle interazioni nel browser. Autosave confermato funzionante dall’utente. Registrazione con Mailtrap confermata funzionante dall’utente; ruolo di un utente cambiato manualmente in Prisma Studio per provare creazione/modifica.
+**Ultime verifiche:** 193 test frontend su 27 file e 323 test API superati; build/lint frontend, typecheck API/shared superati. Rimangono il warning bundle >500 kB e il warning React Compiler/TanStack Table preesistente. Test Node/jsdom: non equivalgono a prove browser. Dopo l’applicazione della migrazione da parte dell’utente, tutti e tre i test Settings PostgreSQL sono superati sul database dell’app. Tutte le scritture di prova sono state annullate. La suite emette un warning non bloccante di `pg` sulle query concorrenti. Autosave e registrazione con Mailtrap già confermati dall’utente nelle sessioni precedenti.
 
 ---
 
@@ -88,15 +88,15 @@ Legenda: ✅ fatto · 🟡 parziale · ⬜ non iniziato
 | 31 | Page view + editor Tiptap | ✅ | Reader, creazione/modifica, toolbar, tabelle, visibilità, bozza/pubblicazione, guardia modifiche non salvate. Fatti anche upload e ridimensionamento immagini, link, syntax highlighting e contenuti legacy JSON. Autosave dopo 30s di inattività sulle pagine esistenti. Menzioni e bubble menu implementati. Tag/preferiti e commenti nel reader completati; resta la prova nel browser |
 | 32 | Drawer revisioni | ✅ | Cronologia e anteprima riservate a Editor/Admin; ripristino con conferma Editor/Admin e navigazione allo slug ripristinato |
 | 33 | Componente commenti | ✅ | Thread paginati e risposte espandibili, avatar, markdown-lite sicuro, modifica propria, eliminazione propria/Admin con conferma, cache ottimistica e rollback. Integrato nel reader; riusabile per Project/Section |
-| 34 | Pagine settings | ✅ | Profile, Password, Appearance locale, Users Admin con ricerca/paginazione/ruoli e cancellazione con anteprima, Invites elenco/reinvio/cancellazione e App Settings. Migrazione authVersion su file da applicare dall’utente; prove browser/SMTP/DB ancora aperte |
-| 35 | Hook TanStack Query | 🟡 | Adapter tipizzati per auth/project/page/revisions/comments/tags/favorites; hook `usePages`, `useSections`, `useSectionMutations`, `useRevisions`, `useRevision` e `useRestoreRevision`. Restano hook uniformi per gli altri moduli; diverse `useQuery` sono ancora nei componenti |
+| 34 | Pagine settings | ✅ | Profile, Password, Appearance locale, Users Admin con ricerca/paginazione/ruoli e cancellazione con anteprima, Invites elenco/reinvio/cancellazione e App Settings. Migrazione authVersion applicata dall’utente e tre test PostgreSQL superati; prove browser/SMTP ancora aperte |
+| 35 | Hook TanStack Query | ✅ | Hook e adapter tipizzati in `src/api`; query key condivise con filtri/paginazione, cache CRUD centralizzata, login/logout condivisi, ricerca cancellabile e upload tramite mutazioni. Bootstrap/loader/Tiptap usano adapter senza hook dove necessario. ESLint impedisce HTTP e hook di trasporto nei consumatori |
 
 ### Fase 5 — Test, CI/CD, GitHub
 
 | # | Task | Stato | Note |
 |---|---|---|---|
-| 36 | Test backend | 🟡 | 323 test verdi su 20 file con Prisma mockato; suite opzionale Settings PostgreSQL con 3 test, non eseguita. Restano test di integrazione su PostgreSQL dedicato: migrazioni, ricerca full-text, revisioni e soft delete |
-| 37 | Test componenti frontend | 🟡 | 174 test Vitest Node/jsdom su 24 file, inclusi test Testing Library delle interazioni auth, commenti, cover, permessi e autosave/Save draft. Restano copertura completa login/editor reale e prove browser dei flussi |
+| 36 | Test backend | 🟡 | 323 test verdi su 20 file con Prisma mockato; suite Settings PostgreSQL con 3 test superati il 13 ottobre sul DB dell’app dopo la migrazione. Restano test di integrazione su PostgreSQL dedicato: migrazioni, ricerca full-text, revisioni e soft delete |
+| 37 | Test componenti frontend | 🟡 | 193 test Vitest Node/jsdom su 27 file, inclusi test Testing Library delle interazioni auth, commenti, cover, permessi e autosave/Save draft. Login coperto con Testing Library; restano prove browser dei flussi e copertura dell’editor reale |
 | 38 | Dockerfile per l'API | ✅ | Implementato meglio della specifica: `pnpm deploy --prod` + rimozione mirata di dipendenze non raggiungibili a runtime |
 | 39 | GitHub Actions CI | ⬜ | `.github/` non esiste |
 | 40 | Init repo GitHub | 🟡 | Repo e remote esistono. Manca `CONTRIBUTING.md`; il branch di sviluppo si chiama `dev`, non `develop` come da specifica; la branch protection su `main` è da verificare |
@@ -121,18 +121,17 @@ Punti in cui il codice si discosta da `GIGAWIKI_V2_TASKS.md`. Vanno **letti prim
 
 ## Prossimi passi — ripresa del lavoro
 
-**Prima della prova locale:** applicare la migrazione `20261011000000_user_auth_version` lasciata su file su richiesta dell’utente e riavviare l’API. Istruzioni e contratti in [SETTINGS.md](./SETTINGS.md). **Prossimo incremento: task 35**, uniformare gli hook API tipizzati.
+**Migrazione authVersion applicata dall’utente e test Settings PostgreSQL superati sul database dell’app.** Task 35 completato. Prossimo incremento: verifiche Settings nel browser e integrazioni PostgreSQL aggiuntive.
 
 Ordine degli incrementi successivi:
 
-1. **Task 34, verifica:** dopo la migrazione, provare password/sessioni, tema, ruoli, anteprima eliminazione, inviti e App Settings nel browser. Eseguire `test:settings:db` dopo aver applicato la migrazione.
-2. **Task 35:** uniformare gli hook API tipizzati e spostare le chiamate ancora presenti nei componenti.
-3. **Task 36:** aggiungere test di integrazione su un PostgreSQL separato, ad esempio `gigawiki_test`, con migrazioni e pulizia dei dati. Per la nuova suite Settings l’utente ha chiesto di usare il database dell’app: solo fixture casuali in transazioni sempre annullate, nessun truncate/migrazione automatica. Le altre integrazioni richiedono ancora un DB dedicato. I 323 test ordinari simulano Prisma.
-4. **Task 37:** completare i test delle interazioni login/editor e provare nel browser creazione bozza, salvataggi successivi, pubblicazione, autosave, upload, commenti, preferiti personali e revisioni con ruoli Guest/Editor/Admin.
-5. **Task 39:** GitHub Actions per lint, typecheck, test e build; adattare i trigger al branch di sviluppo attuale `dev`.
-6. **Task 40:** `CONTRIBUTING.md`, verifica protezione `main` e strategia branch. Repo e remote esistono già.
+1. **Task 34, verifica:** provare password/sessioni, tema, ruoli, anteprima eliminazione, inviti e App Settings nel browser. `test:settings:db` già superato dopo la migrazione.
+2. **Task 36:** aggiungere test di integrazione su un PostgreSQL separato, ad esempio `gigawiki_test`, con migrazioni e pulizia dei dati. Per la nuova suite Settings l’utente ha chiesto di usare il database dell’app: solo fixture casuali in transazioni sempre annullate, nessun truncate/migrazione automatica. Le altre integrazioni richiedono ancora un DB dedicato. I 323 test ordinari simulano Prisma.
+3. **Task 37:** estendere le prove dell’editor reale (login ora coperto) e provare nel browser creazione bozza, salvataggi successivi, pubblicazione, autosave, upload, commenti, preferiti personali e revisioni con ruoli Guest/Editor/Admin.
+4. **Task 39:** GitHub Actions per lint, typecheck, test e build su `main`/`dev`. Aggiungere prima gli script typecheck frontend e lint API/shared mancanti; i job non devono saltare questi pacchetti.
+5. **Task 40:** `CONTRIBUTING.md`, verifica protezione `main` e strategia branch. Repo e remote esistono già.
 
-**Stato alla chiusura:** 35/40 completati, 4 parziali, 1 non iniziato. Ultime verifiche: 174 test frontend e 323 API, lint/build frontend e typecheck API superati. Non sono state eseguite prove browser/storage/DB reali per gli ultimi interventi. Le modifiche di questa sessione sono nel working tree e non sono state committate dall’assistente.
+**Stato alla chiusura:** 36/40 completati, 3 parziali, 1 non iniziato. Ultime verifiche: 193 test frontend e 323 API, lint/build frontend e typecheck API/shared superati. Tre test Settings su DB reale superati dopo la migrazione; prove browser/SMTP/storage degli ultimi interventi ancora aperte. Le modifiche di questa sessione sono nel working tree e non sono state committate dall’assistente.
 
 **Comportamenti da preservare:** dettaglio Subject senza banner grande, icona/titolo a sinistra e azioni a destra; commenti richiusi inizialmente sotto “Comments” con freccia, bozze mantenute alla chiusura; Save draft mantiene l’editor aperto e usa la stessa pagina nei salvataggi successivi, Publish apre il reader. Guest senza cronologia, preferiti personali per account e temporizzazione login disattivata in development come richiesto.
 
@@ -164,6 +163,25 @@ Chi clona il repo su una macchina nuova deve ricreare `init.sh` (o avere Node su
 ---
 
 ## Log delle sessioni
+
+### 2026-10-13 — Verifica Settings dopo la migrazione
+
+- L’utente conferma completati migrazione, generazione client e riavvio API. Rieseguita `test:settings:db` sul database dell’app: **3/3 test superati**, tutte le scritture di prova annullate.
+- Warning non bloccante `pg`: query concorrenti sul medesimo client deprecate in vista di pg 9. Nessuna modifica al database applicata dall’assistente.
+
+**Lasciato aperto:** prove browser/SMTP/storage, integrazioni PostgreSQL aggiuntive e CI.
+
+### 2026-10-13 — Task 35: hook API e cache uniformi
+
+- Spostate le richieste di login/logout, ricerca, navigazione, dashboard, Subject/Project, reader/editor e profilo nei moduli `src/api`. Aggiunti hook CRUD mancanti, upload immagini e adapter per menzioni; bootstrap e interceptor condividono un trasporto sessione senza dipendenze circolari.
+- Factory delle query key condivise, con filtri/paginazione e prefissi compatibili. Corretto il conflitto tra conteggio Subject della dashboard e liste Sidebar/Subjects. Le mutazioni centralizzano aggiornamenti/invalidazioni; cache personali e rollback commenti conservati.
+- Ricerca con debounce 300 ms, `AbortSignal`, risultati precedenti nascosti durante nuova digitazione ed errore con retry. Settings aggiornano cache pubblica/admin e branding senza perdere gli altri valori. Login tardivo non sostituisce un account cambiato nel frattempo.
+- Preservati Save draft, Publish, autosave a 30 secondi, permessi revisioni e salvataggio parziale del profilo quando l’avatar fallisce. ESLint vieta import del client HTTP e definizioni `useQuery`/`useMutation` fuori dai moduli API nei consumatori.
+- Aggiunti 19 test comportamentali per login, cache, CRUD, cambio sessione e ricerca; adattati i test autosave/editor agli hook reali con trasporto mockato. Totali: 193 frontend, 323 API; build/lint frontend e typecheck API/shared superati.
+- Eseguita `test:settings:db` sul database dell’app su richiesta dell’utente: tre test fermati da `users.authVersion` mancante. Tutte le transazioni annullate; nessun truncate, migrazione o reset. L’applicazione della migrazione resta all’utente come concordato.
+- README frontend aggiornato e vecchio report API marcato come storico: la ricerca attuale usa PostgreSQL, non Meilisearch.
+
+**Lasciato aperto:** applicazione migrazione e riesecuzione test Settings, verifiche browser/SMTP/storage, integrazioni PostgreSQL aggiuntive, CI e CONTRIBUTING/protezione main. Nessun commit creato dall’assistente.
 
 ### 2026-10-11 — Task 34: password, Appearance e amministrazione
 

@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
 
 import { CARD_TONES, toneForColor } from '@/styles/cover-colors'
-import { fetchSubjects } from '@/api/subjects'
+import { useSubjects } from '@/api/subjects'
 import { useAuthStore } from '@/stores/auth.store'
 import { Icon, type IconName } from '@/components/ui/icon'
 import { CreateSubjectModal } from '@/components/subjects/CreateSubjectModal'
@@ -240,10 +239,7 @@ export function SubjectsPage() {
   const canCreate = user?.role === 'ADMIN' || user?.role === 'EDITOR'
   const [createOpen, setCreateOpen] = useState(false)
 
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['subjects'],
-    queryFn: () => fetchSubjects({ limit: 50 }),
-  })
+  const { data, isLoading, isError } = useSubjects({ limit: 50 })
 
   const subjects = data?.subjects ?? []
 

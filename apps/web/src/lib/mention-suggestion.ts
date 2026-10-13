@@ -1,17 +1,14 @@
 import type { MentionOptions } from '@tiptap/extension-mention'
 
 type SuggestionOptions<T> = MentionOptions<T>['suggestion']
-import apiClient from '@/api/client'
+import { fetchMentionUsers, type MentionCandidate } from '@/api/users'
 
-type Candidate = { id: string; name: string; unavailable?: boolean }
+type Candidate = MentionCandidate
 export const mentionSuggestion: Omit<SuggestionOptions<Candidate>, 'editor'> = {
   char: '@',
   items: async ({ query }) => {
     try {
-      const response = await apiClient.get<{ users: Candidate[] }>('/api/v2/users/mentions', {
-        params: { search: query },
-      })
-      return response.data.users
+      return await fetchMentionUsers(query)
     } catch {
       return [{ id: '', name: 'Cannot load users. Try typing again.', unavailable: true }]
     }
