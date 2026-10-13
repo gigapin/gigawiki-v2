@@ -15,4 +15,6 @@ Ogni test crea fixture con identificatori casuali dentro una transazione sempre 
 
 Redis e accodamento email sono simulati: SMTP, storage e browser non sono coperti. Le transazioni interne alle rotte usano savepoint nella transazione esterna di prova; non si verificano commit concorrenti, retry di serializzazione o migrazioni da zero. `pg` può emettere un warning non bloccante sulle query concorrenti sul medesimo client.
 
+La CI esegue entrambe le suite su PostgreSQL 16 temporaneo dopo tutte le migrazioni. Il 13 ottobre 2026 sono state verificate da zero le 6 migrazioni e sono passati tutti i 334 test API (323 ordinari e 11 integrazioni) in quell’ambiente separato dall’app. Vedere [CI.md](CI.md).
+
 Le verifiche browser sono eseguite dall’utente. Per le Settings e la suite dedicata vedere [SETTINGS.md](SETTINGS.md).

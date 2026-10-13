@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run --config vitest.config.mjs"
+    "test": "vitest run --config vitest.config.mjs",
+    "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.11",

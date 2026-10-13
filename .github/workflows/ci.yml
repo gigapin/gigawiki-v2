@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Dummy credentials for tests only; no application secrets or app database access.
+env:
+  NODE_ENV: test
+  HUSKY: '0'
+  TURBO_TELEMETRY_DISABLED: '1'
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/gigawiki_test
+  REDIS_URL: redis://localhost:6379
+  API_URL: http://localhost:3001
+  FRONTEND_URL: http://localhost:5173
+  JWT_SECRET: ci-test-secret-not-used-outside-tests
+  AWS_ACCESS_KEY_ID: ci-test
+  AWS_SECRET_ACCESS_KEY: ci-test
+  AWS_REGION: us-east-1
+  AWS_BUCKET: ci-test
+  SMTP_HOST: localhost
+  SMTP_PORT: '1025'
+  SMTP_USER: ci-test
+  SMTP_PASS: ci-test
+  SMTP_FROM: ci@example.invalid
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup
+      - run: pnpm turbo typecheck lint
+
+  test-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: gigawiki_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d gigawiki_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup
+      - name: Apply migrations to disposable test database
+        run: pnpm --filter gigawiki-v2-api exec prisma migrate deploy
+      - name: API unit tests
+        run: pnpm --filter gigawiki-v2-api test
+      - name: PostgreSQL API integration tests
+        run: pnpm --filter gigawiki-v2-api test:integration:db
+      - name: PostgreSQL Settings integration tests
+        run: pnpm --filter gigawiki-v2-api test:settings:db
+
+  test-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup
+      - run: pnpm --filter web test
+
+  build:
+    needs: [quality, test-api, test-web]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup
+      - run: pnpm turbo build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: apps/web/dist
+          if-no-files-found: error
+          retention-days: 7
