@@ -9,7 +9,6 @@ import { useLogout } from '@/api/auth'
 import { Button } from '@/components/ui/button'
 import { useProjects } from '@/api/projects'
 import { useSubjects } from '@/api/subjects'
-import { useFavorites } from '@/api/favorites'
 import { useAuthStore } from '@/stores/auth.store'
 import { Icon, type IconName } from '@/components/ui/icon'
 
@@ -189,23 +188,10 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
 
   const { data: subjectsData } = useSubjects({ limit: 50 })
 
-  const { data: favsData } = useFavorites({ limit: 1 }, true)
-
   const avatarInitials = user ? initials(user.name) : '?'
   const w = collapsed ? 52 : 264
 
-  const pinnedItems: {
-    icon: IconName
-    label: string
-    shortcut?: string
-    badge?: number | null
-    path?: string
-  }[] = [
-    { icon: 'search', label: 'Search', shortcut: '⌘K' },
-    { icon: 'star', label: 'Favorites', badge: favsData?.total ?? null },
-    { icon: 'history', label: 'Recent' },
-    { icon: 'bell', label: 'Inbox' },
-  ]
+  const pinnedItems = [{ icon: 'home' as IconName, label: 'Dashboard', path: '/' as const }]
 
   return (
     <aside
@@ -302,10 +288,13 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
           flexShrink: 0,
         }}
       >
-        {pinnedItems.map(({ icon, label, shortcut, badge, path }) => {
-          const active = path ? pathname === path : false
+        {pinnedItems.map(({ icon, label, path }) => {
+          const active = pathname === path
           return (
-            <div
+            <Link
+              to={path}
+              aria-label={label}
+              aria-current={active ? 'page' : undefined}
               key={label}
               style={{
                 display: 'flex',
@@ -332,35 +321,7 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
                 <Icon name={icon} size={15} />
               </span>
               {!collapsed && <span>{label}</span>}
-              {!collapsed && shortcut && (
-                <span
-                  style={{
-                    marginLeft: 'auto',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 11,
-                    color: 'var(--db-muted)',
-                    background: 'var(--db-surface)',
-                    border: '1px solid var(--db-line)',
-                    padding: '1px 5px',
-                    borderRadius: 4,
-                  }}
-                >
-                  {shortcut}
-                </span>
-              )}
-              {!collapsed && badge != null && badge > 0 && (
-                <span
-                  style={{
-                    marginLeft: 'auto',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 11,
-                    color: 'var(--db-muted)',
-                  }}
-                >
-                  {badge}
-                </span>
-              )}
-            </div>
+            </Link>
           )
         })}
       </div>
@@ -435,8 +396,8 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
               >
                 <Icon name="chev-right" size={10} />
               </span>
-              <span
-                onClick={() => navigate({ to: '/subjects' })}
+              <Link
+                to="/subjects"
                 style={{
                   fontSize: 13.5,
                   color: 'var(--db-ink-2)',
@@ -448,7 +409,7 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
                 onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--db-ink-2)')}
               >
                 Subjects
-              </span>
+              </Link>
             </div>
             {subjectsOpen && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -462,64 +423,16 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
                 )}
               </div>
             )}
-
-            <div
-              style={{
-                fontSize: 10.5,
-                textTransform: 'uppercase',
-                letterSpacing: '0.12em',
-                color: 'var(--db-muted-2)',
-                padding: '12px 10px 6px',
-                fontWeight: 600,
-              }}
-            >
-              Spaces
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {[
-                { icon: 'lightning' as IconName, label: 'Drafts' },
-                { icon: 'users' as IconName, label: 'Shared with me' },
-                { icon: 'tag' as IconName, label: 'Tags' },
-              ].map(({ icon, label }) => (
-                <div
-                  key={label}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '6px 8px',
-                    borderRadius: 6,
-                    cursor: 'pointer',
-                    color: 'var(--db-ink-2)',
-                    fontSize: 13.5,
-                    userSelect: 'none',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--db-bg-2)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                >
-                  <span style={{ width: 14, height: 14, visibility: 'hidden' }} />
-                  <span
-                    style={{
-                      color: 'var(--db-muted)',
-                      display: 'grid',
-                      placeItems: 'center',
-                      width: 16,
-                      height: 16,
-                    }}
-                  >
-                    <Icon name={icon} size={14} />
-                  </span>
-                  <span>{label}</span>
-                </div>
-              ))}
-            </div>
           </>
         )}
 
-        {/* collapsed: just icon placeholders for subjects */}
+        {/* collapsed subject links */}
         {collapsed &&
           subjectsData?.subjects.slice(0, 8).map((s) => (
-            <div
+            <Link
+              to="/subjects/$slug"
+              params={{ slug: s.slug }}
+              aria-label={s.name}
               key={s.id}
               title={s.name}
               style={{
@@ -534,7 +447,7 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
               onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
             >
               <Icon name="book" size={14} />
-            </div>
+            </Link>
           ))}
       </div>
 

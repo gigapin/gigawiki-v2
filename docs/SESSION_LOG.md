@@ -20,7 +20,7 @@
 |---|---|
 | Branch di lavoro | `dev` (il default remoto è `main`) |
 | Remote | `git@github.com:gigapin/gigawiki-v2.git` |
-| Task completati | 37 / 40 completati; 2 parziali; 1 non iniziato (conteggio dalla tabella sotto) |
+| Task completati | 38 / 40 completati; 1 parziale; 1 non iniziato (conteggio dalla tabella sotto) |
 | Fase corrente | **Fase 5 — Test e CI/CD**, task 34 e 35 implementati. Base shadcn, Project detail e registrazione implementati; reader/editor con immagini ridimensionabili, autosave, revisioni, menzioni e menu contestuale |
 | Backend | Completo (task 5–23). 323 test ordinari verdi; 8 test di integrazione e 3 test Settings PostgreSQL superati sul database dell’app |
 | Frontend | Login, Register, Verify email, ForgotPassword, ResetPassword, AcceptInvite, Dashboard, Subjects, Project detail, scelta destinazione nuova pagina, reader ed editor Tiptap. Bozza/pubblicazione, breadcrumb, tema light/dark, upload e resize immagini, link, syntax highlighting, autosave, drawer revisioni, menzioni e menu contestuale implementati. Tag/preferiti nelle pagine implementati; commenti riusabili integrati nel reader; Settings complete (Profile, Password, Appearance, Users, Invites, App Settings) |
@@ -28,7 +28,7 @@
 
 **Ultimo commit presente:** `02a8137` (`feat: hook api`), su `dev`. Il working tree era pulito all’inizio dell’intervento; la suite PostgreSQL del task 36 e i relativi aggiornamenti documentali sono ora nel working tree, senza commit creati dall’assistente. `.claude/settings.local.json` è ancora tracciato, anche se escluso da `.gitignore`.
 
-**Ultime verifiche:** 193 test frontend su 27 file e 323 test API superati; build/lint frontend, typecheck API/shared superati. Rimangono il warning bundle >500 kB e il warning React Compiler/TanStack Table preesistente. Test Node/jsdom: non equivalgono a prove browser. Dopo l’applicazione della migrazione da parte dell’utente, tutti e tre i test Settings PostgreSQL sono superati sul database dell’app. Tutte le scritture di prova sono state annullate. La suite emette un warning non bloccante di `pg` sulle query concorrenti. Autosave e registrazione con Mailtrap già confermati dall’utente nelle sessioni precedenti.
+**Ultime verifiche:** 198 test frontend su 27 file e 323 test API superati; build/lint frontend, typecheck API/shared superati. Rimangono il warning bundle >500 kB e il warning React Compiler/TanStack Table preesistente. Test Node/jsdom: non equivalgono a prove browser. Dopo l’applicazione della migrazione da parte dell’utente, tutti e tre i test Settings PostgreSQL sono superati sul database dell’app. Tutte le scritture di prova sono state annullate. La suite emette un warning non bloccante di `pg` sulle query concorrenti. Autosave e registrazione con Mailtrap già confermati dall’utente nelle sessioni precedenti.
 
 ---
 
@@ -96,7 +96,7 @@ Legenda: ✅ fatto · 🟡 parziale · ⬜ non iniziato
 | # | Task | Stato | Note |
 |---|---|---|---|
 | 36 | Test backend | ✅ | 323 test ordinari; 8 integrazioni PostgreSQL per auth, ricerca full-text, revisioni, permessi e soft delete; 3 integrazioni Settings. Tutti superati sul DB dell’app con rollback. Migrazioni gestite dall’utente; vedere scostamenti e DATABASE_TESTS.md |
-| 37 | Test componenti frontend | 🟡 | 193 test Vitest Node/jsdom su 27 file, inclusi test Testing Library delle interazioni auth, commenti, cover, permessi e autosave/Save draft. Login coperto con Testing Library; restano prove browser dei flussi e copertura dell’editor reale |
+| 37 | Test componenti frontend | ✅ | 198 test Vitest Node/jsdom su 27 file. Login, commenti e vero Tiptap: contenuto iniziale, digitazione/onChange, undo/redo, blocco/ripresa, reader senza toolbar; coperti anche upload, link, menzioni e autosave. Prove browser affidate all’utente |
 | 38 | Dockerfile per l'API | ✅ | Implementato meglio della specifica: `pnpm deploy --prod` + rimozione mirata di dipendenze non raggiungibili a runtime |
 | 39 | GitHub Actions CI | ⬜ | `.github/` non esiste |
 | 40 | Init repo GitHub | 🟡 | Repo e remote esistono. Manca `CONTRIBUTING.md`; il branch di sviluppo si chiama `dev`, non `develop` come da specifica; la branch protection su `main` è da verificare |
@@ -121,17 +121,17 @@ Punti in cui il codice si discosta da `GIGAWIKI_V2_TASKS.md`. Vanno **letti prim
 
 ## Prossimi passi — ripresa del lavoro
 
-**Task 35 e 36 completati; 8 integrazioni API e 3 Settings PostgreSQL superate.** L’utente esegue personalmente i test nel browser. Prossimo incremento di codice: copertura dell’editor reale (task 37), poi CI.
+**Task 35 e 36 completati; 8 integrazioni API e 3 Settings PostgreSQL superate.** L’utente esegue personalmente i test nel browser. Task 37 completato con il vero Tiptap in jsdom. Prossimo incremento di codice: CI (task 39).
 
 Ordine degli incrementi successivi:
 
 1. **Task 34, verifica:** provare password/sessioni, tema, ruoli, anteprima eliminazione, inviti e App Settings nel browser. `test:settings:db` già superato dopo la migrazione.
 2. **Task 36 completato:** suite opzionali `test:integration:db` e `test:settings:db`; istruzioni e limiti in `DATABASE_TESTS.md`. Nessuna migrazione aggiuntiva richiesta da questo intervento.
-3. **Task 37:** estendere le prove dell’editor reale (login ora coperto) e provare nel browser creazione bozza, salvataggi successivi, pubblicazione, autosave, upload, commenti, preferiti personali e revisioni con ruoli Guest/Editor/Admin.
+3. **Task 37 completato:** copertura automatica di login, editor reale e commenti. L’utente verifica nel browser bozza, pubblicazione, autosave, upload, commenti, preferiti e revisioni con Guest/Editor/Admin.
 4. **Task 39:** GitHub Actions per lint, typecheck, test e build su `main`/`dev`. Aggiungere prima gli script typecheck frontend e lint API/shared mancanti; i job non devono saltare questi pacchetti.
 5. **Task 40:** `CONTRIBUTING.md`, verifica protezione `main` e strategia branch. Repo e remote esistono già.
 
-**Stato alla chiusura:** 37/40 completati, 2 parziali, 1 non iniziato. Ultime verifiche: 193 test frontend e 323 API, lint/build frontend e typecheck API/shared superati. Otto integrazioni API e tre test Settings su DB reale superati; prove browser affidate all’utente, SMTP/storage ancora aperti. Le modifiche di questa sessione sono nel working tree e non sono state committate dall’assistente.
+**Stato alla chiusura:** 38/40 completati, 1 parziale, 1 non iniziato. Ultime verifiche: 198 test frontend e 323 API, lint/build frontend e typecheck API/shared superati. Otto integrazioni API e tre test Settings su DB reale superati; prove browser affidate all’utente, SMTP/storage ancora aperti. Le modifiche di questa sessione sono nel working tree e non sono state committate dall’assistente.
 
 **Comportamenti da preservare:** dettaglio Subject senza banner grande, icona/titolo a sinistra e azioni a destra; commenti richiusi inizialmente sotto “Comments” con freccia, bozze mantenute alla chiusura; Save draft mantiene l’editor aperto e usa la stessa pagina nei salvataggi successivi, Publish apre il reader. Guest senza cronologia, preferiti personali per account e temporizzazione login disattivata in development come richiesto.
 
@@ -163,6 +163,23 @@ Chi clona il repo su una macchina nuova deve ricreare `init.sh` (o avere Node su
 ---
 
 ## Log delle sessioni
+
+### 2026-10-13 — Sidebar: rimozione delle voci senza destinazione
+
+- Su richiesta dell’utente, rimossi Search, Favorites, Recent, Inbox e la sezione Spaces (Drafts, Shared with me, Tags), privi di pagine dedicate. Preferiti e visite recenti rimangono nella Dashboard; ricerca disponibile dalla topbar.
+- Aggiunto link Dashboard; Subjects e le icone Subject della sidebar ridotta sono link reali alle pagine esistenti. Rimossa la query contatore preferiti usata solo dalla voce eliminata.
+- Lint e build frontend superati, con warning preesistenti. La revisione del design della sidebar è rimandata come richiesto; il prossimo incremento della roadmap resta CI.
+
+
+### 2026-10-13 — Task 37: componenti frontend e Tiptap reale
+
+- Verificata la copertura richiesta di Login e CommentSection: validazione, 401, sessione/redirect, rendering, inserimento ottimistico e permessi di eliminazione (Admin può eliminare altri commenti come previsto dall’app).
+- Aggiunti 5 test al vero PageEditor/PageContent: HTML iniziale senza modifica artificiale, digitazione con callback HTML, undo/redo, blocco e ripresa, reader non modificabile senza toolbar.
+- Corretto `setEditable`: il cambio di stato non emette più `onChange` a contenuto invariato. Il test verifica anche il primo montaggio.
+- **198/198 test frontend su 27 file superati**, lint e build superati. Restano i warning preesistenti bundle e React Compiler/TanStack Table; jsdom segnala navigazione documentale non implementata in una prova esistente, senza errori non gestiti.
+- Conservato il layout esistente `tests/*.test.mjs`, con Testing Library/jsdom e provider QueryClient; non spostati i test in `src/__tests__` né sostituiti i mock router esistenti. Le interazioni Tiptap usano l’editor reale; simulati solo layout jsdom e trasporto HTTP. Browser a carico dell’utente.
+- Task 37 completato. Prossimo incremento: task 39 CI. Nessuna migrazione o dipendenza aggiuntiva, nessun commit creato dall’assistente.
+
 
 ### 2026-10-13 — Task 36: integrazioni PostgreSQL
 

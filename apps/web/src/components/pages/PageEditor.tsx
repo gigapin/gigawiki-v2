@@ -94,7 +94,7 @@ export function PageEditor({
     },
   })
   useEffect(() => {
-    editor?.setEditable(!blocked)
+    editor?.setEditable(!blocked, false)
   }, [editor, blocked])
   const state = useEditorState({
     editor,

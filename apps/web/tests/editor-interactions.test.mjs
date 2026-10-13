@@ -30,6 +30,7 @@ beforeEach(() => {
     height: 0,
   })
   Element.prototype.scrollIntoView = vi.fn()
+  document.elementFromPoint = () => null
 })
 afterEach(() => {
   cleanup()
@@ -40,7 +41,7 @@ async function mount(content = '<p>Welcome</p>') {
   const onChange = vi.fn()
   const onStatusChange = vi.fn()
   client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
-  render(
+  const view = render(
     createElement(
       QueryClientProvider,
       { client },
@@ -48,7 +49,7 @@ async function mount(content = '<p>Welcome</p>') {
     ),
   )
   const textbox = await screen.findByRole('textbox', { name: 'Page content' })
-  return { editor: textbox.editor, textbox, onChange, onStatusChange }
+  return { editor: textbox.editor, textbox, onChange, onStatusChange, view }
 }
 
 it('edits and removes a link while preserving the selected text', async () => {
@@ -229,4 +230,78 @@ it('formats selected text from the contextual toolbar', async () => {
   const toolbar = await screen.findByRole('toolbar', { name: 'Selection formatting' })
   await userEvent.click(within(toolbar).getByRole('button', { name: 'Bold' }))
   expect(editor.getHTML()).toContain('<strong>Welcome</strong>')
+})
+
+it('renders initial HTML without reporting an edit on mount', async () => {
+  const { textbox, onChange } = await mount(
+    '<h2>Introduction</h2><p>Hello <strong>wiki</strong></p>',
+  )
+  expect(within(textbox).getByRole('heading', { level: 2 }).textContent).toBe('Introduction')
+  expect(textbox.querySelector('strong').textContent).toBe('wiki')
+  expect(textbox.getAttribute('contenteditable')).toBe('true')
+  expect(onChange).not.toHaveBeenCalled()
+})
+
+it('reports serialized content when the user types in the real editor', async () => {
+  const { editor, textbox, onChange } = await mount('<p></p>')
+  await userEvent.click(textbox)
+  await userEvent.keyboard('Hello wiki')
+  await waitFor(() => expect(editor.getText()).toBe('Hello wiki'))
+  expect(onChange).toHaveBeenLastCalledWith('<p>Hello wiki</p>')
+})
+
+it('undoes and redoes a typed change through the toolbar', async () => {
+  const { editor, textbox, onChange } = await mount('<p></p>')
+  await userEvent.click(textbox)
+  await userEvent.keyboard('Draft')
+  const toolbar = within(screen.getByRole('toolbar', { name: 'Text formatting' }))
+  await userEvent.click(toolbar.getByRole('button', { name: 'Undo' }))
+  expect(editor.getText()).toBe('')
+  expect(onChange).toHaveBeenLastCalledWith('<p></p>')
+  await userEvent.click(toolbar.getByRole('button', { name: 'Redo' }))
+  expect(editor.getText()).toBe('Draft')
+  expect(onChange).toHaveBeenLastCalledWith('<p>Draft</p>')
+})
+
+it('blocks editing while disabled and preserves content when editing resumes', async () => {
+  const { editor, textbox, onChange, onStatusChange, view } = await mount()
+  const update = (disabled) =>
+    view.rerender(
+      createElement(
+        QueryClientProvider,
+        { client },
+        createElement(PageEditor, {
+          content: '<p>Welcome</p>',
+          onChange,
+          onStatusChange,
+          disabled,
+        }),
+      ),
+    )
+  update(true)
+  await waitFor(() => expect(textbox.getAttribute('contenteditable')).toBe('false'))
+  expect(editor.isEditable).toBe(false)
+  expect(screen.getByRole('button', { name: 'Upload image' }).disabled).toBe(true)
+  await userEvent.click(textbox)
+  await userEvent.keyboard('Blocked')
+  expect(editor.getHTML()).toBe('<p>Welcome</p>')
+  expect(onChange).not.toHaveBeenCalled()
+  update(false)
+  await waitFor(() => expect(editor.isEditable).toBe(true))
+  await userEvent.click(textbox)
+  await userEvent.keyboard('!')
+  expect(editor.getText()).toContain('!')
+  expect(editor.getText()).toContain('Welcome')
+  expect(onChange).toHaveBeenCalled()
+})
+
+it('renders the reader without editing controls and ignores typing', async () => {
+  render(createElement(PageContent, { content: '<h2>Published</h2><p>Read me</p>' }))
+  const heading = await screen.findByRole('heading', { name: 'Published' })
+  const content = heading.closest('.tiptap')
+  expect(content.getAttribute('contenteditable')).toBe('false')
+  expect(screen.queryByRole('toolbar')).toBeNull()
+  await userEvent.click(content)
+  await userEvent.keyboard('Unwanted edit')
+  expect(content.textContent).toBe('PublishedRead me')
 })
