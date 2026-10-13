@@ -11,7 +11,7 @@ I quattro job, utilizzabili come status check per la protezione dei branch, sono
 
 I valori d’ambiente sono credenziali fittizie; non servono secret del database dell’app, SMTP o storage. Il database CI nasce vuoto a ogni job e viene eliminato dal runner. Le integrazioni simulano Redis/coda email come descritto in [DATABASE_TESTS.md](DATABASE_TESTS.md); il workflow non esegue prove browser, invii SMTP o upload reali. `VITE_API_URL` partecipa alla cache Turbo delle build; di default il web usa richieste same-origin.
 
-Verifiche locali del 13 ottobre 2026: lint/typecheck su tutti e tre i pacchetti, build API/web, 200 test frontend e 334 test API superati. Le 6 migrazioni sono state applicate da zero su un container PostgreSQL 16 temporaneo separato dall’app, con ambiente test e credenziali CI. YAML e formattazione verificati. Rimangono warning preesistenti (console API, TanStack Table, dimensione bundle, Browserslist e pg). Il workflow remoto sarà verificato al primo push: non sono stati effettuati push o modifiche alla protezione dei branch.
+Verifiche locali del 13 ottobre 2026: lint/typecheck su tutti e tre i pacchetti, build API/web, 200 test frontend e 334 test API superati. Le 6 migrazioni sono state applicate da zero su un container PostgreSQL 16 temporaneo separato dall’app, con ambiente test e credenziali CI. YAML e formattazione verificati. Rimangono warning preesistenti (console API, TanStack Table, dimensione bundle, Browserslist e pg). Dopo il push dell’utente, verificata anche la [run GitHub 38378305259](https://github.com/gigapin/gigawiki-v2/actions/runs/38378305259): quality, test-api, test-web e build tutti superati. Non sono stati effettuati push o modifiche alla protezione dei branch dall’assistente.
 
 Comandi locali dalla root:
 

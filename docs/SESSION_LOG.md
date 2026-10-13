@@ -20,13 +20,13 @@
 |---|---|
 | Branch di lavoro | `dev` (il default remoto è `main`) |
 | Remote | `git@github.com:gigapin/gigawiki-v2.git` |
-| Task completati | 39 / 40 completati; 1 parziale; 0 non iniziati (conteggio dalla tabella sotto) |
+| Task completati | 40 / 40 completati; 0 parziali; 0 non iniziati (conteggio dalla tabella sotto) |
 | Fase corrente | **Fase 5 — Test e CI/CD**, task 34 e 35 implementati. Base shadcn, Project detail e registrazione implementati; reader/editor con immagini ridimensionabili, autosave, revisioni, menzioni e menu contestuale |
 | Backend | Completo (task 5–23). 323 test ordinari verdi; 8 test di integrazione e 3 test Settings PostgreSQL superati sul database dell’app |
 | Frontend | Login, Register, Verify email, ForgotPassword, ResetPassword, AcceptInvite, Dashboard, Subjects, Project detail, scelta destinazione nuova pagina, reader ed editor Tiptap. Bozza/pubblicazione, breadcrumb, tema light/dark, upload e resize immagini, link, syntax highlighting, autosave, drawer revisioni, menzioni e menu contestuale implementati. Tag/preferiti nelle pagine implementati; commenti riusabili integrati nel reader; Settings complete (Profile, Password, Appearance, Users, Invites, App Settings) |
-| CI/CD | Workflow task 39 implementato: quality, test-api, test-web e build; prima esecuzione remota dopo push |
+| CI/CD | Workflow task 39 attivo: quality, test-api, test-web e build tutti superati su GitHub |
 
-**Ultimo commit presente:** `8fe46f0` (`fix: add remove row and column in table editor`), su `dev`. Il working tree era pulito all’inizio dell’intervento; la CI del task 39 e i relativi aggiornamenti documentali sono ora nel working tree, senza commit creati dall’assistente. `.claude/settings.local.json` è ancora tracciato, anche se escluso da `.gitignore`.
+**Ultimo commit presente:** `4b9ab4d` (`feat: add ci and github actions`), su `dev`. Il working tree era pulito all’inizio dell’intervento; CONTRIBUTING, README e documentazione del task 40 sono ora nel working tree, senza commit creati dall’assistente. `.claude/settings.local.json` è ancora tracciato, anche se escluso da `.gitignore`.
 
 **Ultime verifiche:** 200 test frontend su 27 file e 334 test API (323 ordinari + 11 integrazioni) superati; lint/typecheck su API, web e shared e build API/web superati. Le 6 migrazioni sono state verificate da zero su PostgreSQL temporaneo per il task 39. Rimangono il warning bundle >500 kB e il warning React Compiler/TanStack Table preesistente. Test Node/jsdom: non equivalgono a prove browser. Dopo l’applicazione della migrazione da parte dell’utente, tutti e tre i test Settings PostgreSQL sono superati sul database dell’app. Tutte le scritture di prova sono state annullate. La suite emette un warning non bloccante di `pg` sulle query concorrenti. Autosave e registrazione con Mailtrap già confermati dall’utente nelle sessioni precedenti.
 
@@ -98,8 +98,8 @@ Legenda: ✅ fatto · 🟡 parziale · ⬜ non iniziato
 | 36 | Test backend | ✅ | 323 test ordinari; 8 integrazioni PostgreSQL per auth, ricerca full-text, revisioni, permessi e soft delete; 3 integrazioni Settings. Tutti superati sul DB dell’app con rollback. Migrazioni gestite dall’utente; vedere scostamenti e DATABASE_TESTS.md |
 | 37 | Test componenti frontend | ✅ | 200 test Vitest Node/jsdom su 27 file. Login, commenti e vero Tiptap: contenuto iniziale, digitazione/onChange, undo/redo, blocco/ripresa, reader senza toolbar; coperti anche upload, link, menzioni e autosave. Prove browser affidate all’utente |
 | 38 | Dockerfile per l'API | ✅ | Implementato meglio della specifica: `pnpm deploy --prod` + rimozione mirata di dipendenze non raggiungibili a runtime |
-| 39 | GitHub Actions CI | ✅ | quality, test-api, test-web, build su main/dev; PostgreSQL/Redis temporanei, migrazioni e 11 integrazioni DB, artifact web. Comandi e migrazioni verificati localmente; prima esecuzione remota al push |
-| 40 | Init repo GitHub | 🟡 | Repo e remote esistono. Manca `CONTRIBUTING.md`; il branch di sviluppo si chiama `dev`, non `develop` come da specifica; la branch protection su `main` è da verificare |
+| 39 | GitHub Actions CI | ✅ | quality, test-api, test-web, build su main/dev; PostgreSQL/Redis temporanei, migrazioni e 11 integrazioni DB, artifact web. Comandi e migrazioni verificati localmente; tutti i quattro job superati anche su GitHub |
+| 40 | Init repo GitHub | ✅ | CONTRIBUTING e README aggiornati; main/dev mantenuti. Main protetto: PR, quattro check CI, branch aggiornato, conversazioni risolte, niente bypass Admin/force push/eliminazione. Zero review esterne confermate dall’utente, unico collaboratore. Repo pubblico conservato. Vedere REPOSITORY.md |
 
 ---
 
@@ -121,17 +121,17 @@ Punti in cui il codice si discosta da `GIGAWIKI_V2_TASKS.md`. Vanno **letti prim
 
 ## Prossimi passi — ripresa del lavoro
 
-**Task 35 e 36 completati; 8 integrazioni API e 3 Settings PostgreSQL superate.** L’utente esegue personalmente i test nel browser. Task 37 completato con il vero Tiptap in jsdom. Task 39 implementato e verificato localmente. Prossimo incremento: task 40, CONTRIBUTING e verifica protezione main.
+**Task 35 e 36 completati; 8 integrazioni API e 3 Settings PostgreSQL superate.** L’utente esegue personalmente i test nel browser. Task 37 completato con il vero Tiptap in jsdom. Task 39 verificato anche su GitHub e task 40 completato. La roadmap dei 40 task è completata; restano le verifiche manuali e gli interventi di manutenzione sotto elencati.
 
 Ordine degli incrementi successivi:
 
 1. **Task 34, verifica:** provare password/sessioni, tema, ruoli, anteprima eliminazione, inviti e App Settings nel browser. `test:settings:db` già superato dopo la migrazione.
 2. **Task 36 completato:** suite opzionali `test:integration:db` e `test:settings:db`; istruzioni e limiti in `DATABASE_TESTS.md`. Nessuna migrazione aggiuntiva richiesta da questo intervento.
 3. **Task 37 completato:** copertura automatica di login, editor reale e commenti. L’utente verifica nel browser bozza, pubblicazione, autosave, upload, commenti, preferiti e revisioni con Guest/Editor/Admin.
-4. **Task 39 completato:** GitHub Actions per lint, typecheck, test e build su `main`/`dev`; aggiunti tutti gli script mancanti. Prima esecuzione remota dopo push, istruzioni in `CI.md`.
-5. **Task 40:** `CONTRIBUTING.md`, verifica protezione `main` e strategia branch. Repo e remote esistono già.
+4. **Task 39 completato:** GitHub Actions per lint, typecheck, test e build su `main`/`dev`; aggiunti tutti gli script mancanti. Esecuzione remota verificata: quattro job superati; istruzioni in `CI.md`.
+5. **Task 40 completato:** CONTRIBUTING e strategia main/dev documentati. Protezione main applicata e verificata, senza revisori esterni come confermato dall’utente; dettagli in `REPOSITORY.md`. Repo pubblico e visibilità conservata.
 
-**Stato alla chiusura:** 39/40 completati, 1 parziale, 0 non iniziati. Ultime verifiche: 200 test frontend e 323 API, lint/build frontend e typecheck API/shared superati. Otto integrazioni API e tre test Settings su DB reale superati; prove browser affidate all’utente, SMTP/storage ancora aperti. Le modifiche di questa sessione sono nel working tree e non sono state committate dall’assistente.
+**Stato alla chiusura:** 40/40 completati, 0 parziali, 0 non iniziati. Ultime verifiche: 200 test frontend e 323 API, lint/build frontend e typecheck API/shared superati. Otto integrazioni API e tre test Settings su DB reale superati; prove browser affidate all’utente, SMTP/storage ancora aperti. Le modifiche di questa sessione sono nel working tree e non sono state committate dall’assistente.
 
 **Comportamenti da preservare:** dettaglio Subject senza banner grande, icona/titolo a sinistra e azioni a destra; commenti richiusi inizialmente sotto “Comments” con freccia, bozze mantenute alla chiusura; Save draft mantiene l’editor aperto e usa la stessa pagina nei salvataggi successivi, Publish apre il reader. Guest senza cronologia, preferiti personali per account e temporizzazione login disattivata in development come richiesto.
 
@@ -163,6 +163,23 @@ Chi clona il repo su una macchina nuova deve ricreare `init.sh` (o avere Node su
 ---
 
 ## Log delle sessioni
+
+### 2026-10-13 — Task 40 completato: protezione main
+
+- L’utente conferma che lavora da solo e non vuole revisori esterni.
+- Applicata protezione main: PR obbligatoria, quality/test-api/test-web/build richiesti, branch aggiornato, conversazioni risolte, applicazione agli Admin, force push ed eliminazione disabilitati, zero approvazioni esterne.
+- Riletta la configurazione dall’API GitHub: tutti i requisiti confermati. CONTRIBUTING, README e documentazione repository aggiornati; roadmap 40/40 completata con gli scostamenti documentati.
+- Nessun push, merge o commit creato dall’assistente; verifiche browser/SMTP/storage residue come documentato.
+
+
+### 2026-10-13 — Task 40: CONTRIBUTING e audit repository
+
+- Aggiunto CONTRIBUTING: branch feat/fix/chore da dev, PR verso dev e release dev → main, Conventional Commits, setup Node/pnpm/Compose, migrazioni/seed e checklist.
+- Corretto README obsoleto: URL reale, React 19, .env alla root, wrapper pnpm, Compose infrastruttura senza override API, migrate deploy al posto di migrate dev nel setup.
+- Audit GitHub: repo pubblico, main default, dev presente, unico collaboratore gigapin Admin, main senza protezione classica/ruleset. Conservate visibilità e nomi dei branch esistenti.
+- Preparata protezione main con PR, quality/test-api/test-web/build richiesti, branch aggiornato, conversazioni risolte, niente bypass Admin/force push/eliminazione. Scelta approvazioni chiesta all’utente: una review esterna con l’unico collaboratore bloccherebbe i merge.
+- Verificata run GitHub 38378305259: quality, test-api, test-web e build tutti superati. Controllati link locali, formattazione e diff. Nessun test applicativo aggiuntivo necessario per modifiche documentali. Protezione ancora da applicare; nessun push/merge/commit creato.
+
 
 ### 2026-10-13 — Task 39: GitHub Actions CI
 

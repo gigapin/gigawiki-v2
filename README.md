@@ -1,37 +1,37 @@
 # GiGaWiki V2
 
-A modern, self-hosted wiki built with Fastify, React, PostgreSQL, and TypeScript in a Turborepo monorepo.
+A self-hosted wiki built with Fastify, React 19, PostgreSQL and TypeScript in a Turborepo monorepo.
 
-## Prerequisites
+## Getting started
 
-- Node.js 22
-- pnpm
-- Docker
+You need Node 22, Docker and Compose. Follow [CONTRIBUTING.md](CONTRIBUTING.md) for first-time setup, the `dev` → `main` workflow, commits and validation commands.
 
-## First-time Setup
-
-```bash
-# 1. Clone and install dependencies
-git clone https://github.com/your-org/gigawiki-v2
+```sh
+git clone https://github.com/gigapin/gigawiki-v2.git
 cd gigawiki-v2
-pnpm install
-
-# 2. Start local services (PostgreSQL + Redis + MinIO)
-docker compose up -d
-
-# 3. Copy env and configure
-cp .env.example apps/api/.env
-
-# 4. Run migrations and seed
-cd apps/api && pnpm prisma migrate dev && pnpm prisma db seed && cd ../..
-
-# 5. Start dev servers
-pnpm dev
+cp .env.example .env
+# Configure the root .env before continuing.
+./bin/pnpm install --frozen-lockfile
+docker compose -f docker-compose.yml up -d
+./bin/pnpm --filter gigawiki-v2-api exec prisma generate
+./bin/pnpm --filter gigawiki-v2-api exec prisma migrate deploy
+./bin/pnpm dev
 ```
+
+The web normally runs at http://localhost:5173 and the API at http://localhost:3001. Optional demo seeding and account details are in CONTRIBUTING.
 
 ## Stack
 
-- **Backend**: Fastify + TypeScript + Prisma + PostgreSQL + Redis
-- **Frontend**: React 18 + Vite + TanStack Router + TanStack Query + Tailwind CSS + shadcn/ui
-- **Shared**: Zod schemas and TypeScript types in `packages/shared`
-- **Monorepo**: Turborepo + pnpm workspaces
+- Backend: Fastify, TypeScript, Prisma, PostgreSQL and Redis.
+- Frontend: React 19, Vite, TanStack Router/Query, Tailwind CSS and shadcn/ui.
+- Storage: MinIO/S3; email: SMTP with a queued worker.
+- Shared: Zod schemas and TypeScript types in `packages/shared`.
+- Monorepo: pnpm workspaces and Turborepo.
+
+## Development and checks
+
+- [Contributing](CONTRIBUTING.md): setup, branches, commit conventions and PR checklist.
+- [CI](docs/CI.md): quality, API/web tests, builds and artifacts.
+- [Database tests](docs/DATABASE_TESTS.md): optional rollback-only integrations.
+- [Settings](docs/SETTINGS.md): migrations and account/admin features.
+- [Session log](docs/SESSION_LOG.md): current implementation state and next steps.
