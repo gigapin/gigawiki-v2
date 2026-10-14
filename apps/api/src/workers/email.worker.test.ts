@@ -1,11 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { prisma } from '../lib/prisma.js'
 import { sendMail } from '../lib/mailer.js'
 
 import { deliverEmail } from './email.worker.js'
 
 vi.mock('../lib/prisma.js', () => ({
-  prisma: { setting: { findUnique: vi.fn().mockResolvedValue(null) } },
+  prisma: {
+    image: { findUnique: vi.fn() },
+    setting: { findUnique: vi.fn().mockResolvedValue(null) },
+  },
 }))
 vi.mock('../lib/mailer.js', () => ({ sendMail: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('../lib/redis.js', () => ({ redis: {} }))
@@ -90,4 +94,24 @@ it('uses the configured site name in email branding and subject', async () => {
     subject: "You've been invited to My Wiki",
     html: expect.stringContaining('My Wiki'),
   })
+})
+
+it('uses the configured logo in email branding', async () => {
+  vi.mocked(prisma.setting.findUnique)
+    .mockResolvedValueOnce({ value: 'My Wiki' } as never)
+    .mockResolvedValueOnce({ value: 'logo' } as never)
+  vi.mocked(prisma.image.findUnique).mockResolvedValue({
+    url: 'https://wiki.example/uploads/logo.webp',
+  } as never)
+  await deliverEmail({
+    data: {
+      to: 'reader@example.invalid',
+      template: 'welcome',
+      data: { name: 'Reader', loginUrl: 'https://wiki.example/login' },
+    },
+  })
+  expect(vi.mocked(sendMail).mock.calls[0][0].html).toContain(
+    'src="https://wiki.example/uploads/logo.webp"',
+  )
+  expect(vi.mocked(sendMail).mock.calls[0][0].fromName).toBe('My Wiki')
 })

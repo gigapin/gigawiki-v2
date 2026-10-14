@@ -16,15 +16,17 @@ const btn = {
 
 export function VerifyEmailEmail({
   siteName = 'GiGaWiki',
+  logoUrl,
   name,
   verifyUrl,
 }: {
   siteName?: string
+  logoUrl?: string
   name: string
   verifyUrl: string
 }) {
   return (
-    <BaseLayout siteName={siteName}>
+    <BaseLayout siteName={siteName} logoUrl={logoUrl}>
       <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginTop: 0 }}>
         Verify your email address
       </h1>

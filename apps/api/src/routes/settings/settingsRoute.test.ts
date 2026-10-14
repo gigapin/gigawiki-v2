@@ -8,6 +8,7 @@ import { fetchSettings, updateSetting } from './settingsRoute.js'
 
 vi.mock('../../lib/prisma.js', () => ({
   prisma: {
+    image: { findUnique: vi.fn() },
     setting: {
       findMany: vi.fn(),
       upsert: vi.fn(),
@@ -250,4 +251,51 @@ it.each([
   })
   expect(result.statusCode).toBe(400)
   expect(mockSetting.upsert).not.toHaveBeenCalled()
+})
+
+describe('Site logo', () => {
+  it('resolves the configured image URL for public branding', async () => {
+    mockSetting.findMany.mockResolvedValue([{ key: 'SITE_LOGO_IMAGE_ID', value: 'logo' }] as never)
+    vi.mocked(prisma.image.findUnique).mockResolvedValue({
+      id: 'logo',
+      url: '/uploads/logo.webp',
+    } as never)
+    const app = buildPublicApp()
+    expect((await app.inject('/settings')).json()).toEqual({
+      SITE_LOGO_IMAGE_ID: 'logo',
+      SITE_LOGO_URL: '/uploads/logo.webp',
+    })
+    await app.close()
+  })
+  it('rejects a missing logo image', async () => {
+    vi.mocked(prisma.image.findUnique).mockResolvedValue(null)
+    const app = buildAuthApp()
+    expect(
+      (
+        await app.inject({
+          method: 'PUT',
+          url: '/settings/SITE_LOGO_IMAGE_ID',
+          payload: { value: 'missing' },
+        })
+      ).statusCode,
+    ).toBe(400)
+    expect(mockSetting.upsert).not.toHaveBeenCalled()
+    await app.close()
+  })
+  it('removes the logo without deleting the shared asset', async () => {
+    const app = buildAuthApp()
+    expect(
+      (
+        await app.inject({
+          method: 'PUT',
+          url: '/settings/SITE_LOGO_IMAGE_ID',
+          payload: { value: '' },
+        })
+      ).statusCode,
+    ).toBe(200)
+    expect(mockSetting.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ update: { value: '' } }),
+    )
+    await app.close()
+  })
 })

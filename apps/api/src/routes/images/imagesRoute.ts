@@ -18,11 +18,11 @@ export async function serveUploadedImage(fastify: FastifyInstance) {
   fastify.get<{ Params: { '*': string } }>('/uploads/*', async (req, reply) => {
     const image = await prisma.image.findFirst({
       where: { path: req.params['*'] },
-      select: { path: true },
+      select: { path: true, storageDriver: true },
     })
     if (!image) return reply.status(404).send({ error: 'Image not found' })
     try {
-      const file = await readFile(image.path)
+      const file = await readFile(image.path, image.storageDriver as 's3' | 'local')
       if (!file.Body) return reply.status(404).send({ error: 'Image not found' })
       return reply
         .type('image/webp')
@@ -83,6 +83,7 @@ export async function uploadImage(fastify: FastifyInstance) {
         name: data.filename ?? key,
         url,
         path: key,
+        storageDriver: env.STORAGE_DRIVER,
         type: imageType,
         createdById: req.user.id,
       },
@@ -99,7 +100,7 @@ export async function deleteImage(fastify: FastifyInstance) {
 
     const image = await prisma.image.findFirst({
       where: { id },
-      select: { id: true, path: true, createdById: true },
+      select: { id: true, path: true, createdById: true, storageDriver: true },
     })
 
     if (!image) {
@@ -113,7 +114,7 @@ export async function deleteImage(fastify: FastifyInstance) {
       return reply.status(403).send({ error: 'Forbidden' })
     }
 
-    await deleteFile(image.path)
+    await deleteFile(image.path, image.storageDriver as 's3' | 'local')
     await prisma.image.delete({ where: { id } })
 
     return reply.status(200).send({ message: 'Image deleted successfully' })

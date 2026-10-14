@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useBlocker, useNavigate, useParams } from '@tanstack/react-router'
 import { toast } from 'sonner'
 
@@ -6,6 +6,7 @@ import { usePage, useSavePage, type PageInput } from '@/api/pages'
 import { useProject } from '@/api/projects'
 import { useSections } from '@/api/sections'
 import { ProjectBreadcrumb } from '@/components/shared/ProjectBreadcrumb'
+import { OwnerPicker } from '@/components/pages/OwnerPicker'
 import { PageEditor } from '@/components/pages/PageEditor'
 import { EmptyState, ErrorState, ListSkeleton } from '@/components/shared/ResourceState'
 import { Button } from '@/components/ui/button'
@@ -117,6 +118,9 @@ export function EditPagePage() {
         content: data.content,
         isDraft: data.isDraft,
         visibility: data.visibility,
+        expectedRevision: data.currentRevision,
+        restricted: data.restricted,
+        ownedById: data.ownedById,
       }}
     />
   )
@@ -146,8 +150,12 @@ export function PageForm({
     activeSlug ? { slug: activeSlug } : { sectionId: context.sectionId },
     {
       onSuccess: async (page, { payload, automatic }) => {
-        setBaseline(payload)
-        setInput(payload)
+        const next = {
+          ...payload,
+          expectedRevision: page.currentRevision ?? payload.expectedRevision,
+        }
+        setBaseline(next)
+        setInput(next)
         setLastSaved(new Date())
         setSaved(true)
         savedForNavigation.current = true
@@ -163,16 +171,24 @@ export function PageForm({
     },
   )
   const { mutate, isPending } = mutation
+  const prepare = useCallback(
+    (value: PageInput) => {
+      const payload = { ...value, title: value.title.trim() }
+      if (user?.role !== 'ADMIN') delete payload.ownedById
+      return payload
+    },
+    [user?.role],
+  )
   const allowed = user?.role === 'EDITOR' || user?.role === 'ADMIN'
   useEffect(() => {
     if (!activeSlug || !allowed || !dirty || editorBusy || isPending || !input.title.trim()) return
     const timer = window.setTimeout(() => {
-      mutate({ payload: { ...input, title: input.title.trim() }, automatic: true })
+      mutate({ payload: prepare(input), automatic: true })
     }, 30_000)
     return () => window.clearTimeout(timer)
-  }, [activeSlug, allowed, dirty, editorBusy, input, isPending, mutate])
+  }, [activeSlug, allowed, dirty, editorBusy, input, isPending, mutate, prepare])
   const save = (isDraft: boolean) =>
-    mutation.mutate({ payload: { ...input, title: input.title.trim(), isDraft }, automatic: false })
+    mutation.mutate({ payload: prepare({ ...input, isDraft }), automatic: false })
   const blocker = useBlocker({
     shouldBlockFn: () =>
       editorStatus.uploading || (!savedForNavigation.current && (dirty || mutation.isPending)),
@@ -249,6 +265,24 @@ export function PageForm({
           </SelectContent>
         </Select>
       </div>
+      {(user.role === 'ADMIN' || initial.ownedById === user.id || !slug) && (
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={input.restricted ?? false}
+            disabled={mutation.isPending}
+            onChange={(e) => change({ restricted: e.target.checked })}
+          />
+          Restricted to owner and Admin
+        </label>
+      )}
+      {user.role === 'ADMIN' && slug && (
+        <OwnerPicker
+          value={input.ownedById}
+          disabled={mutation.isPending}
+          onChange={(ownedById) => change({ ownedById })}
+        />
+      )}
       {mutation.isError && (
         <p role="alert" className="text-sm text-destructive">
           {apiErrorMessage(mutation.error)}

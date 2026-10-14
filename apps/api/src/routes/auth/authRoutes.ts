@@ -39,6 +39,14 @@ const REFRESH_COOKIE = 'refreshToken'
 const REFRESH_COOKIE_PATH = '/api/v2/auth'
 const AUTH_RATE_LIMIT = { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }
 
+function refreshDuration() {
+  const [, amount, unit] = env.JWT_REFRESH_EXPIRES_IN.match(/^([1-9]\d*)(ms|s|m|h|d|w)$/)!
+  return (
+    Number(amount) *
+    { ms: 1, s: 1000, m: 60000, h: 3600000, d: 86400000, w: 604800000 }[unit as 'd']
+  )
+}
+
 function setRefreshCookie(reply: FastifyReply, token: string, expiresAt: Date) {
   reply.setCookie(REFRESH_COOKIE, token, {
     httpOnly: true,
@@ -54,7 +62,7 @@ async function createRefreshToken(reply: FastifyReply, userId: string, authVersi
   const expiresAt =
     env.NODE_ENV === 'development'
       ? new Date('9999-12-31T23:59:59.000Z')
-      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      : new Date(Date.now() + refreshDuration())
   await adminTransaction(async (tx) => {
     const current = await tx.user.findUnique({
       where: { id: userId },
@@ -114,7 +122,7 @@ export async function logout(fastify: FastifyInstance) {
 }
 
 export async function refresh(fastify: FastifyInstance) {
-  fastify.post('/auth/refresh', async (request, reply) => {
+  fastify.post('/auth/refresh', AUTH_RATE_LIMIT, async (request, reply) => {
     const token = request.cookies[REFRESH_COOKIE]
     if (!token) return reply.status(401).send({ error: 'Missing refresh token' })
 
@@ -134,7 +142,7 @@ export async function refresh(fastify: FastifyInstance) {
       const expiresAt =
         env.NODE_ENV === 'development'
           ? new Date('9999-12-31T23:59:59.000Z')
-          : new Date(Date.now() + 30 * 86400000)
+          : new Date(Date.now() + refreshDuration())
       await tx.refreshToken.create({ data: { userId: user.id, token: nextToken, expiresAt } })
       return { user, nextToken, expiresAt }
     })

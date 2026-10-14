@@ -42,6 +42,14 @@ export async function fetchSettings(fastify: FastifyInstance) {
       return acc
     }, {})
 
+    if (settings.SITE_LOGO_IMAGE_ID) {
+      const logo = await prisma.image.findUnique({
+        where: { id: settings.SITE_LOGO_IMAGE_ID },
+        select: { url: true },
+      })
+      settings.SITE_LOGO_URL = logo?.url ?? ''
+    }
+
     try {
       await redis.set(CACHE_KEY, JSON.stringify(settings), 'EX', CACHE_TTL)
     } catch (err) {
@@ -81,6 +89,12 @@ export async function updateSetting(fastify: FastifyInstance) {
               ? value.trim().length > 0 && value.trim().length <= 100
               : true
       if (!valid) return reply.status(400).send({ error: 'Invalid setting value' })
+      if (
+        key === 'SITE_LOGO_IMAGE_ID' &&
+        value &&
+        !(await prisma.image.findUnique({ where: { id: value }, select: { id: true } }))
+      )
+        return reply.status(400).send({ error: 'Logo image not found' })
       const normalized = key === 'SITE_NAME' ? value.trim() : value
       await prisma.setting.upsert({
         where: { key },

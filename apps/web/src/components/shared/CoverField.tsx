@@ -7,9 +7,11 @@ import { Label } from '@/components/ui/label'
 export function CoverField({
   cover,
   disabled,
+  label = 'Cover image',
 }: {
   cover: ReturnType<typeof useCover>
   disabled: boolean
+  label?: string
 }) {
   return (
     <div
@@ -20,7 +22,7 @@ export function CoverField({
         if (!disabled && event.dataTransfer.files[0]) cover.choose(event.dataTransfer.files[0])
       }}
     >
-      <Label htmlFor="resource-cover">Cover image</Label>
+      <Label htmlFor="resource-cover">{label}</Label>
       {cover.preview && (
         <img
           src={cover.preview}

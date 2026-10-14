@@ -266,6 +266,7 @@ export async function uploadAvatar(fastify: FastifyInstance) {
           name: file.filename,
           url: `${env.API_URL.replace(/\/$/, '')}/uploads/${key}`,
           path: key,
+          storageDriver: env.STORAGE_DRIVER,
           type: 'AVATAR',
           createdById: req.user.id,
         },

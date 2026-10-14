@@ -28,23 +28,39 @@ export async function deliverEmail(job: Pick<Job<EmailJobData>, 'data'>) {
   const { to, template, data } = job.data
   const setting = await prisma.setting.findUnique({ where: { key: 'SITE_NAME' } })
   const siteName = setting?.value.trim() || 'GiGaWiki'
+  const logoSetting = await prisma.setting.findUnique({ where: { key: 'SITE_LOGO_IMAGE_ID' } })
+  const logo = logoSetting?.value
+    ? await prisma.image.findUnique({ where: { id: logoSetting.value }, select: { url: true } })
+    : null
+  const logoUrl = logo?.url
   let html: string
   switch (template) {
     case 'welcome':
       html = await render(
-        <WelcomeEmail siteName={siteName} name={data.name} loginUrl={data.loginUrl} />,
+        <WelcomeEmail
+          siteName={siteName}
+          logoUrl={logoUrl}
+          name={data.name}
+          loginUrl={data.loginUrl}
+        />,
       )
       break
     case 'verify':
       if (!data.verifyUrl) throw new Error('Missing verification URL')
       html = await render(
-        <VerifyEmailEmail siteName={siteName} name={data.name} verifyUrl={data.verifyUrl} />,
+        <VerifyEmailEmail
+          siteName={siteName}
+          logoUrl={logoUrl}
+          name={data.name}
+          verifyUrl={data.verifyUrl}
+        />,
       )
       break
     case 'invite':
       html = await render(
         <InviteEmail
           siteName={siteName}
+          logoUrl={logoUrl}
           inviterName={data.inviterName}
           role={data.role}
           acceptUrl={data.acceptUrl}
@@ -54,7 +70,12 @@ export async function deliverEmail(job: Pick<Job<EmailJobData>, 'data'>) {
       break
     case 'reset-password':
       html = await render(
-        <ResetPasswordEmail siteName={siteName} name={data.name} resetUrl={data.resetUrl} />,
+        <ResetPasswordEmail
+          siteName={siteName}
+          logoUrl={logoUrl}
+          name={data.name}
+          resetUrl={data.resetUrl}
+        />,
       )
       break
     default:

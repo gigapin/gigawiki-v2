@@ -10,6 +10,7 @@ export type PageListItem = Pick<
   Page,
   'id' | 'title' | 'slug' | 'isDraft' | 'restricted' | 'visibility' | 'updatedAt'
 > & {
+  currentRevision?: number
   createdBy: { id: string; name: string; slug: string }
 }
 export interface PagesResponse {
@@ -43,6 +44,9 @@ export type PageDetail = Page & {
   section: { id: string; title: string; slug: string }
 }
 export type PageInput = {
+  expectedRevision?: number
+  restricted?: boolean
+  ownedById?: string
   title: string
   content: string
   isDraft: boolean
@@ -152,6 +156,8 @@ export function useDeletePage(slug: string, options: MutationOptions<void> = {})
   })
 }
 export interface SearchResult {
+  projectName?: string
+  projectSlug?: string
   id: string
   title: string
   slug: string

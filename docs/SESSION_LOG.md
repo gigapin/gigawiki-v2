@@ -20,15 +20,15 @@
 |---|---|
 | Branch di lavoro | `dev` (il default remoto è `main`) |
 | Remote | `git@github.com:gigapin/gigawiki-v2.git` |
-| Task completati | 40 / 40 completati; 0 parziali; 0 non iniziati (conteggio dalla tabella sotto) |
-| Fase corrente | **Fase 5 — Test e CI/CD**, task 34 e 35 implementati. Base shadcn, Project detail e registrazione implementati; reader/editor con immagini ridimensionabili, autosave, revisioni, menzioni e menu contestuale |
-| Backend | Completo (task 5–23). 323 test ordinari verdi; 8 test di integrazione e 3 test Settings PostgreSQL superati sul database dell’app |
-| Frontend | Login, Register, Verify email, ForgotPassword, ResetPassword, AcceptInvite, Dashboard, Subjects, Project detail, scelta destinazione nuova pagina, reader ed editor Tiptap. Bozza/pubblicazione, breadcrumb, tema light/dark, upload e resize immagini, link, syntax highlighting, autosave, drawer revisioni, menzioni e menu contestuale implementati. Tag/preferiti nelle pagine implementati; commenti riusabili integrati nel reader; Settings complete (Profile, Password, Appearance, Users, Invites, App Settings) |
+| Task completati | 40 / 40 obiettivi principali implementati con scostamenti concordati; F01–F14 chiusi nel codice (vedi PARITY_IMPLEMENTATION.md). Parità V1 da verificare |
+| Fase corrente | **Chiusura interventi post-audit** — implementazione funzionale completata, migrazione dell’app e attivazione policy ancora operative |
+| Backend | Audit F01–F14 implementato: accesso gerarchico, attività atomiche, revisioni/concorrenza, validazione shared, statistiche, logo/storage locale e refresh. 343 test ordinari e 20 test PostgreSQL temporaneo superati |
+| Frontend | Login, Register, Verify email, ForgotPassword, ResetPassword, AcceptInvite, Dashboard, Subjects, Project detail, scelta destinazione nuova pagina, reader ed editor Tiptap. Bozza/pubblicazione, breadcrumb, tema light/dark, upload e resize immagini, link, syntax highlighting, autosave, drawer revisioni, menzioni e menu contestuale implementati. Tag/preferiti/commenti su Page/Project/Section, sidebar con Section, ricerca per Project, spostamento Project, toolbar completa e logo implementati; Settings complete (Profile, Password, Appearance, Users, Invites, App Settings) |
 | CI/CD | Workflow task 39 attivo: quality, test-api, test-web e build tutti superati su GitHub |
 
-**Ultimo commit presente:** `4b9ab4d` (`feat: add ci and github actions`), su `dev`. Il working tree era pulito all’inizio dell’intervento; CONTRIBUTING, README e documentazione del task 40 sono ora nel working tree, senza commit creati dall’assistente. `.claude/settings.local.json` è ancora tracciato, anche se escluso da `.gitignore`.
+**Ultimo commit presente:** `d35300c` (`docs: add contributing guide and repository policy`), su `dev`. Audit e implementazione del piano sono nel working tree; nessun commit/push creato dall’assistente. Migrazione 20261013000000_activity_subject_storage_driver non applicata al database dell’app; ENFORCE_CONTENT_ACCESS resta false.
 
-**Ultime verifiche:** 200 test frontend su 27 file e 334 test API (323 ordinari + 11 integrazioni) superati; lint/typecheck su API, web e shared e build API/web superati. Le 6 migrazioni sono state verificate da zero su PostgreSQL temporaneo per il task 39. Rimangono il warning bundle >500 kB e il warning React Compiler/TanStack Table preesistente. Test Node/jsdom: non equivalgono a prove browser. Dopo l’applicazione della migrazione da parte dell’utente, tutti e tre i test Settings PostgreSQL sono superati sul database dell’app. Tutte le scritture di prova sono state annullate. La suite emette un warning non bloccante di `pg` sulle query concorrenti. Autosave e registrazione con Mailtrap già confermati dall’utente nelle sessioni precedenti.
+**Ultime verifiche:** 343 test API ordinari, 20 PostgreSQL su database temporaneo e 214 frontend; lint/typecheck/build API/shared/web superati. Sette migrazioni applicate da zero al database temporaneo; build Docker e smoke test runtime shared/Prisma/storage locale superati. Audit in sola lettura dell’app: 2 Subject, 2 Project, 3 Section, 4 Page; 3 pagine interessate dai nuovi permessi. Browser affidato all’utente; SMTP/S3 reali e riavvio storage locale da verificare manualmente. Warning preesistenti bundle >500 kB, React Compiler/TanStack Table e `pg`.
 
 ---
 
@@ -48,57 +48,57 @@ Legenda: ✅ fatto · 🟡 parziale · ⬜ non iniziato
 
 | # | Task | Stato | Note |
 |---|---|---|---|
-| 4 | `packages/shared` — types + schemi Zod | ✅ | 12 types, 9 schemi |
+| 4 | `packages/shared` — types + schemi Zod | ✅ | Schemi usati a runtime; wire diretto e page/limit mantenuti, errori uniformi (scostamento concordato). |
 
 ### Fase 3 — Backend
 
 | # | Task | Stato | Note |
 |---|---|---|---|
-| 5 | Bootstrap Fastify | ✅ | |
-| 6 | Plugin Fastify | ✅ | helmet → cors → cookie → rate-limit → jwt → multipart |
-| 7 | Schema Prisma + migrazione iniziale | ✅ | 5 migrazioni applicate |
+| 5 | Bootstrap Fastify | ✅ | Validazione centrale e errori uniformi; successi diretti mantenuti come concordato. |
+| 6 | Plugin Fastify | ✅ | Refresh 10/min, configurazione durata refresh e sessioni development preservate. |
+| 7 | Schema Prisma + migrazione iniziale | ✅ | Sette migrazioni verificate da zero su PostgreSQL temporaneo; nuova migrazione Activity.subjectId/Image.storageDriver ancora da applicare al DB dell’app. |
 | 8 | Migrazione full-text search Postgres | ✅ | `add_search_vector` + `restore_search_vector` |
-| 9 | Singleton `lib/` | ✅ | Aggiunto anche `lib/slugify.ts` (con test) |
+| 9 | Singleton `lib/` | ✅ | Client e helper slugify, storage locale/S3, accesso gerarchico e salvataggi/attività atomici. |
 | 10 | Modulo Auth | ✅ | login, logout, refresh, register, forgot/reset password, verify email, accept invite, me |
 | 11 | Modulo Users | ✅ | incluso upload avatar e invito |
-| 12 | Modulo Subjects | ✅ | + `color` e `icon` |
-| 13 | Modulo Projects | ✅ | |
-| 14 | Modulo Sections | ✅ | incluso riordino |
-| 15 | Modulo Pages | ✅ | incluso `GET /search` |
-| 16 | Modulo Revisions | ✅ | |
-| 17 | Modulo Comments | ✅ | |
-| 18 | Tags, favorites, views, activities | ✅ | |
-| 19 | Modulo Images | ✅ | |
-| 20 | Modulo Settings | ✅ | `GET /settings` è pubblico, serve al frontend prima della sessione |
+| 12 | Modulo Subjects | ✅ | CRUD/attività, includeDeleted Admin e accesso gerarchico; login obbligatorio concordato. |
+| 13 | Modulo Projects | ✅ | CRUD, spostamento Subject, attività atomiche e accesso gerarchico; includeDeleted Admin. |
+| 14 | Modulo Sections | ✅ | CRUD e riordino con attività atomiche, accesso gerarchico e controlli proprietario/Admin. |
+| 15 | Modulo Pages | ✅ | CRUD, ricerca raggruppata e salvataggio atomico; expectedRevision, summary e conflitto 409. |
+| 16 | Modulo Revisions | ✅ | Cronologia Editor/Admin filtrata per accesso; restore atomico con snapshot e attività. |
+| 17 | Modulo Comments | ✅ | Commenti/risposte e modifiche registrati atomicamente; UI Page/Project/Section. |
+| 18 | Tags, favorites, views, activities | ✅ | Preferiti/tag/visite filtrati per accesso, attività reali e feed personale. |
+| 19 | Modulo Images | ✅ | WebP, storage locale/S3 e driver persistito per asset; protezioni traversal/symlink, volume Docker. |
+| 20 | Modulo Settings | ✅ | GET /settings pubblico; logo selezionabile/rimuovibile e SITE_LOGO_URL derivato per UI/email. |
 | 21 | Worker BullMQ | ✅ | `email.worker.tsx`, `image.worker.ts` |
-| 22 | Template React Email | ✅ | Invite, ResetPassword, VerifyEmail, Welcome |
+| 22 | Template React Email | ✅ | Invite, ResetPassword, VerifyEmail, Welcome con nome e logo configurabili. |
 | 23 | Seed Prisma | ✅ | |
 
 ### Fase 4 — Frontend
 
 | # | Task | Stato | Note |
 |---|---|---|---|
-| 24 | Bootstrap React + Vite + Tailwind + shadcn | ✅ | shadcn usato nei nuovi form Project/Section, Project detail e primitive condivise; tema dark unico con alias per i vecchi componenti. Migrazione del resto incrementale |
+| 24 | Bootstrap React + Vite + Tailwind + shadcn | ✅ | shadcn nei nuovi form e primitive condivise; dark iniziale e light selezionabile, migrazione degli stili precedenti incrementale. |
 | 25 | TanStack Router + Query + client axios | ✅ | Rotte auth, dashboard, subject/project, `/new-page`, `/projects/$projectSlug/sections/$sectionSlug/pages/new`, `/pages/$slug`, `/pages/$slug/edit`. Query `section` per ripristinare la sezione nel Project |
 | 26 | Store Zustand | ✅ | `auth.store.ts`, `settings.store.ts` |
-| 27 | Componenti di layout | ✅ | AppShell, Sidebar, Topbar, SearchModal |
+| 27 | Componenti di layout | ✅ | Sidebar Subject/Project/Section lazy; ricerca raggruppata per Project. |
 | 28 | Pagine auth | ✅ | Login, Register, VerifyEmail, AuthLayout, reinvio verifica, ForgotPassword, ResetPassword e AcceptInvite. Inviti avviano la sessione; errori e validazione coperti in jsdom. Resta verifica browser/SMTP |
-| 29 | Dashboard | ✅ | Attività, preferiti/statistiche personali e Recently visited con sei visite, link pagina/progetto/sezione, stato vuoto/caricamento/errore e retry. Endpoint `/views` personale con ordinamento e filtro eliminati |
-| 30 | Pagine Subjects / Projects / Sections | ✅ | Prima implementazione in `c12f73a`. Fatti: Subjects/Subject detail, Project detail, ProjectFormDialog riusato in creazione/modifica, SectionFormDialog, eliminazione admin con conferma, riordino nativo + pulsanti accessibili, lista pagine paginata. Collegamenti a reader/editor e breadcrumb completati. CRUD Subject completo, modifica proprietario/Admin ed eliminazione Admin con conferma. Upload cover Subject/Project con anteprima, sostituzione e rimozione |
-| 31 | Page view + editor Tiptap | ✅ | Reader, creazione/modifica, toolbar, tabelle, visibilità, bozza/pubblicazione, guardia modifiche non salvate. Fatti anche upload e ridimensionamento immagini, link, syntax highlighting e contenuti legacy JSON. Autosave dopo 30s di inattività sulle pagine esistenti. Menzioni e bubble menu implementati. Tag/preferiti e commenti nel reader completati; resta la prova nel browser |
-| 32 | Drawer revisioni | ✅ | Cronologia e anteprima riservate a Editor/Admin; ripristino con conferma Editor/Admin e navigazione allo slug ripristinato |
-| 33 | Componente commenti | ✅ | Thread paginati e risposte espandibili, avatar, markdown-lite sicuro, modifica propria, eliminazione propria/Admin con conferma, cache ottimistica e rollback. Integrato nel reader; riusabile per Project/Section |
-| 34 | Pagine settings | ✅ | Profile, Password, Appearance locale, Users Admin con ricerca/paginazione/ruoli e cancellazione con anteprima, Invites elenco/reinvio/cancellazione e App Settings. Migrazione authVersion applicata dall’utente e tre test PostgreSQL superati; prove browser/SMTP ancora aperte |
+| 29 | Dashboard | ✅ | Statistiche Admin reali, feed personale, preferiti e visite; rimossi valori inventati. |
+| 30 | Pagine Subjects / Projects / Sections | ✅ | Selector/spostamento Subject del Project, metadati e commenti sui contenitori. |
+| 31 | Page view + editor Tiptap | ✅ | Toolbar completa, restricted/proprietario, salvataggio atomico e 409 con bozza preservata. |
+| 32 | Drawer revisioni | ✅ | Cronologia/anteprima Editor/Admin; restore atomico con summary, conferma e navigazione allo slug ripristinato. |
+| 33 | Componente commenti | ✅ | Thread paginati, risposte espandibili, avatar, markdown-lite, modifica/eliminazione e cache ottimistica con rollback. Integrato in Page, Project e Section. |
+| 34 | Pagine settings | ✅ | Profilo, password, tema locale, Users e Invites Admin, App Settings con upload/rimozione logo. Prove browser/SMTP ancora aperte. |
 | 35 | Hook TanStack Query | ✅ | Hook e adapter tipizzati in `src/api`; query key condivise con filtri/paginazione, cache CRUD centralizzata, login/logout condivisi, ricerca cancellabile e upload tramite mutazioni. Bootstrap/loader/Tiptap usano adapter senza hook dove necessario. ESLint impedisce HTTP e hook di trasporto nei consumatori |
 
 ### Fase 5 — Test, CI/CD, GitHub
 
 | # | Task | Stato | Note |
 |---|---|---|---|
-| 36 | Test backend | ✅ | 323 test ordinari; 8 integrazioni PostgreSQL per auth, ricerca full-text, revisioni, permessi e soft delete; 3 integrazioni Settings. Tutti superati sul DB dell’app con rollback. Migrazioni gestite dall’utente; vedere scostamenti e DATABASE_TESTS.md |
-| 37 | Test componenti frontend | ✅ | 200 test Vitest Node/jsdom su 27 file. Login, commenti e vero Tiptap: contenuto iniziale, digitazione/onChange, undo/redo, blocco/ripresa, reader senza toolbar; coperti anche upload, link, menzioni e autosave. Prove browser affidate all’utente |
-| 38 | Dockerfile per l'API | ✅ | Implementato meglio della specifica: `pnpm deploy --prod` + rimozione mirata di dipendenze non raggiungibili a runtime |
-| 39 | GitHub Actions CI | ✅ | quality, test-api, test-web, build su main/dev; PostgreSQL/Redis temporanei, migrazioni e 11 integrazioni DB, artifact web. Comandi e migrazioni verificati localmente; tutti i quattro job superati anche su GitHub |
+| 36 | Test backend | ✅ | 343 test ordinari e 20 PostgreSQL superati (8 integrazioni + 3 Settings + 9 policy/concorrenza). Nuovi test con commit su DB temporaneo gigawiki_test; suite precedenti con rollback. |
+| 37 | Test componenti frontend | ✅ | 214 test Vitest Node/jsdom su 28 file; vero Tiptap, toolbar, conflitti/bozze, logo, ricerca e metadati contenitori. Prove browser affidate all’utente. |
+| 38 | Dockerfile per l'API | ✅ | Build shared e packaging pnpm deploy/Prisma; immagine compilata e smoke runtime shared/Prisma/storage locale superato. |
+| 39 | GitHub Actions CI | ✅ | quality, test-api, test-web e build; shared compilato, migrazioni e 20 integrazioni su PostgreSQL temporaneo. Baseline precedente verde su GitHub; nuova CI da verificare dopo il push. |
 | 40 | Init repo GitHub | ✅ | CONTRIBUTING e README aggiornati; main/dev mantenuti. Main protetto: PR, quattro check CI, branch aggiornato, conversazioni risolte, niente bypass Admin/force push/eliminazione. Zero review esterne confermate dall’utente, unico collaboratore. Repo pubblico conservato. Vedere REPOSITORY.md |
 
 ---
@@ -107,9 +107,9 @@ Legenda: ✅ fatto · 🟡 parziale · ⬜ non iniziato
 
 Punti in cui il codice si discosta da `GIGAWIKI_V2_TASKS.md`. Vanno **letti prima** di «completare» il task corrispondente, altrimenti si rischia di riscrivere scelte già prese di proposito.
 
-1. **Test backend (task 36) — database dell’app e rollback su richiesta dell’utente.** Alle 323 prove ordinarie con dipendenze mockate si aggiungono 8 integrazioni in `src/__tests__/` e 3 Settings con SQL PostgreSQL reale. Invece del database dedicato, migrazioni automatiche e truncate previsti dalla specifica, le fixture casuali sono sempre annullate; le impostazioni singleton sono isolate. Redis e coda email restano mockati. Le transazioni delle rotte sono adattate a savepoint: non si verificano conflitti fra commit concorrenti; le migrazioni da zero sono ora verificate su PostgreSQL temporaneo nel task 39. Vedere `DATABASE_TESTS.md`.
+1. **Test backend (task 36).** 343 prove ordinarie e 20 integrazioni PostgreSQL superate. Le 8 integrazioni precedenti e le 3 Settings mantengono il rollback concordato; i 9 nuovi casi verificano anche commit concorrenti e atomicità su un database temporaneo dedicato `gigawiki_test`. Sette migrazioni verificate da zero; nessuna nuova migrazione applicata al database dell’app. Redis/coda email e S3 rimangono simulati nei test pertinenti. Vedere [DATABASE_TESTS.md](DATABASE_TESTS.md) e [PARITY_IMPLEMENTATION.md](PARITY_IMPLEMENTATION.md).
 2. **Doppio file di env.** Esistono sia `apps/api/src/config/env.ts` (previsto dal task 5) sia `apps/api/src/lib/env.ts` (quello effettivamente documentato in `CLAUDE.md` e importato per primo in `server.ts`). Da consolidare in uno solo.
-3. **Rotte pubbliche disabilitate.** In `src/routes/index.ts` il blocco delle rotte pubbliche è commentato: letture di subjects, projects, sections, pages, revisioni, commenti, tag e view sono tutte dietro autenticazione. Va deciso se `Visibility.PUBLIC` deve essere davvero raggiungibile senza login — al momento non lo è.
+3. **Login obbligatorio e policy concordata.** PUBLIC è leggibile dagli utenti autenticati; PRIVATE, restricted e bozze seguono i vincoli gerarchici documentati in [PARITY_IMPLEMENTATION.md](PARITY_IMPLEMENTATION.md). Il gate `ENFORCE_CONTENT_ACCESS` resta disattivato sull’app; il filtro sugli antenati eliminati è sempre applicato.
 4. **Meilisearch nel compose ma inutilizzato.** La ricerca è implementata con la full-text search di Postgres (task 8). Il servizio `meilisearch` in `docker-compose.yml` non è previsto dalla specifica e non è referenziato da alcun codice: o si usa o si rimuove.
 5. **Dockerfile più elaborato della specifica (task 38).** La versione reale usa `pnpm deploy --prod --legacy`, ricopia a mano `.prisma/client` e rimuove sottoalberi non raggiungibili a runtime per dimezzare l'immagine. I commenti nel file spiegano il perché di ogni passaggio: non semplificarlo senza rileggerli.
 6. **Design system — migrazione avviata.** Tema e font unificati il 2026-10-07 in `styles/tokens.css`, con alias per il codice esistente e palette cover condivisa. shadcn è usato nelle nuove schermate; restano stili inline e icone custom nelle vecchie pagine. L'audit del 14 settembre fotografa lo stato precedente.
@@ -121,17 +121,13 @@ Punti in cui il codice si discosta da `GIGAWIKI_V2_TASKS.md`. Vanno **letti prim
 
 ## Prossimi passi — ripresa del lavoro
 
-**Task 35 e 36 completati; 8 integrazioni API e 3 Settings PostgreSQL superate.** L’utente esegue personalmente i test nel browser. Task 37 completato con il vero Tiptap in jsdom. Task 39 verificato anche su GitHub e task 40 completato. La roadmap dei 40 task è completata; restano le verifiche manuali e gli interventi di manutenzione sotto elencati.
+**Piano post-audit implementato.** Dettagli e comandi in [PARITY_IMPLEMENTATION.md](./PARITY_IMPLEMENTATION.md).
 
-Ordine degli incrementi successivi:
-
-1. **Task 34, verifica:** provare password/sessioni, tema, ruoli, anteprima eliminazione, inviti e App Settings nel browser. `test:settings:db` già superato dopo la migrazione.
-2. **Task 36 completato:** suite opzionali `test:integration:db` e `test:settings:db`; istruzioni e limiti in `DATABASE_TESTS.md`. Nessuna migrazione aggiuntiva richiesta da questo intervento.
-3. **Task 37 completato:** copertura automatica di login, editor reale e commenti. L’utente verifica nel browser bozza, pubblicazione, autosave, upload, commenti, preferiti e revisioni con Guest/Editor/Admin.
-4. **Task 39 completato:** GitHub Actions per lint, typecheck, test e build su `main`/`dev`; aggiunti tutti gli script mancanti. Esecuzione remota verificata: quattro job superati; istruzioni in `CI.md`.
-5. **Task 40 completato:** CONTRIBUTING e strategia main/dev documentati. Protezione main applicata e verificata, senza revisori esterni come confermato dall’utente; dettagli in `REPOSITORY.md`. Repo pubblico e visibilità conservata.
-
-**Stato alla chiusura:** 40/40 completati, 0 parziali, 0 non iniziati. Ultime verifiche: 200 test frontend e 323 API, lint/build frontend e typecheck API/shared superati. Otto integrazioni API e tre test Settings su DB reale superati; prove browser affidate all’utente, SMTP/storage ancora aperti. Le modifiche di questa sessione sono nel working tree e non sono state committate dall’assistente.
+1. Applicare alla base dati dell’app la migrazione `20261013000000_activity_subject_storage_driver`, poi rigenerare Prisma e riavviare API/web.
+2. Verificare il rapporto di accesso prima di impostare `ENFORCE_CONTENT_ACCESS=true`; invalidare le sessioni con il comando documentato. Nessuna attivazione automatica.
+3. Prove browser a cura dell’utente, incluse proprietà/restricted, sidebar, spostamento progetto, metadati dei contenitori, conflitti e logo/storage locale.
+4. Dopo il push verificare la nuova CI; nessun commit/push eseguito dall’assistente.
+5. Per certificare parità V1/import/password/PDF occorrono codice o inventario V1. Restano le prove SMTP/storage reali e il miglioramento grafico rimandato.
 
 **Comportamenti da preservare:** dettaglio Subject senza banner grande, icona/titolo a sinistra e azioni a destra; commenti richiusi inizialmente sotto “Comments” con freccia, bozze mantenute alla chiusura; Save draft mantiene l’editor aperto e usa la stessa pagina nei salvataggi successivi, Publish apre il reader. Guest senza cronologia, preferiti personali per account e temporizzazione login disattivata in development come richiesto.
 
@@ -163,6 +159,25 @@ Chi clona il repo su una macchina nuova deve ricreare `init.sh` (o avere Node su
 ---
 
 ## Log delle sessioni
+
+### 2026-10-13 — Implementazione del piano post-audit
+
+- Implementati gli interventi F01–F14, con policy condivise sui contenuti e successi API compatibili. Attività, revisioni e salvataggi atomici; conflitti con expectedRevision e preservazione delle bozze.
+- Completati feed/statistiche Dashboard, commenti/tag/preferiti Project/Section, albero Section, ricerca per Project, selector/spostamento Subject e toolbar/proprietà/restricted.
+- Logo UI/email, storage locale persistente con driver per asset e controlli traversal/symlink, refresh limitato/configurabile. Migrazione nuova preparata e verificata su PostgreSQL temporaneo.
+- Verifiche: 343 API ordinari + 20 PostgreSQL + 214 frontend; typecheck/lint/build verdi, build Docker e smoke test runtime superati. Audit app solo lettura: 3 pagine interessate dalla policy. Report e istruzioni in PARITY_IMPLEMENTATION.md.
+
+**Lasciato operativo:** migrazione e attivazione policy sul database dell’app, browser a cura dell’utente, SMTP/S3 reali, CI dopo push. Nessuna migrazione dell’app, revoca sessioni, attivazione privacy, commit o push eseguiti. Import/PDF e parità V1 rimangono fuori dall’incremento senza codice originale.
+
+
+### 2026-10-13 — Audit conformità V2 e parità V1
+
+- Confrontati tutti i 40 task e il tech stack con rotte registrate, codice web/shared/API, schema e test. Rapporto completo in V2_PARITY_AUDIT.md.
+- Rilevate lacune: logger attività non richiamato, Dashboard su endpoint globale Admin e statistiche incomplete, UI risorse Project/Section parziale, sidebar senza Section, contratto API/schema divergente, includeDeleted assente e toolbar incompleta. Riaperti 10 task: il precedente 40/40 era un conteggio delle milestone, non piena conformità.
+- Documentati anche policy di visibilità/restricted da definire, asset/logo/driver locale, snapshot non atomici, import V1 non verificato e PDF citato soltanto nel tech stack.
+- V1 non presente nella workspace: richiesto riferimento al repository/percorso. Nessuna regressione V1 dichiarata senza prova; differenze approvate preservate.
+- Solo audit statico e documentazione; nessun test browser, migrazione, scrittura database o modifica applicativa.
+
 
 ### 2026-10-13 — Task 40 completato: protezione main
 

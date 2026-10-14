@@ -26,7 +26,10 @@ app.get('/health', async () => ({ status: 'ok', uptime: process.uptime() }))
 // ── Global error handler ─────────────────────────────────────────
 app.setErrorHandler((error, _request, reply) => {
   // Zod validation error
-  if (error instanceof ZodError) {
+  if (
+    error instanceof ZodError ||
+    (error && typeof error === 'object' && 'issues' in error && Array.isArray(error.issues))
+  ) {
     return reply.status(400).send({
       success: false,
       error: { code: 'VALIDATION_ERROR', message: 'Validation failed', details: error.issues },

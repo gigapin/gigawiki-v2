@@ -3,6 +3,7 @@ import { FastifyInstance } from 'fastify'
 
 import { generateUniqueSlug } from '../../lib/slugify.js'
 import { prisma } from '../../lib/prisma.js'
+import { auditedWrite } from '../../lib/activity.js'
 
 const SUBJECT_SELECT = {
   id: true,
@@ -23,6 +24,7 @@ const SUBJECT_SELECT = {
 type SubjectSlugParams = { slug: string }
 
 type FetchSubjectsQuery = {
+  includeDeleted?: string
   visibility?: 'PUBLIC' | 'PRIVATE'
   page?: string
   limit?: string
@@ -52,7 +54,8 @@ export async function fetchAllSubjects(fastify: FastifyInstance) {
     const skip = (parseInt(page) - 1) * parseInt(limit)
     const take = parseInt(limit)
 
-    const where: Record<string, unknown> = { deletedAt: null }
+    const where: Record<string, unknown> =
+      req.user?.role === 'ADMIN' && req.query.includeDeleted === 'true' ? {} : { deletedAt: null }
     if (visibility) where.visibility = visibility
 
     const [subjects, total] = await Promise.all([
@@ -127,10 +130,12 @@ export async function createSubject(fastify: FastifyInstance) {
       ),
     )
 
-    const subject = await prisma.subject.create({
-      data: { userId: req.user.id, name, slug, description, color, icon, visibility, imageId },
-      select: SUBJECT_SELECT,
-    })
+    const subject = await auditedWrite(req, 'SUBJECT', 'CREATED', (tx) =>
+      tx.subject.create({
+        data: { userId: req.user.id, name, slug, description, color, icon, visibility, imageId },
+        select: SUBJECT_SELECT,
+      }),
+    )
 
     return reply.status(201).send(subject)
   })
@@ -188,11 +193,13 @@ export async function updateSubject(fastify: FastifyInstance) {
       if (visibility !== undefined) data.visibility = visibility
       if (imageId !== undefined) data.imageId = imageId
 
-      const subject = await prisma.subject.update({
-        where: { id: existing.id },
-        data,
-        select: SUBJECT_SELECT,
-      })
+      const subject = await auditedWrite(req, 'SUBJECT', 'UPDATED', (tx) =>
+        tx.subject.update({
+          where: { id: existing.id },
+          data,
+          select: SUBJECT_SELECT,
+        }),
+      )
 
       return reply.status(200).send(subject)
     },
@@ -214,10 +221,12 @@ export async function deleteSubject(fastify: FastifyInstance) {
       return reply.status(404).send({ error: 'Subject not found' })
     }
 
-    await prisma.subject.update({
-      where: { id: existing.id },
-      data: { deletedAt: new Date() },
-    })
+    await auditedWrite(req, 'SUBJECT', 'DELETED', (tx) =>
+      tx.subject.update({
+        where: { id: existing.id },
+        data: { deletedAt: new Date() },
+      }),
+    )
 
     return reply.status(200).send({ message: 'Subject deleted successfully' })
   })

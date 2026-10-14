@@ -4,13 +4,17 @@ import type { Section } from '@shared/types/section'
 import { queryKeys } from './query-keys'
 import apiClient from './client'
 
-export type SectionWithCount = Section & { _count: { pages: number } }
+export type SectionWithCount = Section & {
+  tags?: { id: string; name: string; userId: string }[]
+  favorites?: { id: string }[]
+  _count: { pages: number }
+}
 export type SectionInput = { title: string; description: string; visibility: 'PUBLIC' | 'PRIVATE' }
 
-export function useSections(projectSlug: string) {
+export function useSections(projectSlug: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.sections(projectSlug),
-    enabled: Boolean(projectSlug),
+    enabled: Boolean(projectSlug) && enabled,
     queryFn: ({ signal }) =>
       apiClient
         .get<{

@@ -1,5 +1,7 @@
 import { FastifyInstance } from 'fastify'
 
+import { adminTransaction } from '../../lib/admin-transaction.js'
+import { recordActivity } from '../../lib/activity.js'
 import { prisma } from '../../lib/prisma.js'
 
 const COMMENT_SELECT = {
@@ -185,24 +187,35 @@ export async function createComment(fastify: FastifyInstance) {
       }
     }
 
-    const comment = await prisma.comment.create({
-      data: {
-        userId: req.user.id,
-        body,
-        pageId,
-        projectId,
-        sectionId,
-        parentId,
-      },
-      select: {
-        id: true,
-        body: true,
-        parentId: true,
-        createdAt: true,
-        updatedAt: true,
-        userId: true,
-        user: { select: { id: true, name: true, slug: true, avatar: { select: { url: true } } } },
-      },
+    const comment = await adminTransaction(async (tx) => {
+      const result = await tx.comment.create({
+        data: {
+          userId: req.user.id,
+          body,
+          pageId,
+          projectId,
+          sectionId,
+          parentId,
+        },
+        select: {
+          id: true,
+          body: true,
+          parentId: true,
+          createdAt: true,
+          updatedAt: true,
+          userId: true,
+          user: { select: { id: true, name: true, slug: true, avatar: { select: { url: true } } } },
+        },
+      })
+
+      await recordActivity(
+        tx,
+        req,
+        pageId ? 'PAGE' : projectId ? 'PROJECT' : 'SECTION',
+        (pageId ?? projectId ?? sectionId)!,
+        parentId ? 'REPLIED' : 'COMMENTED',
+      )
+      return result
     })
 
     return reply.status(201).send(comment)
@@ -219,7 +232,7 @@ export async function updateComment(fastify: FastifyInstance) {
 
       const existing = await prisma.comment.findFirst({
         where: { id },
-        select: { id: true, userId: true },
+        select: { id: true, userId: true, pageId: true, projectId: true, sectionId: true },
       })
 
       if (!existing) {
@@ -230,18 +243,32 @@ export async function updateComment(fastify: FastifyInstance) {
         return reply.status(403).send({ error: 'You can only edit your own comments' })
       }
 
-      const comment = await prisma.comment.update({
-        where: { id },
-        data: { body: req.body.body },
-        select: {
-          id: true,
-          body: true,
-          parentId: true,
-          createdAt: true,
-          updatedAt: true,
-          userId: true,
-          user: { select: { id: true, name: true, slug: true, avatar: { select: { url: true } } } },
-        },
+      const comment = await adminTransaction(async (tx) => {
+        const result = await tx.comment.update({
+          where: { id },
+          data: { body: req.body.body },
+          select: {
+            id: true,
+            body: true,
+            parentId: true,
+            createdAt: true,
+            updatedAt: true,
+            userId: true,
+            user: {
+              select: { id: true, name: true, slug: true, avatar: { select: { url: true } } },
+            },
+          },
+        })
+
+        await recordActivity(
+          tx,
+          req,
+          existing.pageId ? 'PAGE' : existing.projectId ? 'PROJECT' : 'SECTION',
+          (existing.pageId ?? existing.projectId ?? existing.sectionId)!,
+          'UPDATED',
+          'Updated a comment',
+        )
+        return result
       })
 
       return reply.status(200).send(comment)
@@ -255,7 +282,7 @@ export async function deleteComment(fastify: FastifyInstance) {
 
     const existing = await prisma.comment.findFirst({
       where: { id },
-      select: { id: true, userId: true },
+      select: { id: true, userId: true, pageId: true, projectId: true, sectionId: true },
     })
 
     if (!existing) {
@@ -269,7 +296,17 @@ export async function deleteComment(fastify: FastifyInstance) {
       return reply.status(403).send({ error: 'Forbidden' })
     }
 
-    await prisma.comment.delete({ where: { id } })
+    await adminTransaction(async (tx) => {
+      await tx.comment.delete({ where: { id } })
+      await recordActivity(
+        tx,
+        req,
+        existing.pageId ? 'PAGE' : existing.projectId ? 'PROJECT' : 'SECTION',
+        (existing.pageId ?? existing.projectId ?? existing.sectionId)!,
+        'DELETED',
+        'Deleted a comment',
+      )
+    })
 
     return reply.status(200).send({ message: 'Comment deleted successfully' })
   })

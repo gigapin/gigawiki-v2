@@ -20,7 +20,7 @@ COPY . .
 # working directory, and that config supplies the schema path and datasource.
 RUN cd apps/api && pnpm exec prisma generate
 
-RUN pnpm --filter gigawiki-v2-api build
+RUN pnpm --filter shared build && pnpm --filter gigawiki-v2-api build
 
 # Collect a self-contained, production-only tree. This drops every devDependency
 # (typescript, vitest, the prisma CLI, esbuild) and flattens pnpm's symlinked

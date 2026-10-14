@@ -1,5 +1,7 @@
 import { useState } from 'react'
 
+import { useCover } from '@/lib/use-cover'
+import { CoverField } from '@/components/shared/CoverField'
 import { useSettings, useUpdateSetting, type EditableSettingKey } from '@/api/settings'
 import { useAuthStore } from '@/stores/auth.store'
 import { apiErrorMessage } from '@/lib/api-error'
@@ -92,6 +94,36 @@ function SettingField({
     </form>
   )
 }
+function LogoField({ imageId, url }: { imageId?: string; url?: string }) {
+  const cover = useCover(imageId && url ? { id: imageId, url } : undefined, imageId)
+  const mutation = useUpdateSetting()
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+  return (
+    <form
+      className="space-y-3 rounded border p-4"
+      onSubmit={async (event) => {
+        event.preventDefault()
+        if (saving) return
+        setSaving(true)
+        setError('')
+        try {
+          const id = await cover.resolveImageId()
+          await mutation.mutateAsync({ key: 'SITE_LOGO_IMAGE_ID', value: id ?? '' })
+        } catch (error) {
+          setError(apiErrorMessage(error))
+        } finally {
+          setSaving(false)
+        }
+      }}
+    >
+      <h2>Site logo</h2>
+      <CoverField cover={cover} disabled={saving} label="Logo image" />
+      <Button disabled={saving}>Save logo</Button>
+      {error && <p role="alert">{error}</p>}
+    </form>
+  )
+}
 export function AppSettingsPage() {
   const query = useSettings()
   const isAdmin = useAuthStore((s) => s.user?.role === 'ADMIN')
@@ -104,6 +136,7 @@ export function AppSettingsPage() {
         <CardTitle>App Settings</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <LogoField imageId={query.data.SITE_LOGO_IMAGE_ID} url={query.data.SITE_LOGO_URL} />
         <SettingField
           settingKey="ALLOW_SELF_REGISTRATION"
           label="Self registration"

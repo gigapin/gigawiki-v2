@@ -14,6 +14,8 @@ import {
 
 vi.mock('../../lib/prisma.js', () => ({
   prisma: {
+    $transaction: vi.fn(),
+    activity: { create: vi.fn().mockResolvedValue({ id: 'activity' }) },
     subject: {
       findMany: vi.fn(),
       findFirst: vi.fn(),
@@ -49,6 +51,10 @@ function buildAuthApp(role: string = 'ADMIN', userId: string = 'user-1') {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.mocked(prisma.$transaction).mockImplementation(async (work) => {
+    if (typeof work !== 'function') return Promise.all(work)
+    return work(prisma)
+  })
   // slug helper looks up the candidate slug; free unless a test says otherwise
   mockSubject.findUnique.mockResolvedValue(null)
 })

@@ -19,7 +19,12 @@ function SearchDialog({ onClose }: Omit<Props, 'open'>) {
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const searchQuery = useSearch(debouncedQuery)
   const results = useMemo(
-    () => (query.trim() === debouncedQuery.trim() ? (searchQuery.data?.results ?? []) : []),
+    () =>
+      query.trim() === debouncedQuery.trim()
+        ? [...(searchQuery.data?.results ?? [])].sort((a, b) =>
+            (a.projectName ?? '').localeCompare(b.projectName ?? ''),
+          )
+        : [],
     [query, debouncedQuery, searchQuery.data],
   )
   const [focusedIndex, setFocusedIndex] = useState(0)
@@ -156,66 +161,73 @@ function SearchDialog({ onClose }: Omit<Props, 'open'>) {
         {results.length > 0 && (
           <div style={{ maxHeight: 380, overflowY: 'auto', padding: '6px 6px' }}>
             {results.map((r, i) => (
-              <div
-                key={r.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => {
-                  onClose()
-                  void navigate({ to: '/pages/$slug', params: { slug: r.slug } })
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  padding: '10px 12px',
-                  borderRadius: 8,
-                  cursor: 'pointer',
-                  background: i === focusedIndex ? 'var(--db-bg-2)' : 'transparent',
-                }}
-                onMouseEnter={() => setFocusedIndex(i)}
-              >
-                <span
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: 7,
-                    flexShrink: 0,
-                    display: 'grid',
-                    placeItems: 'center',
-                    background: 'var(--db-em-soft)',
-                    color: 'var(--db-em-deep)',
+              <div key={r.id}>
+                {(i === 0 || results[i - 1].projectId !== r.projectId) && (
+                  <h3 className="px-3 py-2 text-xs font-semibold text-muted-foreground">
+                    {r.projectName ?? 'Project'}
+                  </h3>
+                )}
+                <div
+                  key={r.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    onClose()
+                    void navigate({ to: '/pages/$slug', params: { slug: r.slug } })
                   }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    background: i === focusedIndex ? 'var(--db-bg-2)' : 'transparent',
+                  }}
+                  onMouseEnter={() => setFocusedIndex(i)}
                 >
-                  <Icon name="doc" size={13} />
-                </span>
-                <div style={{ minWidth: 0 }}>
-                  <div
+                  <span
                     style={{
-                      fontSize: 13.5,
-                      color: 'var(--db-ink)',
-                      fontWeight: 500,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
+                      width: 28,
+                      height: 28,
+                      borderRadius: 7,
+                      flexShrink: 0,
+                      display: 'grid',
+                      placeItems: 'center',
+                      background: 'var(--db-em-soft)',
+                      color: 'var(--db-em-deep)',
                     }}
                   >
-                    {r.title}
+                    <Icon name="doc" size={13} />
+                  </span>
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: 13.5,
+                        color: 'var(--db-ink)',
+                        fontWeight: 500,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {r.title}
+                    </div>
                   </div>
+                  <span
+                    style={{
+                      marginLeft: 'auto',
+                      fontSize: 11,
+                      color: 'var(--db-muted-2)',
+                      fontFamily: 'var(--font-mono)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      flexShrink: 0,
+                    }}
+                  >
+                    page
+                  </span>
                 </div>
-                <span
-                  style={{
-                    marginLeft: 'auto',
-                    fontSize: 11,
-                    color: 'var(--db-muted-2)',
-                    fontFamily: 'var(--font-mono)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    flexShrink: 0,
-                  }}
-                >
-                  page
-                </span>
               </div>
             ))}
           </div>

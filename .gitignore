@@ -39,3 +39,6 @@ lerna-debug.log*
 # Local reference files intentionally excluded from version control
 GIGAWIKI_V2_TASKS.md
 GIGAWIKI_V2_TECH_STACK.md
+
+# Local storage assets
+data/uploads/

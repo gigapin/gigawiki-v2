@@ -138,6 +138,7 @@ export function useCommentMutation(resource: CommentResource) {
         }),
         client.invalidateQueries({ queryKey: queryKeys.root('activities') }),
         client.invalidateQueries({ queryKey: queryKeys.root('activities-count') }),
+        client.invalidateQueries({ queryKey: queryKeys.root('personal-activities') }),
       ])
     },
   })

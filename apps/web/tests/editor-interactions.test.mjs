@@ -328,3 +328,36 @@ it.each([
       expect(row.cells).toHaveLength(3)
   },
 )
+
+it.each([
+  ['Heading 1', 'h1'],
+  ['Heading 4', 'h4'],
+])('applies %s and returns to a paragraph', async (label, tag) => {
+  const { editor } = await mount()
+  const toolbar = within(screen.getByRole('toolbar', { name: 'Text formatting' }))
+  await userEvent.click(toolbar.getByRole('button', { name: label }))
+  expect(editor.getHTML()).toContain(`<${tag}>Welcome</${tag}>`)
+  await userEvent.click(toolbar.getByRole('button', { name: 'Paragraph' }))
+  expect(editor.getHTML()).toContain('<p>Welcome</p>')
+  expect(editor.getHTML()).not.toContain(`<${tag}>`)
+})
+it.each([
+  ['Strikethrough', 's'],
+  ['Inline code', 'code'],
+])('applies %s to a selection', async (label, tag) => {
+  const { editor } = await mount()
+  act(() => editor.commands.setTextSelection({ from: 1, to: 8 }))
+  const toolbar = within(screen.getByRole('toolbar', { name: 'Text formatting' }))
+  await userEvent.click(toolbar.getByRole('button', { name: label }))
+  expect(editor.getHTML()).toContain(`<${tag}>Welcome</${tag}>`)
+})
+it('inserts a horizontal rule without losing existing text', async () => {
+  const { editor } = await mount()
+  await userEvent.click(
+    within(screen.getByRole('toolbar', { name: 'Text formatting' })).getByRole('button', {
+      name: 'Horizontal rule',
+    }),
+  )
+  expect(editor.getHTML()).toContain('<hr>')
+  expect(editor.getText()).toContain('Welcome')
+})

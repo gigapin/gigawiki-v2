@@ -16,6 +16,8 @@ import {
 
 vi.mock('../../lib/prisma.js', () => ({
   prisma: {
+    $transaction: vi.fn(),
+    activity: { create: vi.fn().mockResolvedValue({ id: 'activity' }) },
     section: { findFirst: vi.fn() },
     page: {
       findFirst: vi.fn(),
@@ -39,6 +41,11 @@ const mockQueryRaw = vi.mocked(prisma.$queryRaw)
 
 function buildPublicApp() {
   const app = Fastify()
+  app.setErrorHandler((error, _req, reply) =>
+    reply
+      .code((error as { statusCode?: number }).statusCode ?? 500)
+      .send({ error: (error as Error).message }),
+  )
   app.register(fetchPagesBySection)
   app.register(fetchPage)
   return app
@@ -46,6 +53,11 @@ function buildPublicApp() {
 
 function buildAuthApp(role: string = 'ADMIN', userId: string = 'user-1') {
   const app = Fastify()
+  app.setErrorHandler((error, _req, reply) =>
+    reply
+      .code((error as { statusCode?: number }).statusCode ?? 500)
+      .send({ error: (error as Error).message }),
+  )
   app.decorateRequest('user', null as unknown as { id: string; email: string; role: string })
   app.addHook('preHandler', (req, _reply, done) => {
     req.user = { id: userId, email: 'test@example.com', role }
@@ -61,6 +73,10 @@ function buildAuthApp(role: string = 'ADMIN', userId: string = 'user-1') {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.mocked(prisma.$transaction).mockImplementation(async (work) => {
+    if (typeof work !== 'function') return Promise.all(work)
+    return work(prisma)
+  })
   // slug helper looks up the candidate slug; free unless a test says otherwise
   mockPage.findUnique.mockResolvedValue(null)
 })
@@ -160,6 +176,11 @@ describe('GET /pages/:slug', () => {
   it('returns only the requester favorite state without exposing favorite records', async () => {
     mockPage.findFirst.mockResolvedValue({ ...fakePage, favorites: [{ id: 'fav' }] } as never)
     const app = Fastify()
+    app.setErrorHandler((error, _req, reply) =>
+      reply
+        .code((error as { statusCode?: number }).statusCode ?? 500)
+        .send({ error: (error as Error).message }),
+    )
     app.decorateRequest('user', null as never)
     app.addHook('preHandler', (req, _reply, done) => {
       req.user = { id: 'reader', email: 'reader@example.com', role: 'GUEST' }
@@ -613,7 +634,7 @@ describe('Page editor save contract', () => {
     })
     expect(res.statusCode).toBe(200)
     const data = mockPage.update.mock.calls[0][0].data
-    expect(data).not.toHaveProperty('slug')
+    expect(data.slug).toBe('introduction-2')
     expect(data).toMatchObject({
       isDraft: false,
       publishedAt: expect.any(Date),
@@ -651,6 +672,11 @@ it('tracks the selected section for the authenticated account before returning i
   mockPage.count.mockResolvedValue(0)
   vi.mocked(prisma.view.upsert).mockResolvedValue({} as never)
   const app = Fastify()
+  app.setErrorHandler((error, _req, reply) =>
+    reply
+      .code((error as { statusCode?: number }).statusCode ?? 500)
+      .send({ error: (error as Error).message }),
+  )
   app.decorateRequest('user', null as never)
   app.addHook('preHandler', (req, _reply, done) => {
     req.user = { id: 'guest', role: 'GUEST', email: 'guest@example.com' }

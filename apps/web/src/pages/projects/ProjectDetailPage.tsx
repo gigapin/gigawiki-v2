@@ -17,6 +17,8 @@ import { toast } from 'sonner'
 import { useDeleteProject, useProject } from '@/api/projects'
 import { usePages } from '@/api/pages'
 import { useSectionMutations, useSections, type SectionWithCount } from '@/api/sections'
+import { ResourceMetadata } from '@/components/shared/ResourceMetadata'
+import { CommentSection } from '@/components/comments/CommentSection'
 import { ProjectFormDialog } from '@/components/projects/ProjectFormDialog'
 import { SectionFormDialog } from '@/components/projects/SectionFormDialog'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
@@ -60,7 +62,9 @@ export function ProjectDetail({ slug, sectionSlug }: { slug: string; sectionSlug
   const pagesQuery = usePages(activeSection?.slug, page, PAGE_SIZE)
   const project = projectQuery.data
   const canCreate = user?.role === 'ADMIN' || user?.role === 'EDITOR'
-  const canManage = Boolean(project && (user?.role === 'ADMIN' || user?.id === project.userId))
+  const canManage = Boolean(
+    canCreate && project && (user?.role === 'ADMIN' || user?.id === project.userId),
+  )
   const isAdmin = user?.role === 'ADMIN'
   const deletion = useDeleteProject(slug, {
     onSuccess: async () => {
@@ -77,7 +81,7 @@ export function ProjectDetail({ slug, sectionSlug }: { slug: string; sectionSlug
       void navigate({ to: '/projects/$slug', params: { slug }, search: { section: section.slug } })
   }
   async function move(id: string, targetId: string) {
-    if (!canCreate || reorder.isPending) return
+    if (!canManage || reorder.isPending) return
     const ordered = moveSection(sections, id, targetId)
     if (!ordered) return
     try {
@@ -171,6 +175,26 @@ export function ProjectDetail({ slug, sectionSlug }: { slug: string; sectionSlug
           </div>
         </div>
       </header>
+      <ResourceMetadata
+        resource={{ type: 'projects', id: project.id, slug }}
+        tags={project.tags}
+        favorited={Boolean(project._count?.favorites)}
+      />
+      <CommentSection key={project.id} resource={{ type: 'projects', id: project.id, slug }} />
+      {activeSection && (
+        <div className="space-y-4">
+          <ResourceMetadata
+            key={`meta-${activeSection.id}`}
+            resource={{ type: 'sections', id: activeSection.id, slug: activeSection.slug }}
+            tags={activeSection.tags}
+            favorited={Boolean(activeSection.favorites?.length)}
+          />
+          <CommentSection
+            key={activeSection.id}
+            resource={{ type: 'sections', id: activeSection.id, slug: activeSection.slug }}
+          />
+        </div>
+      )}
 
       <div className="grid items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
         <Card>
@@ -203,7 +227,7 @@ export function ProjectDetail({ slug, sectionSlug }: { slug: string; sectionSlug
                   <li
                     key={section.id}
                     onDragOver={(event) => {
-                      if (draggedId && canCreate && !reorder.isPending) event.preventDefault()
+                      if (draggedId && canManage && !reorder.isPending) event.preventDefault()
                     }}
                     onDrop={(event) => {
                       event.preventDefault()
@@ -215,7 +239,7 @@ export function ProjectDetail({ slug, sectionSlug }: { slug: string; sectionSlug
                     }
                   >
                     <div className="flex items-center gap-1">
-                      {canCreate && (
+                      {canManage && (
                         <button
                           type="button"
                           disabled={reorder.isPending}
@@ -244,7 +268,7 @@ export function ProjectDetail({ slug, sectionSlug }: { slug: string; sectionSlug
                         </span>
                       </button>
                     </div>
-                    {canCreate && (
+                    {canManage && (
                       <div className="flex justify-end gap-1 px-2 pb-1">
                         <Button
                           variant="ghost"

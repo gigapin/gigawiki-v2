@@ -81,3 +81,31 @@ it('distinguishes failed searches from empty results and permits retry', async (
   await screen.findByText('Guide')
   await waitFor(() => expect(screen.queryByRole('alert')).toBeNull())
 })
+it('groups results by project and preserves keyboard navigation', async () => {
+  vi.useFakeTimers()
+  apiClient.get.mockResolvedValue({
+    data: {
+      results: [
+        { id: 'z', title: 'Zulu page', slug: 'zulu', projectId: 'z', projectName: 'Zulu project' },
+        {
+          id: 'a',
+          title: 'Alpha page',
+          slug: 'alpha',
+          projectId: 'a',
+          projectName: 'Alpha project',
+        },
+      ],
+    },
+  })
+  const { input } = mount()
+  fireEvent.change(input, { target: { value: 'page' } })
+  await tick(300)
+  await tick(1)
+  expect(screen.getAllByRole('heading').map((item) => item.textContent)).toEqual([
+    'Alpha project',
+    'Zulu project',
+  ])
+  fireEvent.keyDown(document, { key: 'ArrowDown' })
+  fireEvent.keyDown(document, { key: 'Enter' })
+  expect(navigate).toHaveBeenCalledWith({ to: '/pages/$slug', params: { slug: 'zulu' } })
+})

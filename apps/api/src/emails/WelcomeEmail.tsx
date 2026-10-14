@@ -16,15 +16,17 @@ const btn = {
 
 export function WelcomeEmail({
   siteName = 'GiGaWiki',
+  logoUrl,
   name,
   loginUrl,
 }: {
   siteName?: string
+  logoUrl?: string
   name: string
   loginUrl: string
 }) {
   return (
-    <BaseLayout siteName={siteName}>
+    <BaseLayout siteName={siteName} logoUrl={logoUrl}>
       <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginTop: 0 }}>
         Welcome to {siteName}, {name}!
       </h1>

@@ -61,14 +61,14 @@ afterEach(() => {
   client?.clear()
   vi.useRealTimers()
 })
-function mount(slug = 'title') {
+function mount(slug = 'title', initialValues = initial) {
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
     createElement(
       QueryClientProvider,
       { client },
       createElement(PageForm, {
-        initial,
+        initial: initialValues,
         slug,
         context: {
           projectSlug: 'project',
@@ -228,4 +228,26 @@ it('retains changes after a failed manual draft save and allows retry', async ()
     { slug: 'title' },
   )
   expect(screen.queryByRole('alert')).toBeNull()
+})
+
+it('sends the loaded revision and advances it after a successful save', async () => {
+  savePage.mockResolvedValue({ slug: 'title', title: 'Title', isDraft: false, currentRevision: 4 })
+  mount('title', { ...initial, expectedRevision: 3 })
+  change()
+  await tick(30000)
+  expect(savePage.mock.calls[0][0].expectedRevision).toBe(3)
+  change('<p>Next</p>')
+  await tick(30000)
+  expect(savePage.mock.calls[1][0].expectedRevision).toBe(4)
+})
+it('keeps the draft and its expected revision after a conflict', async () => {
+  savePage.mockRejectedValue(new Error('Conflict'))
+  mount('title', { ...initial, expectedRevision: 3 })
+  change('<p>Local draft</p>')
+  fireEvent.click(screen.getByRole('button', { name: 'Save draft' }))
+  await tick(1)
+  expect(screen.getByLabelText('Content').value).toBe('<p>Local draft</p>')
+  expect(screen.getByRole('status').textContent).toContain('Unsaved changes')
+  expect(savePage.mock.calls[0][0].expectedRevision).toBe(3)
+  expect(session.navigate).not.toHaveBeenCalled()
 })

@@ -72,10 +72,10 @@ it('lets guests browse pages without exposing mutation controls', () => {
   expect(html).not.toContain('Delete section')
 })
 
-it('allows editors to create and reorder but reserves editing for the owner', () => {
+it('allows editors to create but reserves reordering and editing for the owner', () => {
   const html = render('EDITOR')
   expect(html).toContain('New section')
-  expect(html).toContain('Move Introduction up')
+  expect(html).not.toContain('Move Introduction up')
   expect(html).not.toContain('Edit project')
   expect(html).not.toContain('Edit section')
   expect(html).not.toContain('Delete project')
@@ -85,6 +85,7 @@ it('allows owners to edit but reserves deletion for admins', () => {
   const html = render('EDITOR', true)
   expect(html).toContain('Edit project')
   expect(html).toContain('Edit section')
+  expect(html).toContain('Move Introduction up')
   expect(html).not.toContain('Delete project')
 })
 

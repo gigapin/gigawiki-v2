@@ -1,15 +1,13 @@
 export interface PaginationMeta {
   page: number
-  perPage: number
+  limit: number
   total: number
-  totalPages: number
 }
 
-export interface PaginatedResponse<T> {
-  data: T[]
-  meta: PaginationMeta
+export type PaginatedResponse<T, Key extends string = 'data'> = PaginationMeta & Record<Key, T[]>
+export interface ApiErrorResponse {
+  error: string
+  code: string
+  details?: unknown
 }
-
-export type ApiResponse<T> =
-  | { success: true; data: T }
-  | { success: false; error: { code: string; message: string; details?: unknown } }
+export type ApiResponse<T> = T | ApiErrorResponse

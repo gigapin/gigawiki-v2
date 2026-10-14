@@ -7,6 +7,7 @@ import { fetchRevisions, fetchRevision, restoreRevision } from './revisionsRoute
 
 vi.mock('../../lib/prisma.js', () => ({
   prisma: {
+    activity: { create: vi.fn().mockResolvedValue({ id: 'activity' }) },
     page: { findFirst: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
     $transaction: vi.fn(),
     revision: { findMany: vi.fn(), findFirst: vi.fn(), count: vi.fn(), create: vi.fn() },
@@ -18,6 +19,11 @@ const mockRevision = vi.mocked(prisma.revision)
 
 function buildPublicApp(role = 'EDITOR') {
   const app = Fastify()
+  app.setErrorHandler((error, _req, reply) =>
+    reply
+      .code((error as { statusCode?: number }).statusCode ?? 500)
+      .send({ error: (error as Error).message }),
+  )
   app.decorateRequest('user', null as never)
   app.addHook('preHandler', (req, _reply, done) => {
     req.user = { id: 'reader', email: 'reader@example.com', role }
@@ -30,6 +36,11 @@ function buildPublicApp(role = 'EDITOR') {
 
 function buildAuthApp(role: string = 'ADMIN', userId: string = 'user-1') {
   const app = Fastify()
+  app.setErrorHandler((error, _req, reply) =>
+    reply
+      .code((error as { statusCode?: number }).statusCode ?? 500)
+      .send({ error: (error as Error).message }),
+  )
   app.decorateRequest('user', null as unknown as { id: string; email: string; role: string })
   app.addHook('preHandler', (req, _reply, done) => {
     req.user = { id: userId, email: 'test@example.com', role }
@@ -41,6 +52,10 @@ function buildAuthApp(role: string = 'ADMIN', userId: string = 'user-1') {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.mocked(prisma.$transaction).mockImplementation(async (work) => {
+    if (typeof work !== 'function') return Promise.all(work)
+    return work(prisma)
+  })
   mockPage.findUnique.mockReset().mockResolvedValue(null)
   vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
     if (typeof callback !== 'function') throw new Error('Expected interactive transaction')

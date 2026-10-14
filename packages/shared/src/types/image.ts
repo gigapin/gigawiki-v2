@@ -4,6 +4,7 @@ export interface Image {
   id: string
   name: string
   url: string
+  storageDriver?: 's3' | 'local'
   path: string
   type: ImageType
   createdById: string

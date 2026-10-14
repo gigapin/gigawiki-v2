@@ -16,15 +16,17 @@ const btn = {
 
 export function ResetPasswordEmail({
   siteName = 'GiGaWiki',
+  logoUrl,
   name,
   resetUrl,
 }: {
   siteName?: string
+  logoUrl?: string
   name: string
   resetUrl: string
 }) {
   return (
-    <BaseLayout siteName={siteName}>
+    <BaseLayout siteName={siteName} logoUrl={logoUrl}>
       <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginTop: 0 }}>Reset your password</h1>
       <p>
         Hi {name}, we received a request to reset your {siteName} password.

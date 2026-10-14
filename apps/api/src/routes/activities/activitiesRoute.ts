@@ -42,6 +42,7 @@ export async function fetchActivities(fastify: FastifyInstance) {
       prisma.activity.findMany({
         where,
         include: {
+          subject: { select: { name: true } },
           user: { select: { id: true, name: true } },
           page: { select: { title: true } },
           project: { select: { name: true } },
@@ -81,6 +82,8 @@ export async function fetchUserActivities(fastify: FastifyInstance) {
         prisma.activity.findMany({
           where,
           include: {
+            user: { select: { id: true, name: true } },
+            subject: { select: { name: true } },
             page: { select: { title: true } },
             project: { select: { name: true } },
             section: { select: { title: true } },

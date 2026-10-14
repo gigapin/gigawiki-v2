@@ -10,7 +10,12 @@ import { ProjectFormDialog } from '../src/components/projects/ProjectFormDialog'
 import apiClient from '../src/api/client'
 const fixture = vi.hoisted(() => ({ user: { id: 'owner', role: 'EDITOR' }, navigate: vi.fn() }))
 vi.mock('../src/api/client', () => ({
-  default: { post: vi.fn(), patch: vi.fn(), delete: vi.fn() },
+  default: {
+    get: vi.fn(async () => ({ data: { subjects: [{ id: 's', name: 'Subject' }], total: 1 } })),
+    post: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
+  },
 }))
 vi.mock('../src/stores/auth.store', () => ({ useAuthStore: (selector) => selector(fixture) }))
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => fixture.navigate }))
@@ -164,4 +169,28 @@ it('confirms Subject deletion, handles failure and navigates after retry', async
   await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }))
   await waitFor(() => expect(fixture.navigate).toHaveBeenCalledWith({ to: '/subjects' }))
   expect(apiClient.delete).toHaveBeenLastCalledWith('/api/v2/subjects/subject')
+})
+
+it('moves an owned project to the selected Subject', async () => {
+  apiClient.get.mockResolvedValue({
+    data: {
+      subjects: [
+        { id: 's', name: 'Original subject' },
+        { id: 'destination', name: 'Destination' },
+      ],
+      total: 2,
+    },
+  })
+  const { onSaved } = mount(ProjectFormDialog, {
+    project: { ...subject, subjectId: 's' },
+    subjectId: 's',
+  })
+  await screen.findByRole('option', { name: 'Destination' })
+  await userEvent.selectOptions(screen.getByLabelText('Subject'), 'destination')
+  await userEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+  await waitFor(() => expect(onSaved).toHaveBeenCalled())
+  expect(apiClient.patch).toHaveBeenCalledWith(
+    '/api/v2/projects/subject',
+    expect.objectContaining({ subjectId: 'destination' }),
+  )
 })

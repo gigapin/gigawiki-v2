@@ -1,7 +1,9 @@
 import { FastifyInstance } from 'fastify'
 
-import { generateSlug, generateUniqueSlug } from '../../lib/slugify.js'
+import { generateUniqueSlug } from '../../lib/slugify.js'
 import { prisma } from '../../lib/prisma.js'
+import { adminTransaction } from '../../lib/admin-transaction.js'
+import { recordActivity, auditedWrite } from '../../lib/activity.js'
 
 const SECTION_SELECT = {
   id: true,
@@ -53,7 +55,11 @@ export async function fetchSectionsByProject(fastify: FastifyInstance) {
 
       const sections = await prisma.section.findMany({
         where: { projectId: project.id, deletedAt: null },
-        include: { _count: { select: { pages: { where: { deletedAt: null } } } } },
+        include: {
+          tags: true,
+          favorites: { where: { userId: req.user?.id ?? '' }, select: { id: true } },
+          _count: { select: { pages: { where: { deletedAt: null } } } },
+        },
         orderBy: { position: 'asc' },
       })
 
@@ -106,10 +112,12 @@ export async function createSection(fastify: FastifyInstance) {
     })
     const position = (aggregate._max.position ?? -1) + 1
 
-    const section = await prisma.section.create({
-      data: { projectId, title, slug, description, visibility, position },
-      select: SECTION_SELECT,
-    })
+    const section = await auditedWrite(req, 'SECTION', 'CREATED', (tx) =>
+      tx.section.create({
+        data: { projectId, title, slug, description, visibility, position },
+        select: SECTION_SELECT,
+      }),
+    )
 
     return reply.status(201).send(section)
   })
@@ -144,16 +152,24 @@ export async function updateSection(fastify: FastifyInstance) {
       const data: Record<string, unknown> = {}
       if (title !== undefined) {
         data.title = title
-        data.slug = generateSlug(title)
+        data.slug = await generateUniqueSlug(title, async (candidate) => {
+          const match = await prisma.section.findUnique({
+            where: { slug: candidate },
+            select: { id: true },
+          })
+          return Boolean(match && match.id !== existing.id)
+        })
       }
       if (description !== undefined) data.description = description
       if (visibility !== undefined) data.visibility = visibility
 
-      const section = await prisma.section.update({
-        where: { id: existing.id },
-        data,
-        select: SECTION_SELECT,
-      })
+      const section = await auditedWrite(req, 'SECTION', 'UPDATED', (tx) =>
+        tx.section.update({
+          where: { id: existing.id },
+          data,
+          select: SECTION_SELECT,
+        }),
+      )
 
       return reply.status(200).send(section)
     },
@@ -170,11 +186,39 @@ export async function reorderSections(fastify: FastifyInstance) {
 
       const { positions } = req.body
 
-      await prisma.$transaction(
-        positions.map(({ id, position }) =>
-          prisma.section.update({ where: { id }, data: { position } }),
-        ),
+      if (
+        !Array.isArray(positions) ||
+        !positions.length ||
+        positions.some(
+          (item) => !item.id || !Number.isSafeInteger(item.position) || item.position < 0,
+        ) ||
+        new Set(positions.map((item) => item.id)).size !== positions.length
       )
+        return reply.status(400).send({ error: 'Invalid positions' })
+      const target = await prisma.section.findFirst({
+        where: { slug: req.params.slug, deletedAt: null },
+        include: { project: true },
+      })
+      if (!target) return reply.status(404).send({ error: 'Section not found' })
+      if (req.user.role !== 'ADMIN' && target.project.userId !== req.user.id)
+        return reply.status(403).send({ error: 'Forbidden' })
+      const found = await prisma.section.count({
+        where: {
+          id: { in: positions.map((item) => item.id) },
+          projectId: target.projectId,
+          deletedAt: null,
+        },
+      })
+      if (found !== positions.length)
+        return reply
+          .status(400)
+          .send({ error: 'Sections must belong to the same accessible project' })
+      await adminTransaction(async (tx) => {
+        for (const { id, position } of positions) {
+          await tx.section.update({ where: { id }, data: { position } })
+          await recordActivity(tx, req, 'SECTION', id, 'UPDATED', 'Changed section order')
+        }
+      })
 
       return reply.status(200).send({ message: 'Positions updated' })
     },
@@ -196,10 +240,12 @@ export async function deleteSection(fastify: FastifyInstance) {
       return reply.status(404).send({ error: 'Section not found' })
     }
 
-    await prisma.section.update({
-      where: { id: existing.id },
-      data: { deletedAt: new Date() },
-    })
+    await auditedWrite(req, 'SECTION', 'DELETED', (tx) =>
+      tx.section.update({
+        where: { id: existing.id },
+        data: { deletedAt: new Date() },
+      }),
+    )
 
     return reply.status(200).send({ message: 'Section deleted successfully' })
   })

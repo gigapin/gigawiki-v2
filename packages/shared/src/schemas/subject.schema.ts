@@ -1,7 +1,9 @@
 import { z } from 'zod'
 
+import { BooleanQuery } from './request.schema.js'
+
 export const CreateSubjectSchema = z.object({
-  name: z.string().min(1).max(100),
+  name: z.string().trim().min(1).max(100),
   description: z.string().optional(),
   color: z.string().optional(),
   icon: z.string().optional(),
@@ -10,7 +12,7 @@ export const CreateSubjectSchema = z.object({
 })
 
 export const UpdateSubjectSchema = z.object({
-  name: z.string().min(1).max(100).optional(),
+  name: z.string().trim().min(1).max(100).optional(),
   description: z.string().optional(),
   color: z.string().optional(),
   icon: z.string().optional(),
@@ -20,9 +22,9 @@ export const UpdateSubjectSchema = z.object({
 
 export const SubjectQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
-  perPage: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
   visibility: z.enum(['PUBLIC', 'PRIVATE']).optional(),
-  includeDeleted: z.coerce.boolean().default(false),
+  includeDeleted: BooleanQuery.default(false),
 })
 
 export type CreateSubjectDto = z.infer<typeof CreateSubjectSchema>

@@ -7,3 +7,5 @@ export * from './page.schema.js'
 export * from './comment.schema.js'
 export * from './tag.schema.js'
 export * from './pagination.schema.js'
+
+export * from './request.schema.js'

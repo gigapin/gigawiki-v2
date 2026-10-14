@@ -3,6 +3,7 @@ import { FastifyInstance } from 'fastify'
 
 import { generateUniqueSlug } from '../../lib/slugify.js'
 import { prisma } from '../../lib/prisma.js'
+import { auditedWrite } from '../../lib/activity.js'
 
 const PROJECT_SELECT = {
   id: true,
@@ -21,7 +22,7 @@ const PROJECT_SELECT = {
 
 type ProjectSlugParams = { slug: string }
 type SubjectProjectsParams = { subjectSlug: string }
-type SubjectProjectsQuery = { page?: string; limit?: string }
+type SubjectProjectsQuery = { page?: string; limit?: string; includeDeleted?: string }
 type ActivityQuery = { page?: string; limit?: string }
 
 type CreateProjectBody = {
@@ -33,6 +34,7 @@ type CreateProjectBody = {
 }
 
 type PatchProjectBody = {
+  subjectId?: string
   name?: string
   description?: string
   visibility?: 'PUBLIC' | 'PRIVATE'
@@ -49,7 +51,12 @@ export async function fetchProjectsBySubject(fastify: FastifyInstance) {
       const take = parseInt(limit)
 
       const subject = await prisma.subject.findFirst({
-        where: { slug: subjectSlug, deletedAt: null },
+        where: {
+          slug: subjectSlug,
+          ...(req.user?.role === 'ADMIN' && req.query.includeDeleted === 'true'
+            ? {}
+            : { deletedAt: null }),
+        },
         select: { id: true },
       })
 
@@ -57,7 +64,12 @@ export async function fetchProjectsBySubject(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Subject not found' })
       }
 
-      const where = { subjectId: subject.id, deletedAt: null }
+      const where = {
+        subjectId: subject.id,
+        ...(req.user?.role === 'ADMIN' && req.query.includeDeleted === 'true'
+          ? {}
+          : { deletedAt: null }),
+      }
 
       const [projects, total] = await Promise.all([
         prisma.project.findMany({
@@ -142,10 +154,12 @@ export async function createProject(fastify: FastifyInstance) {
       ),
     )
 
-    const project = await prisma.project.create({
-      data: { userId: req.user.id, subjectId, name, slug, description, visibility, imageId },
-      select: PROJECT_SELECT,
-    })
+    const project = await auditedWrite(req, 'PROJECT', 'CREATED', (tx) =>
+      tx.project.create({
+        data: { userId: req.user.id, subjectId, name, slug, description, visibility, imageId },
+        select: PROJECT_SELECT,
+      }),
+    )
 
     return reply.status(201).send(project)
   })
@@ -158,6 +172,7 @@ export async function updateProject(fastify: FastifyInstance) {
       const { slug } = req.params
       const parsed = z
         .object({
+          subjectId: z.string().min(1).optional(),
           name: z.string().trim().min(1).max(100).optional(),
           description: z.string().optional(),
           visibility: z.enum(['PUBLIC', 'PRIVATE']).optional(),
@@ -165,7 +180,7 @@ export async function updateProject(fastify: FastifyInstance) {
         })
         .safeParse(req.body)
       if (!parsed.success) return reply.status(400).send({ error: 'Invalid project fields' })
-      const { name, description, visibility, imageId } = parsed.data
+      const { name, description, visibility, imageId, subjectId } = parsed.data
 
       const existing = await prisma.project.findFirst({
         where: { slug, deletedAt: null },
@@ -198,12 +213,19 @@ export async function updateProject(fastify: FastifyInstance) {
       if (description !== undefined) data.description = description
       if (visibility !== undefined) data.visibility = visibility
       if (imageId !== undefined) data.imageId = imageId
+      if (subjectId !== undefined) {
+        if (!(await prisma.subject.findFirst({ where: { id: subjectId, deletedAt: null } })))
+          return reply.status(404).send({ error: 'Subject not found' })
+        data.subjectId = subjectId
+      }
 
-      const project = await prisma.project.update({
-        where: { id: existing.id },
-        data,
-        select: PROJECT_SELECT,
-      })
+      const project = await auditedWrite(req, 'PROJECT', 'UPDATED', (tx) =>
+        tx.project.update({
+          where: { id: existing.id },
+          data,
+          select: PROJECT_SELECT,
+        }),
+      )
 
       return reply.status(200).send(project)
     },
@@ -225,10 +247,12 @@ export async function deleteProject(fastify: FastifyInstance) {
       return reply.status(404).send({ error: 'Project not found' })
     }
 
-    await prisma.project.update({
-      where: { id: existing.id },
-      data: { deletedAt: new Date() },
-    })
+    await auditedWrite(req, 'PROJECT', 'DELETED', (tx) =>
+      tx.project.update({
+        where: { id: existing.id },
+        data: { deletedAt: new Date() },
+      }),
+    )
 
     return reply.status(200).send({ message: 'Project deleted successfully' })
   })

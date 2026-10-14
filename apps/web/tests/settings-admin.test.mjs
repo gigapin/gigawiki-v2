@@ -10,6 +10,7 @@ import { UsersPage } from '../src/pages/settings/UsersPage'
 import { AppSettingsPage } from '../src/pages/settings/AppSettingsPage'
 import { InviteList } from '../src/pages/settings/InviteList'
 import { SettingsLayout } from '../src/pages/settings/SettingsLayout'
+import { SiteLogo } from '../src/components/shared/SiteLogo'
 import { SiteName } from '../src/components/shared/SiteName'
 import { useAuthStore } from '../src/stores/auth.store'
 import { useThemeStore } from '../src/stores/theme.store'
@@ -277,4 +278,39 @@ it('loads another page of invitations', async () => {
       signal: expect.any(AbortSignal),
     }),
   )
+})
+
+it('uploads and removes the configured logo while refreshing visible branding', async () => {
+  URL.createObjectURL = vi.fn(() => 'blob:logo')
+  URL.revokeObjectURL = vi.fn()
+  let logo = ''
+  apiClient.post.mockResolvedValue({ data: { id: 'logo', url: '/uploads/logo.webp' } })
+  apiClient.put.mockImplementation(async (url, { value }) => {
+    logo = value
+    return { data: { key: url.split('/').at(-1), value } }
+  })
+  apiClient.get.mockImplementation(async () => ({
+    data: {
+      SITE_NAME: 'My Wiki',
+      SITE_LOGO_IMAGE_ID: logo,
+      SITE_LOGO_URL: logo ? '/uploads/logo.webp' : '',
+    },
+  }))
+  mount(AppSettingsPage)
+  render(createElement(SiteLogo))
+  await userEvent.upload(
+    await screen.findByLabelText('Logo image'),
+    new File(['pixels'], 'logo.png', { type: 'image/png' }),
+  )
+  await userEvent.click(screen.getByRole('button', { name: 'Save logo' }))
+  await screen.findByAltText('My Wiki')
+  expect(apiClient.put).toHaveBeenCalledWith('/api/v2/settings/SITE_LOGO_IMAGE_ID', {
+    value: 'logo',
+  })
+  await userEvent.click(screen.getByRole('button', { name: 'Remove cover' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Save logo' }))
+  await waitFor(() => expect(screen.queryByAltText('My Wiki')).toBeNull())
+  expect(apiClient.put).toHaveBeenLastCalledWith('/api/v2/settings/SITE_LOGO_IMAGE_ID', {
+    value: '',
+  })
 })

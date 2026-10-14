@@ -3,10 +3,12 @@ import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import type { Subject } from '@shared/types/subject'
 import { BookOpen, ChevronRight, Folder } from 'lucide-react'
 
+import { SiteLogo } from '@/components/shared/SiteLogo'
 import { SiteName } from '@/components/shared/SiteName'
 import { InviteUsersLink } from '@/components/auth/InviteUsersLink'
 import { useLogout } from '@/api/auth'
 import { Button } from '@/components/ui/button'
+import { useSections } from '@/api/sections'
 import { useProjects } from '@/api/projects'
 import { useSubjects } from '@/api/subjects'
 import { useAuthStore } from '@/stores/auth.store'
@@ -23,9 +25,57 @@ function initials(name: string) {
 
 type SubjectNode = Subject & { _count: { projects: number } }
 
+function ProjectItem({ project }: { project: { id: string; slug: string; name: string } }) {
+  const [open, setOpen] = useState(false)
+  const sections = useSections(project.slug, open)
+  return (
+    <div>
+      <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-6"
+          aria-label={`Toggle sections in ${project.name}`}
+          aria-expanded={open}
+          onClick={() => setOpen((value) => !value)}
+        >
+          <ChevronRight className={open ? 'rotate-90' : ''} />
+        </Button>
+        <Link
+          to="/projects/$slug"
+          params={{ slug: project.slug }}
+          className="flex items-center gap-2 rounded p-2 text-sm"
+        >
+          <Folder className="size-4" />
+          {project.name}
+        </Link>
+      </div>
+      {open && (
+        <div className="ml-6 border-l pl-3">
+          {sections.isPending && <p role="status">Loading sections…</p>}
+          {sections.isError && (
+            <button onClick={() => void sections.refetch()}>Retry loading sections</button>
+          )}
+          {sections.data?.map((section) => (
+            <Link
+              key={section.id}
+              to="/projects/$slug"
+              params={{ slug: project.slug }}
+              search={{ section: section.slug }}
+              className="block rounded p-2 text-sm hover:bg-secondary"
+            >
+              {section.title}
+            </Link>
+          ))}
+          {sections.data?.length === 0 && <p className="text-xs">No sections yet.</p>}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function SubjectItem({ subject }: { subject: SubjectNode }) {
   const [open, setOpen] = useState(false)
-  const pathname = useRouterState({ select: (state) => state.location.pathname })
   const projects = useProjects(subject.slug, { limit: 20 }, { enabled: open })
   return (
     <div>
@@ -67,16 +117,7 @@ function SubjectItem({ subject }: { subject: SubjectNode }) {
             <p className="p-2 text-xs text-muted-foreground">No projects yet.</p>
           ) : (
             projects.data?.projects.map((project) => (
-              <Link
-                key={project.id}
-                to="/projects/$slug"
-                params={{ slug: project.slug }}
-                aria-current={pathname === `/projects/${project.slug}` ? 'page' : undefined}
-                className={`flex items-center gap-2 rounded-md p-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${pathname === `/projects/${project.slug}` ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-secondary'}`}
-              >
-                <Folder className="size-4 shrink-0" />
-                <span className="truncate">{project.name}</span>
-              </Link>
+              <ProjectItem key={project.id} project={project} />
             ))
           )}
           {projects.data && projects.data.total > projects.data.projects.length && (
@@ -238,7 +279,7 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
             boxShadow: 'inset 0 -2px 0 rgba(255,255,255,0.06)',
           }}
         >
-          G
+          <SiteLogo />
         </div>
         {!collapsed && (
           <div

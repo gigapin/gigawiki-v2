@@ -15,8 +15,10 @@ import {
 
 vi.mock('../../lib/prisma.js', () => ({
   prisma: {
+    activity: { create: vi.fn().mockResolvedValue({ id: 'activity' }) },
     project: { findFirst: vi.fn() },
     section: {
+      count: vi.fn(),
       findMany: vi.fn(),
       findFirst: vi.fn(),
       findUnique: vi.fn(),
@@ -55,6 +57,10 @@ function buildAuthApp(role: string = 'ADMIN', userId: string = 'user-1') {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.mocked(prisma.$transaction).mockImplementation(async (work) => {
+    if (typeof work !== 'function') return Promise.all(work)
+    return work(prisma)
+  })
   // slug helper looks up the candidate slug; free unless a test says otherwise
   mockSection.findUnique.mockResolvedValue(null)
 })
@@ -85,7 +91,9 @@ describe('GET /projects/:projectSlug/sections', () => {
     expect(mockSection.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         orderBy: { position: 'asc' },
-        include: { _count: { select: { pages: { where: { deletedAt: null } } } } },
+        include: expect.objectContaining({
+          _count: { select: { pages: { where: { deletedAt: null } } } },
+        }),
       }),
     )
   })
@@ -284,7 +292,11 @@ describe('PATCH /sections/:slug', () => {
 
 describe('PATCH /sections/:slug/position', () => {
   it('batch-updates positions via $transaction', async () => {
-    mockTransaction.mockResolvedValue([])
+    mockSection.findFirst.mockResolvedValue({
+      ...fakeSection,
+      project: { userId: 'user-1' },
+    } as never)
+    vi.mocked(prisma.section.count).mockResolvedValue(2)
 
     const app = buildAuthApp('EDITOR')
     const res = await app.inject({

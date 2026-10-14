@@ -87,7 +87,7 @@ describe('GET /uploads/*', () => {
     expect(res.headers['content-type']).toBe('image/webp')
     expect(res.headers['cross-origin-resource-policy']).toBe('cross-origin')
     expect(res.body).toBe('image-bytes')
-    expect(readFile).toHaveBeenCalledWith(fakeImage.path)
+    expect(readFile).toHaveBeenCalledWith(fakeImage.path, undefined)
     await app.close()
   })
 
@@ -210,7 +210,7 @@ describe('DELETE /images/:id', () => {
 
     expect(res.statusCode).toBe(200)
     expect(res.json()).toEqual({ message: 'Image deleted successfully' })
-    expect(deleteFile).toHaveBeenCalledWith('uploads/user-1/2024/01/abc.webp')
+    expect(deleteFile).toHaveBeenCalledWith('uploads/user-1/2024/01/abc.webp', undefined)
   })
 
   it('allows admin to delete any image', async () => {

@@ -72,6 +72,8 @@ jobs:
         run: pnpm --filter gigawiki-v2-api test
       - name: PostgreSQL API integration tests
         run: pnpm --filter gigawiki-v2-api test:integration:db
+      - name: PostgreSQL access and concurrency tests
+        run: RUN_PARITY_DB_TESTS=1 pnpm --filter gigawiki-v2-api exec vitest run src/__tests__/parity.integration.test.ts
       - name: PostgreSQL Settings integration tests
         run: pnpm --filter gigawiki-v2-api test:settings:db
 

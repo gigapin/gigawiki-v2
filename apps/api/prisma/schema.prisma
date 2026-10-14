@@ -84,6 +84,7 @@ model User {
 // ─────────────────────────────────────────────
 
 model Image {
+    storageDriver String @default("s3")
     id          String    @id @default(cuid())
     name        String
     url         String
@@ -123,6 +124,8 @@ model Subject {
     deletedAt   DateTime?
     createdAt   DateTime   @default(now())
     updatedAt   DateTime   @updatedAt
+
+    activities Activity[] @relation("SubjectActivities")
 
     // Relations
     projects    Project[]
@@ -402,6 +405,10 @@ model Activity {
     details      String?
     ip           String?
     createdAt    DateTime     @default(now())
+
+    subjectId String?
+    subject Subject? @relation("SubjectActivities", fields: [subjectId], references: [id], onDelete: SetNull)
+    @@index([subjectId])
 
     // Polymorphic targets
     pageId    String?

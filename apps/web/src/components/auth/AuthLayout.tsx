@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 
+import { SiteLogo } from '@/components/shared/SiteLogo'
 import { SiteName } from '@/components/shared/SiteName'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
@@ -29,7 +30,7 @@ export function AuthLayout({
             className="grid size-10 place-items-center rounded-lg bg-primary text-2xl text-primary-foreground"
             style={{ fontFamily: 'var(--font-display)' }}
           >
-            G
+            <SiteLogo />
           </span>
           <SiteName />
         </Link>

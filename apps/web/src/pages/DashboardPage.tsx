@@ -1,7 +1,7 @@
 import { RecentlyVisited } from '@/components/dashboard/RecentlyVisited'
 import { useSubjects } from '@/api/subjects'
 import { useFavorites } from '@/api/favorites'
-import { useActivities } from '@/api/activities'
+import { useMyActivities as useActivities, useDashboardStats } from '@/api/activities'
 import { useAuthStore } from '@/stores/auth.store'
 import { Icon, type IconName } from '@/components/ui/icon'
 
@@ -34,68 +34,10 @@ function timeAgo(date: Date | string) {
   return `${Math.floor(hrs / 24)}d ago`
 }
 
-/* ── sparkline ── */
-const SPARK_DATA = [4, 7, 5, 9, 11, 10, 14, 17, 15, 19, 22, 24]
-
-function Sparkline({ tone = 'em' }: { tone?: string }) {
-  const data = SPARK_DATA
-  const w = 76,
-    h = 28,
-    pad = 2
-  const min = Math.min(...data),
-    max = Math.max(...data)
-  const range = max - min || 1
-  const stepX = (w - pad * 2) / (data.length - 1)
-  const points = data.map((v, i) => [
-    pad + i * stepX,
-    pad + (h - pad * 2) * (1 - (v - min) / range),
-  ])
-  const d = points
-    .map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`)
-    .join(' ')
-  const dArea = `${d} L ${w - pad} ${h - pad} L ${pad} ${h - pad} Z`
-  const color =
-    tone === 'em'
-      ? 'oklch(0.58 0.135 158)'
-      : tone === 'amber'
-        ? 'oklch(0.65 0.13 75)'
-        : tone === 'indigo'
-          ? 'oklch(0.55 0.14 268)'
-          : 'oklch(0.62 0.15 18)'
-  const gradId = `sp-${tone}`
-  return (
-    <svg
-      style={{ position: 'absolute', right: 12, top: 12, width: 76, height: 28 }}
-      viewBox={`0 0 ${w} ${h}`}
-      preserveAspectRatio="none"
-    >
-      <defs>
-        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.22" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path d={dArea} fill={`url(#${gradId})`} />
-      <path
-        d={d}
-        fill="none"
-        stroke={color}
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle
-        cx={points[points.length - 1][0]}
-        cy={points[points.length - 1][1]}
-        r="2"
-        fill={color}
-      />
-    </svg>
-  )
-}
-
 /* ── stat cards ── */
 function StatCards() {
+  const admin = useAuthStore((state) => state.user?.role === 'ADMIN')
+  const { data: adminStats } = useDashboardStats(admin)
   const { data: subjectsData } = useSubjects({ limit: 1 })
   const { data: favsData } = useFavorites({ limit: 1 }, true)
   const { data: activitiesData } = useActivities({ limit: 1 }, true)
@@ -103,7 +45,7 @@ function StatCards() {
   const stats = [
     {
       label: 'Subjects',
-      value: subjectsData?.total ?? '—',
+      value: (admin ? adminStats?.subjects : subjectsData?.total) ?? '—',
       unit: '',
       trend: 'up' as const,
       period: 'all time',
@@ -121,22 +63,33 @@ function StatCards() {
     },
     {
       label: 'Activity',
-      value: activitiesData?.total ?? 0,
+      value: activitiesData?.total ?? '—',
       unit: 'events',
       trend: 'flat' as const,
       period: 'total logged',
       icon: 'edit' as IconName,
       tone: 'indigo',
     },
-    {
-      label: 'Views this week',
-      value: 0,
-      unit: '',
-      trend: 'flat' as const,
-      period: 'coming soon',
-      icon: 'eye' as IconName,
-      tone: 'rose',
-    },
+    ...(admin
+      ? [
+          {
+            label: 'Users',
+            value: adminStats?.users ?? '—',
+            unit: '',
+            period: 'registered',
+            icon: 'book' as IconName,
+            tone: 'em',
+          },
+          {
+            label: 'Pages',
+            value: adminStats?.pages ?? '—',
+            unit: '',
+            period: 'active',
+            icon: 'doc' as IconName,
+            tone: 'indigo',
+          },
+        ]
+      : []),
   ]
 
   const toneIcon: Record<string, { bg: string; color: string }> = {
@@ -157,7 +110,12 @@ function StatCards() {
 
   return (
     <div
-      style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 32 }}
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+        gap: 14,
+        marginBottom: 32,
+      }}
     >
       {stats.map((s) => (
         <div
@@ -234,7 +192,6 @@ function StatCards() {
             )}
           </div>
           <div style={{ marginTop: 8, fontSize: 12, color: 'var(--db-muted)' }}>{s.period}</div>
-          <Sparkline tone={s.tone} />
         </div>
       ))}
     </div>
@@ -261,7 +218,7 @@ const VERB_LABEL: Record<string, string> = {
 }
 
 function ActivityFeed() {
-  const { data, isError, isLoading } = useActivities({ limit: 10 })
+  const { data, isError, isLoading, refetch } = useActivities({ limit: 10 })
 
   const avatarGradients = [
     'linear-gradient(135deg,oklch(0.7 0.13 30),oklch(0.55 0.15 350))',
@@ -306,14 +263,23 @@ function ActivityFeed() {
             Loading…
           </div>
         )}
-        {(isError || (!isLoading && (!data?.activities || data.activities.length === 0))) && (
+        {!isError && !isLoading && (!data?.activities || data.activities.length === 0) && (
           <div style={{ padding: '20px 16px', fontSize: 13, color: 'var(--db-muted)' }}>
             No activity to display.
           </div>
         )}
+        {isError && (
+          <p role="alert" className="p-4">
+            Activity unavailable. <button onClick={() => void refetch()}>Retry</button>
+          </p>
+        )}
         {data?.activities.map((a, i) => {
           const resourceName =
-            a.page?.title ?? a.project?.name ?? a.section?.title ?? a.resourceType
+            a.page?.title ??
+            a.project?.name ??
+            a.section?.title ??
+            a.subject?.name ??
+            a.resourceType
           const grad = avatarGradients[i % avatarGradients.length]
           const userInitials = initials(a.user?.name ?? '?')
           return (

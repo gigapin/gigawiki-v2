@@ -44,9 +44,11 @@ const styles = {
 export function BaseLayout({
   children,
   siteName = 'GiGaWiki',
+  logoUrl,
 }: {
   children: React.ReactNode
   siteName?: string
+  logoUrl?: string
 }) {
   return (
     <html>
@@ -58,7 +60,13 @@ export function BaseLayout({
       <body style={styles.body}>
         <div style={styles.wrapper}>
           <div style={styles.header}>
-            <span style={styles.logo}>{siteName}</span>
+            <span style={styles.logo}>
+              {logoUrl ? (
+                <img src={logoUrl} alt={siteName} style={{ maxWidth: 160, maxHeight: 64 }} />
+              ) : (
+                siteName
+              )}
+            </span>
           </div>
           <div style={styles.content}>{children}</div>
           <div style={styles.footer}>

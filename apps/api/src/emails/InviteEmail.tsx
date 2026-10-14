@@ -16,19 +16,21 @@ const btn = {
 
 export function InviteEmail({
   siteName = 'GiGaWiki',
+  logoUrl,
   inviterName,
   role,
   acceptUrl,
   expiresAt,
 }: {
   siteName?: string
+  logoUrl?: string
   inviterName: string
   role: string
   acceptUrl: string
   expiresAt: string
 }) {
   return (
-    <BaseLayout siteName={siteName}>
+    <BaseLayout siteName={siteName} logoUrl={logoUrl}>
       <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginTop: 0 }}>
         You&apos;ve been invited to {siteName}
       </h1>

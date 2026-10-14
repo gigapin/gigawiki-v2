@@ -6,7 +6,11 @@ import apiClient from './client'
 
 import { useSettingsStore } from '@/stores/settings.store'
 
-export type EditableSettingKey = 'ALLOW_SELF_REGISTRATION' | 'DEFAULT_USER_ROLE' | 'SITE_NAME'
+export type EditableSettingKey =
+  | 'ALLOW_SELF_REGISTRATION'
+  | 'DEFAULT_USER_ROLE'
+  | 'SITE_NAME'
+  | 'SITE_LOGO_IMAGE_ID'
 export function useSettings() {
   return useQuery({
     queryKey: queryKeys.settings(),
@@ -31,7 +35,10 @@ export function useUpdateSetting() {
         { queryKey: queryKeys.settings() },
         (current) => (current ? { ...current, [key]: value } : current),
       )
-      await client.invalidateQueries({ queryKey: queryKeys.settings(), refetchType: 'none' })
+      await client.invalidateQueries({
+        queryKey: queryKeys.settings(),
+        refetchType: key === 'SITE_LOGO_IMAGE_ID' ? 'active' : 'none',
+      })
     },
   })
 }

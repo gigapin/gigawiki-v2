@@ -14,6 +14,8 @@ import {
 
 vi.mock('../../lib/prisma.js', () => ({
   prisma: {
+    $transaction: vi.fn(),
+    activity: { create: vi.fn().mockResolvedValue({ id: 'activity' }) },
     page: { findFirst: vi.fn() },
     project: { findFirst: vi.fn() },
     section: { findFirst: vi.fn() },
@@ -56,6 +58,10 @@ function buildAuthApp(role: string = 'ADMIN', userId: string = 'user-1') {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.mocked(prisma.$transaction).mockImplementation(async (work) => {
+    if (typeof work !== 'function') return Promise.all(work)
+    return work(prisma)
+  })
 })
 
 const fakeComment = {

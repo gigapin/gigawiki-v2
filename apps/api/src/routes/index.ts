@@ -1,5 +1,9 @@
 import type { FastifyInstance } from 'fastify'
 
+import { contentContext } from '../lib/content-access.js'
+import { guardContentRequest, normalizeError, validateRequest } from '../lib/request-validation.js'
+
+import { dashboardStats } from './dashboard.js'
 import { deletionPreview } from './users/userDeletion.js'
 import { fetchInvites, resendInvite, cancelInvite } from './users/invitesRoutes.js'
 import {
@@ -72,6 +76,9 @@ import {
 } from './auth/authRoutes.js'
 
 export function registerRoutes(app: FastifyInstance) {
+  app.addHook('onRequest', (request, _reply, done) => contentContext.run({ request }, done))
+  app.addHook('preValidation', validateRequest)
+  app.addHook('onSend', normalizeError)
   app.register(serveUploadedImage)
   // Auth routes (unprotected, under /api/v2)
   app.register(
@@ -98,6 +105,7 @@ export function registerRoutes(app: FastifyInstance) {
   // Public routes
   /* app.register(
     (instance, _, done) => {
+      instance.register(dashboardStats)
       instance.register(fetchAllSubjects)
       instance.register(fetchSubject)
       instance.register(fetchProjectsBySubject)
@@ -123,7 +131,9 @@ export function registerRoutes(app: FastifyInstance) {
   app.register(
     (instance, _, done) => {
       instance.addHook('preHandler', instance.authenticate)
+      instance.addHook('preHandler', guardContentRequest)
 
+      instance.register(dashboardStats)
       instance.register(fetchAllSubjects)
       instance.register(fetchSubject)
       instance.register(fetchProjectsBySubject)

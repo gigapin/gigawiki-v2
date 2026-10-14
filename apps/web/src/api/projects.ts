@@ -32,8 +32,13 @@ export function fetchProjectsBySubject(
     .then((r) => r.data)
 }
 
-export type ProjectDetail = Project & { tags: Tag[]; subject: { name: string; slug: string } }
+export type ProjectDetail = Project & {
+  _count?: { favorites: number }
+  tags: Tag[]
+  subject: { name: string; slug: string }
+}
 export type ProjectInput = {
+  subjectId?: string
   name: string
   description: string
   visibility: 'PUBLIC' | 'PRIVATE'
@@ -87,7 +92,7 @@ export function useProject(slug: string, options: ReadOptions = {}) {
 export function useSaveProject(
   prepare: () => Promise<ProjectInput & { subjectId: string }>,
   slug?: string,
-  subjectSlug?: string,
+  _subjectSlug?: string,
   options: MutationOptions<Project> = {},
 ) {
   const client = useQueryClient()
@@ -95,7 +100,9 @@ export function useSaveProject(
     ...options,
     mutationFn: async () => {
       const { subjectId, ...input } = await prepare()
-      return slug ? updateProject(slug, input) : createProject({ ...input, subjectId })
+      return slug
+        ? updateProject(slug, { ...input, subjectId })
+        : createProject({ ...input, subjectId })
     },
     onSuccess: async (saved, variables, result, context) => {
       if (slug) {
@@ -106,6 +113,8 @@ export function useSaveProject(
           client.removeQueries({ queryKey: queryKeys.project(slug), type: 'inactive' })
       }
       await invalidateResources(client, [
+        'dashboard-stats',
+        'personal-activities',
         'project',
         'pages',
         'page',
@@ -115,7 +124,7 @@ export function useSaveProject(
       ])
       await Promise.all([
         client.invalidateQueries({
-          queryKey: subjectSlug ? queryKeys.subject(subjectSlug) : queryKeys.root('subject'),
+          queryKey: queryKeys.root('subject'),
         }),
         client.invalidateQueries({ queryKey: queryKeys.root('subjects') }),
       ])
