@@ -1,20 +1,37 @@
 # Test API su PostgreSQL
 
-Dalla root del repository, con infrastruttura attiva e `DATABASE_URL` configurato:
+Usare un PostgreSQL 16 temporaneo e dedicato chiamato `gigawiki_test`. Impostare
+`DATABASE_URL` nell'ambiente della shell prima dei comandi: deve puntare al database
+temporaneo, mai a quello dell'app. L'ambiente esplicito prevale sul `.env`.
 
 ```sh
+./bin/pnpm --filter shared build
+./bin/pnpm --filter gigawiki-v2-api exec prisma generate
+./bin/pnpm --filter gigawiki-v2-api exec prisma migrate deploy
 ./bin/pnpm --filter gigawiki-v2-api test:integration:db
 ./bin/pnpm --filter gigawiki-v2-api test:settings:db
+./bin/pnpm --filter gigawiki-v2-api test:parity:db
 ```
 
-Il 13 ottobre 2026 sono passati tutti gli 8 test API e i 3 Settings sul database dell’app, dopo la migrazione `authVersion` applicata dall’utente. Questo intervento non richiede nuove migrazioni. Il comando standard `test` salta entrambe le suite PostgreSQL.
+Il comando standard `test` salta tutte e tre le suite PostgreSQL; la CI le esegue
+dopo le migrazioni su un servizio temporaneo separato dall'app.
 
-La suite API verifica login con Argon2 reale, sessione autenticata, refresh/rotazione/revoca/scadenza, registrazione e policy, risposta neutra del recupero password, creazione/modifica pagina, snapshot e ripristino revisioni, aggiornamento della ricerca full-text, soft delete e permessi correnti dal database. Usa le rotte Fastify tramite `app.inject()` e query Prisma/PostgreSQL reali.
+| Suite | Casi | Isolamento e copertura |
+| --- | --- | --- |
+| `test:integration:db` | 8 | Rollback; Argon2, login/refresh/revoca, registrazione, pagine, revisioni, ricerca e soft delete. |
+| `test:settings:db` | 3 | Rollback; gestione account e permessi Settings. |
+| `test:parity:db` | 9 | Commit reali e pulizia delle proprie fixture; accesso gerarchico, concorrenza, attività e atomicità. Richiede `gigawiki_test`. |
 
-Ogni test crea fixture con identificatori casuali dentro una transazione sempre annullata, anche se fallisce. Dopo il rollback controlla da una connessione esterna che le fixture siano assenti. Le policy singleton sono lette da chiavi temporanee; le impostazioni dell’app restano intatte. Nessun truncate, seed, reset o migrazione automatica.
+Le prime due suite usano savepoint nella transazione esterna e verificano l'assenza
+delle fixture dopo il rollback. La suite di parità può lasciare fixture se il
+processo viene interrotto: eliminare il database temporaneo al termine. Non usare
+un database condiviso con l'app o altri servizi.
 
-Redis e accodamento email sono simulati: SMTP, storage e browser non sono coperti. Le transazioni interne alle rotte usano savepoint nella transazione esterna di prova; non si verificano commit concorrenti, retry di serializzazione o migrazioni da zero. `pg` può emettere un warning non bloccante sulle query concorrenti sul medesimo client.
+Verifica del 14 ottobre 2026: sette migrazioni applicate da zero su PostgreSQL
+16 temporaneo; tutti i 20 casi superati. Anche i 343 test API ordinari sono passati.
+Nessuna migrazione o fixture scritta nel database dell'app durante queste prove.
 
-La CI esegue entrambe le suite su PostgreSQL 16 temporaneo dopo tutte le migrazioni. Il 13 ottobre 2026 sono state verificate da zero le 6 migrazioni e sono passati tutti i 334 test API (323 ordinari e 11 integrazioni) in quell’ambiente separato dall’app. Vedere [CI.md](CI.md).
-
-Le verifiche browser sono eseguite dall’utente. Per le Settings e la suite dedicata vedere [SETTINGS.md](SETTINGS.md).
+Redis e accodamento email sono simulati nei test pertinenti; SMTP, storage e
+browser non sono coperti. `pg` segnala query concorrenti sullo stesso client nelle
+suite con rollback. Vedere [CI.md](CI.md) e la
+[checklist dei collaudi reali](V2_RELEASE_CHECKLIST.md).

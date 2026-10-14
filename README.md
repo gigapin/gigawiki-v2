@@ -24,7 +24,7 @@ The web normally runs at http://localhost:5173 and the API at http://localhost:3
 
 - Backend: Fastify, TypeScript, Prisma, PostgreSQL and Redis.
 - Frontend: React 19, Vite, TanStack Router/Query, Tailwind CSS and shadcn/ui.
-- Storage: MinIO/S3; email: SMTP with a queued worker.
+- Storage: persistent local files or MinIO/S3; email: SMTP with a queued worker.
 - Shared: Zod schemas and TypeScript types in `packages/shared`.
 - Monorepo: pnpm workspaces and Turborepo.
 
@@ -32,6 +32,7 @@ The web normally runs at http://localhost:5173 and the API at http://localhost:3
 
 - [Contributing](CONTRIBUTING.md): setup, branches, commit conventions and PR checklist.
 - [CI](docs/CI.md): quality, API/web tests, builds and artifacts.
-- [Database tests](docs/DATABASE_TESTS.md): optional rollback-only integrations.
+- [Database tests](docs/DATABASE_TESTS.md): integrations on disposable PostgreSQL.
 - [Settings](docs/SETTINGS.md): migrations and account/admin features.
 - [Session log](docs/SESSION_LOG.md): current implementation state and next steps.
+- [V2 release checklist](docs/V2_RELEASE_CHECKLIST.md): completed checks, access policy rollout and remaining acceptance tests.

@@ -65,7 +65,7 @@ Turborepo monorepo with three packages:
 
 **Database:** Prisma 7 with the `@prisma/adapter-pg` driver adapter (connection via `DATABASE_URL`). The singleton client is in `src/lib/prisma.ts`. Schema is at `apps/api/prisma/schema.prisma`.
 
-**Environment:** `src/lib/env.ts` loads the root `.env` file using `process.loadEnvFile`. Import this module first in `server.ts`.
+**Environment:** `src/config/env.ts` loads the root `.env` file using `process.loadEnvFile`. Import this module first in `server.ts`.
 
 **Passwords:** argon2id with `memoryCost: 65536, timeCost: 3, parallelism: 4`.
 
@@ -90,7 +90,7 @@ All cross-cutting plugins are registered before routes. Registration order in `a
 - `storage.ts` — S3/MinIO client; exports `uploadFile`, `deleteFile`, `getSignedUrl`.
 - `mailer.ts` — nodemailer transport; no-op in `NODE_ENV=test`.
 - `queue.ts` — BullMQ `emailQueue` and `imageQueue`.
-- `env.ts` — Zod-validated env at startup.
+- Environment validation lives in `src/config/env.ts`.
 
 ### Data model (key hierarchy)
 

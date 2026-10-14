@@ -14,21 +14,21 @@
 
 ## Stato attuale
 
-**Aggiornato al:** 2026-10-13
+**Aggiornato al:** 2026-10-14
 
 | | |
 |---|---|
 | Branch di lavoro | `dev` (il default remoto è `main`) |
 | Remote | `git@github.com:gigapin/gigawiki-v2.git` |
 | Task completati | 40 / 40 obiettivi principali implementati con scostamenti concordati; F01–F14 chiusi nel codice (vedi PARITY_IMPLEMENTATION.md). Parità V1 da verificare |
-| Fase corrente | **Chiusura interventi post-audit** — implementazione funzionale completata, migrazione dell’app e attivazione policy ancora operative |
+| Fase corrente | **Chiusura interventi post-audit** — implementazione funzionale completata, migrazioni app già applicate; policy attiva sull’app locale; collaudi browser/email ancora aperti |
 | Backend | Audit F01–F14 implementato: accesso gerarchico, attività atomiche, revisioni/concorrenza, validazione shared, statistiche, logo/storage locale e refresh. 343 test ordinari e 20 test PostgreSQL temporaneo superati |
 | Frontend | Login, Register, Verify email, ForgotPassword, ResetPassword, AcceptInvite, Dashboard, Subjects, Project detail, scelta destinazione nuova pagina, reader ed editor Tiptap. Bozza/pubblicazione, breadcrumb, tema light/dark, upload e resize immagini, link, syntax highlighting, autosave, drawer revisioni, menzioni e menu contestuale implementati. Tag/preferiti/commenti su Page/Project/Section, sidebar con Section, ricerca per Project, spostamento Project, toolbar completa e logo implementati; Settings complete (Profile, Password, Appearance, Users, Invites, App Settings) |
 | CI/CD | Workflow task 39 attivo: quality, test-api, test-web e build tutti superati su GitHub |
 
-**Ultimo commit presente:** `d35300c` (`docs: add contributing guide and repository policy`), su `dev`. Audit e implementazione del piano sono nel working tree; nessun commit/push creato dall’assistente. Migrazione 20261013000000_activity_subject_storage_driver non applicata al database dell’app; ENFORCE_CONTENT_ACCESS resta false.
+**Ultimo commit presente:** `af7e030` (`feat: complete user section`), su `dev`, 14 ottobre 2026. Include già gli interventi F01–F14 e i documenti post-audit. Le modifiche della sessione di chiusura sono locali; nessun commit/push dell’assistente. Verificato sul database dell’app: tutte le sette migrazioni sono applicate. Policy attiva nel `.env` locale dopo conferma dell’utente; sessioni dei quattro account revocate. Contenuti/proprietà/visibilità invariati, verificati contro backup ripristinato.
 
-**Ultime verifiche:** 343 test API ordinari, 20 PostgreSQL su database temporaneo e 214 frontend; lint/typecheck/build API/shared/web superati. Sette migrazioni applicate da zero al database temporaneo; build Docker e smoke test runtime shared/Prisma/storage locale superati. Audit in sola lettura dell’app: 2 Subject, 2 Project, 3 Section, 4 Page; 3 pagine interessate dai nuovi permessi. Browser affidato all’utente; SMTP/S3 reali e riavvio storage locale da verificare manualmente. Warning preesistenti bundle >500 kB, React Compiler/TanStack Table e `pg`.
+**Ultime verifiche (14 ottobre):** 343 API ordinari, 20 PostgreSQL su database temporaneo e 218 frontend (29 file); lint/typecheck/build superati. Sette migrazioni verificate da zero sul database temporaneo. Immagine Docker compilata, health/shared/Prisma e storage locale persistente dopo riavvio verificati. Upload/lettura/cancellazione MinIO reali e connessione/autenticazione SMTP riusciti; nessuna email inviata. Audit app: due bozze attive e una pagina eliminata segnalate. Policy attiva: vecchio JWT 401, JWT aggiornato 200, zero refresh token e Guest senza bozze nelle liste API. CI `af7e030` verde, run 38559849609; modifiche locali ancora da pubblicare. Browser e consegna email aperti: [checklist](V2_RELEASE_CHECKLIST.md).
 
 ---
 
@@ -41,7 +41,7 @@ Legenda: ✅ fatto · 🟡 parziale · ⬜ non iniziato
 | # | Task | Stato | Note |
 |---|---|---|---|
 | 1 | Monorepo Turborepo + pnpm | ✅ | |
-| 2 | `docker-compose.yml` | ✅ | Aggiunto anche **meilisearch**, non previsto dalla specifica e attualmente non usato da nessuna parte del codice |
+| 2 | `docker-compose.yml` | ✅ | Meilisearch inutilizzato rimosso dal Compose; volumi dati esistenti conservati. |
 | 3 | ESLint, Prettier, Husky, Commitlint | ✅ | |
 
 ### Fase 2 — Shared
@@ -56,7 +56,7 @@ Legenda: ✅ fatto · 🟡 parziale · ⬜ non iniziato
 |---|---|---|---|
 | 5 | Bootstrap Fastify | ✅ | Validazione centrale e errori uniformi; successi diretti mantenuti come concordato. |
 | 6 | Plugin Fastify | ✅ | Refresh 10/min, configurazione durata refresh e sessioni development preservate. |
-| 7 | Schema Prisma + migrazione iniziale | ✅ | Sette migrazioni verificate da zero su PostgreSQL temporaneo; nuova migrazione Activity.subjectId/Image.storageDriver ancora da applicare al DB dell’app. |
+| 7 | Schema Prisma + migrazione iniziale | ✅ | Sette migrazioni verificate da zero e già applicate al database dell’app (controllo 14 ottobre). |
 | 8 | Migrazione full-text search Postgres | ✅ | `add_search_vector` + `restore_search_vector` |
 | 9 | Singleton `lib/` | ✅ | Client e helper slugify, storage locale/S3, accesso gerarchico e salvataggi/attività atomici. |
 | 10 | Modulo Auth | ✅ | login, logout, refresh, register, forgot/reset password, verify email, accept invite, me |
@@ -96,9 +96,9 @@ Legenda: ✅ fatto · 🟡 parziale · ⬜ non iniziato
 | # | Task | Stato | Note |
 |---|---|---|---|
 | 36 | Test backend | ✅ | 343 test ordinari e 20 PostgreSQL superati (8 integrazioni + 3 Settings + 9 policy/concorrenza). Nuovi test con commit su DB temporaneo gigawiki_test; suite precedenti con rollback. |
-| 37 | Test componenti frontend | ✅ | 214 test Vitest Node/jsdom su 28 file; vero Tiptap, toolbar, conflitti/bozze, logo, ricerca e metadati contenitori. Prove browser affidate all’utente. |
+| 37 | Test componenti frontend | ✅ | 218 test Vitest Node/jsdom su 29 file; vero Tiptap, toolbar, conflitti/bozze, logo, ricerca e metadati contenitori. Prove browser affidate all’utente. |
 | 38 | Dockerfile per l'API | ✅ | Build shared e packaging pnpm deploy/Prisma; immagine compilata e smoke runtime shared/Prisma/storage locale superato. |
-| 39 | GitHub Actions CI | ✅ | quality, test-api, test-web e build; shared compilato, migrazioni e 20 integrazioni su PostgreSQL temporaneo. Baseline precedente verde su GitHub; nuova CI da verificare dopo il push. |
+| 39 | GitHub Actions CI | ✅ | quality, test-api, test-web e build; shared compilato, migrazioni e 20 integrazioni su PostgreSQL temporaneo. CI af7e030 verde; modifiche locali da verificare dopo il push. |
 | 40 | Init repo GitHub | ✅ | CONTRIBUTING e README aggiornati; main/dev mantenuti. Main protetto: PR, quattro check CI, branch aggiornato, conversazioni risolte, niente bypass Admin/force push/eliminazione. Zero review esterne confermate dall’utente, unico collaboratore. Repo pubblico conservato. Vedere REPOSITORY.md |
 
 ---
@@ -108,9 +108,9 @@ Legenda: ✅ fatto · 🟡 parziale · ⬜ non iniziato
 Punti in cui il codice si discosta da `GIGAWIKI_V2_TASKS.md`. Vanno **letti prima** di «completare» il task corrispondente, altrimenti si rischia di riscrivere scelte già prese di proposito.
 
 1. **Test backend (task 36).** 343 prove ordinarie e 20 integrazioni PostgreSQL superate. Le 8 integrazioni precedenti e le 3 Settings mantengono il rollback concordato; i 9 nuovi casi verificano anche commit concorrenti e atomicità su un database temporaneo dedicato `gigawiki_test`. Sette migrazioni verificate da zero; nessuna nuova migrazione applicata al database dell’app. Redis/coda email e S3 rimangono simulati nei test pertinenti. Vedere [DATABASE_TESTS.md](DATABASE_TESTS.md) e [PARITY_IMPLEMENTATION.md](PARITY_IMPLEMENTATION.md).
-2. **Doppio file di env.** Esistono sia `apps/api/src/config/env.ts` (previsto dal task 5) sia `apps/api/src/lib/env.ts` (quello effettivamente documentato in `CLAUDE.md` e importato per primo in `server.ts`). Da consolidare in uno solo.
-3. **Login obbligatorio e policy concordata.** PUBLIC è leggibile dagli utenti autenticati; PRIVATE, restricted e bozze seguono i vincoli gerarchici documentati in [PARITY_IMPLEMENTATION.md](PARITY_IMPLEMENTATION.md). Il gate `ENFORCE_CONTENT_ACCESS` resta disattivato sull’app; il filtro sugli antenati eliminati è sempre applicato.
-4. **Meilisearch nel compose ma inutilizzato.** La ricerca è implementata con la full-text search di Postgres (task 8). Il servizio `meilisearch` in `docker-compose.yml` non è previsto dalla specifica e non è referenziato da alcun codice: o si usa o si rimuove.
+2. **Env consolidato (14 ottobre).** Configurazione unica in `apps/api/src/config/env.ts`; eliminato il re-export inutilizzato `lib/env.ts`, aggiornata la guida locale.
+3. **Login obbligatorio e policy concordata.** PUBLIC è leggibile dagli utenti autenticati; PRIVATE, restricted e bozze seguono i vincoli gerarchici documentati in [PARITY_IMPLEMENTATION.md](PARITY_IMPLEMENTATION.md). Il gate `ENFORCE_CONTENT_ACCESS=true` è attivo sull’app locale dopo audit e conferma del 14 ottobre; il filtro sugli antenati eliminati è sempre applicato.
+4. **Meilisearch rimosso (14 ottobre).** Ricerca PostgreSQL mantenuta; servizio e dichiarazione volume inutilizzati rimossi dal Compose senza eliminare i volumi dati esistenti.
 5. **Dockerfile più elaborato della specifica (task 38).** La versione reale usa `pnpm deploy --prod --legacy`, ricopia a mano `.prisma/client` e rimuove sottoalberi non raggiungibili a runtime per dimezzare l'immagine. I commenti nel file spiegano il perché di ogni passaggio: non semplificarlo senza rileggerli.
 6. **Design system — migrazione avviata.** Tema e font unificati il 2026-10-07 in `styles/tokens.css`, con alias per il codice esistente e palette cover condivisa. shadcn è usato nelle nuove schermate; restano stili inline e icone custom nelle vecchie pagine. L'audit del 14 settembre fotografa lo stato precedente.
 7. **`bin/pnpm` invece di corepack.** Il Dockerfile usa `corepack enable`, che funziona su `node:22-alpine` ma si romperà quando si alzerà la base image: corepack non è più incluso nelle versioni recenti di Node. In locale il problema è già stato aggirato con il wrapper `bin/pnpm` (vedi sessione del 2026-09-09).
@@ -121,17 +121,17 @@ Punti in cui il codice si discosta da `GIGAWIKI_V2_TASKS.md`. Vanno **letti prim
 
 ## Prossimi passi — ripresa del lavoro
 
-**Piano post-audit implementato.** Dettagli e comandi in [PARITY_IMPLEMENTATION.md](./PARITY_IMPLEMENTATION.md).
+**Implementazione e manutenzione completate.** Esiti e checklist in [V2_RELEASE_CHECKLIST.md](V2_RELEASE_CHECKLIST.md); policy e comandi in [PARITY_IMPLEMENTATION.md](PARITY_IMPLEMENTATION.md).
 
-1. Applicare alla base dati dell’app la migrazione `20261013000000_activity_subject_storage_driver`, poi rigenerare Prisma e riavviare API/web.
-2. Verificare il rapporto di accesso prima di impostare `ENFORCE_CONTENT_ACCESS=true`; invalidare le sessioni con il comando documentato. Nessuna attivazione automatica.
-3. Prove browser a cura dell’utente, incluse proprietà/restricted, sidebar, spostamento progetto, metadati dei contenitori, conflitti e logo/storage locale.
-4. Dopo il push verificare la nuova CI; nessun commit/push eseguito dall’assistente.
-5. Per certificare parità V1/import/password/PDF occorrono codice o inventario V1. Restano le prove SMTP/storage reali e il miglioramento grafico rimandato.
+1. Eseguire nuovo login nel browser e collaudare la policy attiva. Backup ripristinato e confrontato; revoca dei quattro account verificata, zero refresh token. API/web avviati con `./bin/pnpm dev`; nessuna migrazione pendente.
+2. Prove browser a cura dell’utente: accessi, sidebar, spostamento progetto, metadati, editor/conflitti, revisioni e logo/avatar/cover.
+3. Completare consegna email e flussi invito/verifica/reset con casella del proprietario; autenticazione SMTP già verificata senza invii.
+4. Dopo commit/push delle modifiche locali, verificare i quattro check CI sullo stesso SHA. CI af7e030 già verde.
+5. Parità/import/password V1, PDF e revisione grafica restano fuori dal ciclo senza codice/inventario originale.
 
 **Comportamenti da preservare:** dettaglio Subject senza banner grande, icona/titolo a sinistra e azioni a destra; commenti richiusi inizialmente sotto “Comments” con freccia, bozze mantenute alla chiusura; Save draft mantiene l’editor aperto e usa la stessa pagina nei salvataggi successivi, Publish apre il reader. Guest senza cronologia, preferiti personali per account e temporizzazione login disattivata in development come richiesto.
 
-**Verifiche e manutenzione residue:** prova SMTP/Mailtrap dei reset e inviti, storage reale delle cover, warning bundle superiore a 500 kB (valutare caricamento differito dell’editor), consolidamento dei due moduli env e verifica del servizio Meilisearch inutilizzato. Valutare `ALLOW_SELF_REGISTRATION=false` a fine prove e rimozione dal tracking di `.claude/settings.local.json`.
+**Manutenzione:** env consolidato, Meilisearch rimosso dal Compose, `.claude/settings.local.json` tolto dal tracking mantenendo la copia locale. Reader/editor caricati su richiesta: JS iniziale circa 789 kB contro 1.465 kB, wiki differito da circa 632 kB. Restano warning bundle, console API, React Compiler/TanStack Table, Browserslist e `pg`. Registrazione autonoma e driver storage dell’app invariati.
 
 Scelte adottate: dark iniziale e light selezionabile; sezioni inline nel Project; revisioni drawer, diff opzionale; settings secondo task 34; nuove icone Lucide, empty state con icona/testo. Non sono necessari nuovi template Claude Design.
 
@@ -159,6 +159,25 @@ Chi clona il repo su una macchina nuova deve ricreare `init.sh` (o avere Node su
 ---
 
 ## Log delle sessioni
+
+### 2026-10-14 — Attivazione permessi e revoca sessioni confermate
+
+- Dopo il sì esplicito dell’utente, impostato ENFORCE_CONTENT_ACCESS=true nel .env locale mantenendo proprietà e visibilità. API non in esecuzione durante il cambio.
+- Backup aggiornato in `/tmp/gigawiki-v2-policy-activation.bXEL9x/database.dump`, verificato con pg_restore --list e ripristino integrale su PostgreSQL temporaneo poi rimosso.
+- Eseguito sessions:invalidate: authVersion incrementato sui quattro account e zero refresh token residui. Cambia anche updatedAt degli account per automatismo Prisma; nessuna modifica agli altri dati, verificata con confronto completo contro il backup.
+- Verificato token precedente valido → 401, JWT aggiornato → 200; filtri Guest e liste API senza bozze. Report privato `/tmp/gigawiki-v2-policy-activation.bXEL9x/verification.json`.
+- Avviati API/web con ./bin/pnpm dev. Verifica HTTP runtime: health/web 200, vecchia sessione e contenuti anonimi 401. Restano login/cache e matrice browser, consegna email e CI dopo commit/push. Nessun commit, push o email eseguito dall’assistente.
+
+
+### 2026-10-14 — Chiusura V2: manutenzione e verifiche operative
+
+- Verificato commit af7e030 e database app: tutti gli interventi post-audit già committati e sette migrazioni già applicate. Corretto lo stato precedente che li indicava nel working tree e con migrazione pendente.
+- Eliminato re-export env inutilizzato, aggiornate istruzioni; Meilisearch rimosso dal Compose conservando i dati. File locale Claude rimosso dall’indice, copia locale conservata e già ignorata.
+- Reader/editor caricati su richiesta; aggiunti quattro test di apertura diretta/navigazione. JS iniziale complessivo circa 789 kB invece di 1.465 kB, inclusi preload; chunk wiki circa 632 kB differito.
+- Superati 343 API ordinari, 20 PostgreSQL su database temporaneo con sette migrazioni da zero e 218 frontend; lint/typecheck/build verdi. Build Docker e smoke health/shared/Prisma/storage dopo riavvio superati; upload/lettura/cancellazione MinIO reali e autenticazione SMTP riusciti senza inviare messaggi.
+- CI af7e030 verificata verde, run 38559849609; documentazione test/CI e checklist V2 aggiornate. Backup app `/tmp/gigawiki-v2-pre-policy.RgI6C5/database.dump`, verificato con pg_restore --list. Container e volume temporanei dei test rimossi.
+
+**Aperto:** conferma accessi prima di attivare policy/revocare sessioni, browser e consegna email a cura dell’utente, CI dopo commit/push delle modifiche locali. Nessuna scrittura al database dell’app, modifica proprietà/visibilità, attivazione policy, revoca sessioni, email, commit o push dell’assistente. Import V1/PDF e grafica rinviati.
 
 ### 2026-10-13 — Implementazione del piano post-audit
 

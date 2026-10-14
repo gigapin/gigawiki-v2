@@ -1,4 +1,10 @@
-import { createRootRoute, createRoute, createRouter, redirect } from '@tanstack/react-router'
+import {
+  createRootRoute,
+  createRoute,
+  createRouter,
+  lazyRouteComponent,
+  redirect,
+} from '@tanstack/react-router'
 
 import { PasswordPage } from '@/pages/settings/PasswordPage'
 import { AppearancePage } from '@/pages/settings/AppearancePage'
@@ -10,9 +16,7 @@ import { InvitesPage } from '@/pages/settings/InvitesPage'
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage'
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage'
 import { AcceptInvitePage } from '@/pages/auth/AcceptInvitePage'
-import { NewPagePage, EditPagePage } from '@/pages/pages/PageEditorPage'
 import { NewPageLocationPage } from '@/pages/pages/NewPageLocationPage'
-import { PageReaderPage } from '@/pages/pages/PageReaderPage'
 import { AppInit } from '@/components/AppInit'
 import { AppShell } from '@/components/layout/AppShell'
 import { verifyEmailToken } from '@/api/auth'
@@ -143,19 +147,19 @@ const newPageRoute = createRoute({
   getParentRoute: () => authLayout,
   path: '/projects/$projectSlug/sections/$sectionSlug/pages/new',
   staticData: { title: 'New page' },
-  component: NewPagePage,
+  component: lazyRouteComponent(() => import('@/pages/pages/PageEditorPage'), 'NewPagePage'),
 })
 const pageRoute = createRoute({
   getParentRoute: () => authLayout,
   path: '/pages/$slug',
   staticData: { title: 'Page' },
-  component: PageReaderPage,
+  component: lazyRouteComponent(() => import('@/pages/pages/PageReaderPage'), 'PageReaderPage'),
 })
 const editPageRoute = createRoute({
   getParentRoute: () => authLayout,
   path: '/pages/$slug/edit',
   staticData: { title: 'Edit page' },
-  component: EditPagePage,
+  component: lazyRouteComponent(() => import('@/pages/pages/PageEditorPage'), 'EditPagePage'),
 })
 
 const settingsRoute = createRoute({

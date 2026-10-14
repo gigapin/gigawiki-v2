@@ -2,6 +2,8 @@
 
 > Aggiornamento: gli interventi F01–F14 sono implementati. Esito, policy concordate, test e comandi di migrazione/attivazione in [PARITY_IMPLEMENTATION.md](PARITY_IMPLEMENTATION.md). Questo audit conserva lo stato del codice prima degli interventi; import/PDF e confronto con la V1 restano aperti.
 
+> **14 ottobre 2026:** il codice post-audit è nel commit `af7e030` e il database dell’app ha già tutte le migrazioni. Policy locale attivata e quattro account disconnessi dopo conferma dell’utente; dati invariati verificati contro backup. Manutenzione/verifiche aggiornate e collaudi aperti in [V2_RELEASE_CHECKLIST.md](V2_RELEASE_CHECKLIST.md). Il resto di questo documento conserva gli esiti del 13 ottobre.
+
 Data: 13 ottobre 2026. Revisione analizzata: `d35300c` (`docs: add contributing guide and repository policy`).
 
 ## Stato successivo all’implementazione — 13 ottobre 2026
