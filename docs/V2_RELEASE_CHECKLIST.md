@@ -16,7 +16,7 @@ Implementazione e contratti in [V1_FEATURE_IMPLEMENTATION.md](V1_FEATURE_IMPLEME
 - [ ] Applicare l'ottava migrazione all'ambiente dell'app dopo backup e verifica destinazione, rigenerare Prisma e riavviare.
 - [ ] Configurare `PDF_RENDERER_SECRET` e avviare il profilo Compose `pdf` prima dei collaudi export.
 - [ ] Registrare B19–B26 oltre ai precedenti casi browser/email; correggere e ricollaudare eventuali difetti.
-- [ ] Verificare CI del candidato finale, inclusa la dipendenza `test-pdf` del job `build`.
+- [x] Incremento pubblicato su `dev` in `30c09c5143bf0413edbe227e9727823257f033f5`: [CI 38882985629](https://github.com/gigapin/gigawiki-v2/actions/runs/38882985629) verde in quality, test-api, test-web, test-pdf e build. Container temporanei rimossi. Il successivo aggiornamento documentale richiede il proprio controllo CI.
 
 ## Verifiche del 16 ottobre 2026
 

@@ -36,3 +36,5 @@ Le suite PostgreSQL locali sono opzionali: seguire [DATABASE_TESTS.md](DATABASE_
 Per permessi e collaudi reali vedere [V2_RELEASE_CHECKLIST.md](V2_RELEASE_CHECKLIST.md).
 
 L’incremento V1 aggiunge il job `test-pdf` (unitari e Chromium Docker con sandbox); `build` dipende anche da questo job. Il setup compila `wiki-content` e `shared`. I conteggi e le run precedenti sono storici; vedere [V1_FEATURE_IMPLEMENTATION.md](V1_FEATURE_IMPLEMENTATION.md) e session log per il nuovo incremento.
+
+Incremento funzionale pubblicato in `30c09c5143bf0413edbe227e9727823257f033f5`: [run 38882985629](https://github.com/gigapin/gigawiki-v2/actions/runs/38882985629) conclusa con tutti e cinque i job verdi. Test: 350 API ordinari, 30 PostgreSQL, 225 frontend, 3 renderer più smoke Docker Chromium. Ottava migrazione verificata soltanto su DB temporaneo; il database dell’app resta invariato. Eventuali commit successivi richiedono il proprio controllo CI.

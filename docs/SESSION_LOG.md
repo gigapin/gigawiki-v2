@@ -21,10 +21,10 @@
 | Branch di lavoro | `dev` (il default remoto è `main`) |
 | Remote | `git@github.com:gigapin/gigawiki-v2.git` |
 | Task completati | 40 / 40 obiettivi principali implementati con scostamenti concordati; F01–F14 chiusi nel codice. Confronto statico V1 completato e incrementi R01–R15 implementati secondo le scelte approvate; import M01–M03 escluso; parità totale non certificata |
-| Fase corrente | **Implementazione incrementi V1/V2** — incrementi selezionati implementati, controlli locali superati e verifica Docker/CI in chiusura; migrazione dati esclusa. Ottava migrazione Prisma da applicare all’app dopo backup; collaudi browser/email ancora aperti |
+| Fase corrente | **Implementazione incrementi V1/V2** — incrementi selezionati implementati, controlli locali, Docker e CI superati sul commit `30c09c5`; migrazione dati esclusa. Ottava migrazione Prisma da applicare all’app dopo backup; collaudi browser/email ancora aperti |
 | Backend | Audit F01–F14 implementato: accesso gerarchico, attività atomiche, revisioni/concorrenza, validazione shared, statistiche, logo/storage locale e refresh. 350 test ordinari e 30 test PostgreSQL temporaneo superati; incrementi descritti nella guida funzionale |
 | Frontend | Login, Register, Verify email, ForgotPassword, ResetPassword, AcceptInvite, Dashboard, Subjects, Project detail, scelta destinazione nuova pagina, reader ed editor Tiptap. Bozza/pubblicazione, breadcrumb, tema light/dark, upload e resize immagini, link, syntax highlighting, autosave, drawer revisioni, menzioni e menu contestuale implementati. Tag/preferiti/commenti su Page/Project/Section, sidebar con Section, ricerca per Project, spostamento Project, toolbar completa e logo implementati; Settings complete (Profile, Password, Appearance, Users, Invites, App Settings) |
-| CI/CD | Workflow task 39 attivo: quality, test-api, test-web e build tutti superati su GitHub |
+| CI/CD | quality, test-api, test-web, test-pdf e build tutti verdi su `30c09c5`, run 38882985629 |
 
 **Base applicativa verificata:** `f6be5ca` (`feat: permissions set`), su `dev`, coincidente con il branch remoto controllato il 16 ottobre. Include gli interventi F01–F14 e le modifiche della chiusura del 14 ottobre, precedentemente descritte come locali. Le verifiche del database dell'app e l'attivazione della policy del 14 ottobre restano storiche: non sono state ripetute né modificate in questo ciclo.
 
@@ -169,7 +169,9 @@ Chi clona il repo su una macchina nuova deve ricreare `init.sh` (o avere Node su
 - Aggiunti test per contenuti, PDF, audit immagini, UI e flussi HTTP PostgreSQL con challenge password/ruoli/restore/privacy. Controlli locali superati: typecheck/lint/build, 350 test API, 225 frontend, 3 renderer e 30 PostgreSQL (8 API, 9 parità, 3 Settings, 10 incrementi), con otto migrazioni da zero. Smoke Docker con API/Redis/PostgreSQL/Chromium isolati: challenge/cambio/login Guest, upload PNG convertito WebP, PDF Guest con asset registrato e audit BullMQ completati; PDF valido di 16.199 byte. Nessun invio email.
 - Guida manuale estesa a B19–B26; browser/email restano aperti e non sono dichiarati superati.
 
-**Aperto:** completare verifica automatica/CI sul candidato; applicazione ottava migrazione e configurazione renderer nell'ambiente dell'app prima dei nuovi collaudi manuali. Nessuna migrazione dati V1 o modifica distruttiva autorizzata da questo incremento.
+- Pubblicato su `dev` nel commit `30c09c5143bf0413edbe227e9727823257f033f5`; [CI 38882985629](https://github.com/gigapin/gigawiki-v2/actions/runs/38882985629) conclusa con quality, test-api, test-web, test-pdf e build tutti verdi sul medesimo SHA. Container/rete temporanei rimossi. Il successivo commit documentale richiede il proprio controllo CI.
+
+**Aperto:** applicazione ottava migrazione e configurazione renderer nell'ambiente dell'app prima dei nuovi collaudi manuali. Nessuna migrazione dati V1 o modifica distruttiva autorizzata da questo incremento.
 
 
 ### 2026-10-16 — Confronto codice V1/V2 e riferimento per PDF/feature mancanti
