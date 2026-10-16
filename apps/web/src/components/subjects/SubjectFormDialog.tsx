@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { useSaveSubject } from '@/api/subjects'
 import { CoverField } from '@/components/shared/CoverField'
 import { useCover } from '@/lib/use-cover'
-import { ResourceFields } from '@/components/shared/ResourceFields'
+import { ResourceFields, type ResourceValues } from '@/components/shared/ResourceFields'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import {
@@ -43,9 +43,10 @@ export function SubjectFormDialog({
   onSaved?: (subject: Subject) => void
 }) {
   const cover = useCover(subject?.image, subject?.imageId)
-  const [values, setValues] = useState({
+  const [values, setValues] = useState<ResourceValues>({
     name: subject?.name ?? '',
     description: subject?.description ?? '',
+    descriptionFormat: subject?.descriptionFormat ?? 'text',
     visibility: subject?.visibility ?? 'PUBLIC',
   })
   const [color, setColor] = useState(subject?.color ?? 'emerald')
@@ -56,6 +57,7 @@ export function SubjectFormDialog({
         ...values,
         name: values.name.trim(),
         description: values.description.trim(),
+        descriptionFormat: values.descriptionFormat,
         color,
         icon,
         imageId: await cover.resolveImageId(),

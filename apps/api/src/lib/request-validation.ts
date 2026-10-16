@@ -148,6 +148,16 @@ function originalTypeInvalid(route: string, type?: string) {
   if (!type) return false
   if (route === '/images') return !['AVATAR', 'INLINE', 'COVER'].includes(type)
   if (route.endsWith('/activities') || route.endsWith('/activity'))
-    return !['CREATED', 'UPDATED', 'DELETED', 'COMMENTED', 'REPLIED', 'RESTORED'].includes(type)
+    return ![
+      'CREATED',
+      'UPDATED',
+      'DELETED',
+      'COMMENTED',
+      'REPLIED',
+      'RESTORED',
+      'LOGIN',
+      'ACCOUNT_CREATED',
+      'TEMP_PASSWORD_ISSUED',
+    ].includes(type)
   return false
 }

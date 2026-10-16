@@ -44,7 +44,11 @@ export async function buildDeletionPreview(tx: Prisma.TransactionClient, id: str
   const subjectRows = await tx.subject.findMany({
     where: { userId: id },
     orderBy: { id: 'asc' },
-    select: { id: true, updatedAt: true },
+    select: {
+      id: true,
+      updatedAt: true,
+      tags: { orderBy: { id: 'asc' }, select: { id: true, userId: true } },
+    },
   })
   const pages = await tx.page.findMany({
     where: { OR: [{ createdById: id }, { ownedById: id }, { updatedById: id }] },
@@ -65,7 +69,11 @@ export async function buildDeletionPreview(tx: Prisma.TransactionClient, id: str
     )
     .map((p) => p.id)
   const deletedSubjects = subjectRows
-    .filter((s) => !projects.some((p) => p.subjectId === s.id && !deletedProjects.includes(p.id)))
+    .filter(
+      (s) =>
+        !(s.tags ?? []).some((tag) => tag.userId !== id) &&
+        !projects.some((p) => p.subjectId === s.id && !deletedProjects.includes(p.id)),
+    )
     .map((s) => s.id)
   const transferredProjects = projects
     .filter((p) => p.userId === id && !deletedProjects.includes(p.id))
@@ -100,7 +108,7 @@ export async function buildDeletionPreview(tx: Prisma.TransactionClient, id: str
     },
   })
   const tags = await tx.tag.findMany({
-    where: { OR: [{ userId: id }, ...targets] },
+    where: { OR: [{ userId: id }, { subjectId: { in: deletedSubjects } }, ...targets] },
     orderBy: { id: 'asc' },
     select: { id: true },
   })

@@ -19,6 +19,7 @@ env:
   NODE_ENV: test
   HUSKY: '0'
   TURBO_TELEMETRY_DISABLED: '1'
+  PUPPETEER_SKIP_DOWNLOAD: 'true'
   DATABASE_URL: postgresql://postgres:postgres@localhost:5432/gigawiki_test
   REDIS_URL: redis://localhost:6379
   API_URL: http://localhost:3001
@@ -74,6 +75,8 @@ jobs:
         run: pnpm --filter gigawiki-v2-api test:integration:db
       - name: PostgreSQL access and concurrency tests
         run: RUN_PARITY_DB_TESTS=1 pnpm --filter gigawiki-v2-api exec vitest run src/__tests__/parity.integration.test.ts
+      - name: PostgreSQL new feature integration tests
+        run: pnpm --filter gigawiki-v2-api test:features:db
       - name: PostgreSQL Settings integration tests
         run: pnpm --filter gigawiki-v2-api test:settings:db
 
@@ -85,8 +88,27 @@ jobs:
       - uses: ./.github/actions/setup
       - run: pnpm --filter web test
 
+  test-pdf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup
+      - run: pnpm --filter gigawiki-pdf test
+      - name: Build sandboxed renderer
+        run: docker build -f apps/pdf/Dockerfile -t gigawiki-pdf-test .
+      - name: PDF runtime smoke
+        run: |
+          docker run -d --rm --init --cap-add=SYS_ADMIN --name pdf-smoke -e PDF_RENDERER_SECRET=ci-only-renderer-secret-32-characters gigawiki-pdf-test
+          trap 'docker stop pdf-smoke' EXIT
+          for attempt in $(seq 1 30); do
+            if docker exec pdf-smoke node -e "fetch('http://localhost:3002/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"; then break; fi
+            sleep 1
+          done
+          docker exec pdf-smoke node --input-type=module -e "const r=await fetch('http://localhost:3002/render',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer ci-only-renderer-secret-32-characters'},body:JSON.stringify({html:'<h1>PDF à è</h1><p>Smoke test</p>'})}); if(!r.ok)throw Error('Render failed'); const b=Buffer.from(await r.arrayBuffer()); if(b.subarray(0,5).toString()!=='%PDF-')throw Error('Invalid PDF'); console.log('PDF runtime passed')"
+
   build:
-    needs: [quality, test-api, test-web]
+    needs: [quality, test-api, test-web, test-pdf]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

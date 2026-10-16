@@ -4,6 +4,7 @@ import { ChevronRight } from 'lucide-react'
 import { CommentForm } from './CommentForm'
 import { CommentList } from './CommentList'
 
+import { useSettingsStore } from '@/stores/settings.store'
 import { useComments, useCommentMutation } from '@/api/comments'
 import type { CommentAction, CommentResource } from '@/api/comments'
 import { useAuthStore } from '@/stores/auth.store'
@@ -26,6 +27,8 @@ export function CommentSection({ resource }: { resource: CommentResource }) {
     mutation.reset()
     await mutation.mutateAsync(action)
   }
+  const enabled = useSettingsStore((state) => state.settings.COMMENTS_ENABLED !== 'false')
+  if (!enabled) return null
   return (
     <details className="group border-t pt-4">
       <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">

@@ -7,6 +7,7 @@ export interface User {
   name: string
   email: string
   slug: string
+  mustChangePassword?: boolean
   role: Role
   avatarId: string | null
   avatar?: Image | null

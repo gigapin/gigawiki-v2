@@ -17,7 +17,7 @@ vi.mock('@tanstack/react-router', () => ({
 vi.mock('@tanstack/react-query', async (importOriginal) => ({
   ...(await importOriginal()),
   useMutation: (options) => {
-    if (!state.mutation) state.mutation = options
+    if (!state.mutation && options.onSuccess) state.mutation = options
     return { isPending: false, isError: false, reset: vi.fn(), mutate: vi.fn() }
   },
 }))

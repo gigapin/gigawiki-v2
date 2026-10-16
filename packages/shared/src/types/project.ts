@@ -7,6 +7,7 @@ export interface Project {
   subjectId: string
   name: string
   slug: string
+  descriptionFormat?: 'text' | 'html'
   description: string | null
   imageId: string | null
   image?: Image | null

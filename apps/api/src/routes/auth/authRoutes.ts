@@ -92,6 +92,26 @@ export async function login(fastify: FastifyInstance) {
         .send({ code: 'EMAIL_NOT_VERIFIED', error: 'Please verify your email before signing in.' })
     }
 
+    if (user.mustChangePassword) {
+      if (!user.temporaryPasswordExpiresAt || user.temporaryPasswordExpiresAt <= new Date())
+        return reply
+          .status(401)
+          .send({ error: 'Temporary password expired. Contact an administrator.' })
+      reply.clearCookie(REFRESH_COOKIE, { path: REFRESH_COOKIE_PATH })
+      return reply.send({
+        requiresPasswordChange: true,
+        passwordChangeToken: fastify.jwt.sign(
+          {
+            id: user.id,
+            email: user.email,
+            role: user.role,
+            authVersion: user.authVersion,
+            purpose: 'initial-password',
+          },
+          { expiresIn: '10m' },
+        ),
+      })
+    }
     const accessToken = fastify.jwt.sign({
       id: user.id,
       email: user.email,
@@ -101,6 +121,9 @@ export async function login(fastify: FastifyInstance) {
     reply.clearCookie(REFRESH_COOKIE, { path: '/api/v2/auth/refresh' })
     await createRefreshToken(reply, user.id, user.authVersion)
 
+    await prisma.activity.create({
+      data: { userId: user.id, resourceType: 'AUTH', type: 'LOGIN', ip: request.ip },
+    })
     return reply.status(200).send({ accessToken })
   })
 }
@@ -136,7 +159,7 @@ export async function refresh(fastify: FastifyInstance) {
       })
       if (!stored) return null
       const user = await tx.user.findUnique({ where: { id: stored.userId } })
-      if (!user) return null
+      if (!user || user.mustChangePassword) return null
       await tx.refreshToken.delete({ where: { id: stored.id } })
       const nextToken = nanoid(64)
       const expiresAt =
@@ -291,7 +314,12 @@ export async function resetPassword(fastify: FastifyInstance) {
       await adminTransaction(async (tx) => {
         await tx.user.update({
           where: { id: userId },
-          data: { password: hashedPassword, authVersion: { increment: 1 } },
+          data: {
+            password: hashedPassword,
+            mustChangePassword: false,
+            temporaryPasswordExpiresAt: null,
+            authVersion: { increment: 1 },
+          },
         })
         await tx.refreshToken.updateMany({
           where: { userId, revokedAt: null },

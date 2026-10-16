@@ -15,7 +15,8 @@
     "lint": "eslint src prisma.config.ts",
     "content-access:audit": "node --import tsx src/scripts/audit-content-access.ts",
     "sessions:invalidate": "node --import tsx src/scripts/invalidate-sessions.ts",
-    "test:parity:db": "RUN_PARITY_DB_TESTS=1 vitest run src/__tests__/parity.integration.test.ts"
+    "test:parity:db": "RUN_PARITY_DB_TESTS=1 vitest run src/__tests__/parity.integration.test.ts",
+    "test:features:db": "RUN_FEATURE_DB_TESTS=1 vitest run src/__tests__/features.integration.test.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -68,6 +69,7 @@
     "sharp": "^0.34.5",
     "slugify": "^1.6.9",
     "zod": "^4.3.6",
-    "shared": "workspace:*"
+    "shared": "workspace:*",
+    "wiki-content": "workspace:*"
   }
 }

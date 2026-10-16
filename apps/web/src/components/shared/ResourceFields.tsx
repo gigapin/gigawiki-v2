@@ -1,3 +1,6 @@
+import { lazy, Suspense, useState } from 'react'
+
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -9,7 +12,16 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-export type ResourceValues = { name: string; description: string; visibility: 'PUBLIC' | 'PRIVATE' }
+const RichDescriptionEditor = lazy(() =>
+  import('./RichDescriptionEditor').then((module) => ({ default: module.RichDescriptionEditor })),
+)
+
+export type ResourceValues = {
+  name: string
+  description: string
+  descriptionFormat?: 'text' | 'html'
+  visibility: 'PUBLIC' | 'PRIVATE'
+}
 
 export function ResourceFields({
   id,
@@ -24,6 +36,7 @@ export function ResourceFields({
   disabled: boolean
   maxNameLength?: number
 }) {
+  const [rich, setRich] = useState(values.descriptionFormat === 'html')
   return (
     <fieldset disabled={disabled} className="space-y-4">
       <div className="space-y-2">
@@ -39,12 +52,48 @@ export function ResourceFields({
       </div>
       <div className="space-y-2">
         <Label htmlFor={`${id}-description`}>Description</Label>
-        <Textarea
-          id={`${id}-description`}
-          rows={4}
-          value={values.description}
-          onChange={(event) => onChange({ ...values, description: event.target.value })}
-        />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={disabled || rich}
+          onClick={() => {
+            setRich(true)
+            onChange({
+              ...values,
+              description: values.description
+                .split('\n')
+                .map(
+                  (line) =>
+                    '<p>' +
+                    line.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;') +
+                    '</p>',
+                )
+                .join(''),
+              descriptionFormat: 'html',
+            })
+          }}
+        >
+          Use formatted description
+        </Button>
+        {rich ? (
+          <Suspense fallback={<p>Loading description editor…</p>}>
+            <RichDescriptionEditor
+              value={values.description}
+              disabled={disabled}
+              onChange={(description) =>
+                onChange({ ...values, description, descriptionFormat: 'html' })
+              }
+            />
+          </Suspense>
+        ) : (
+          <Textarea
+            id={`${id}-description`}
+            rows={4}
+            value={values.description}
+            onChange={(event) => onChange({ ...values, description: event.target.value })}
+          />
+        )}
       </div>
       <div className="space-y-2">
         <Label htmlFor={`${id}-visibility`}>Visibility</Label>

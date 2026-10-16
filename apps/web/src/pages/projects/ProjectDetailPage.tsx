@@ -14,6 +14,7 @@ import {
 import { isAxiosError } from 'axios'
 import { toast } from 'sonner'
 
+import { Description } from '@/components/shared/Description'
 import { useDeleteProject, useProject } from '@/api/projects'
 import { usePages } from '@/api/pages'
 import { useSectionMutations, useSections, type SectionWithCount } from '@/api/sections'
@@ -137,9 +138,9 @@ export function ProjectDetail({ slug, sectionSlug }: { slug: string; sectionSlug
               <h1 className="break-words text-3xl font-semibold tracking-tight">{project.name}</h1>
             </div>
             {project.description && (
-              <p className="max-w-2xl whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-                {project.description}
-              </p>
+              <div className="max-w-2xl whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+                <Description value={project.description} format={project.descriptionFormat} />
+              </div>
             )}
             <div className="flex flex-wrap gap-2">
               <Badge variant="outline">
@@ -323,9 +324,12 @@ export function ProjectDetail({ slug, sectionSlug }: { slug: string; sectionSlug
                 <div className="space-y-2">
                   <h2 className="text-xl font-semibold">{activeSection.title}</h2>
                   {activeSection.description && (
-                    <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-                      {activeSection.description}
-                    </p>
+                    <div className="whitespace-pre-wrap text-sm text-muted-foreground">
+                      <Description
+                        value={activeSection.description}
+                        format={activeSection.descriptionFormat}
+                      />
+                    </div>
                   )}
                   <Badge variant="outline">{activeSection.visibility}</Badge>
                 </div>

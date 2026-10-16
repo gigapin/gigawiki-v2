@@ -1,9 +1,22 @@
 # Chiusura operativa V2
 
-Aggiornamento: 16 ottobre 2026. F01–F14 implementati; parità V1, import dati/password,
-PDF e revisione grafica restano fuori da questo ciclo.
+Aggiornamento: 16 ottobre 2026. F01–F14 e incrementi V1 approvati implementati, PDF incluso. Import dati/password V1 e revisione grafica generale esclusi.
+
+**Confronto V1 del 16 ottobre:** il codice originale è ora disponibile e il confronto statico è completato in [V1_V2_FEATURE_COMPARISON.md](V1_V2_FEATURE_COMPARISON.md), inclusi PDF e backlog delle differenze. Il confronto fotografa lo stato prima dell’implementazione; gli incrementi ora applicati sono descritti nella guida funzionale e non sostituiscono i collaudi browser/email sotto.
 
 **Stato: chiusura ancora aperta.** Collaudo manuale browser e consegna email non ancora eseguiti in questo ciclo. Seguire [V2_MANUAL_TESTS.md](V2_MANUAL_TESTS.md) e registrare ogni caso, inclusi i sottocasi bloccati. Traguardo concordato: versione verificata su `dev`, senza merge in `main` o deployment.
+
+## Incrementi V1/V2 — attivazione e collaudo
+
+Implementazione e contratti in [V1_FEATURE_IMPLEMENTATION.md](V1_FEATURE_IMPLEMENTATION.md). Il confronto statico resta storico rispetto alla base `47cee08`. Migrazione dati V1, cancellazioni definitive e pulizia asset escluse; R09 conserva le revisioni.
+
+- [x] Typecheck, lint e build locali superati; 350 test API, 225 frontend, 3 renderer e 30 PostgreSQL superati.
+- [x] Nuova migrazione additiva predisposta e verificata da zero su PostgreSQL temporaneo dedicato.
+- [x] Renderer PDF in container sandboxato verificato con PDF di prova; nessun contenuto dell'app utilizzato.
+- [ ] Applicare l'ottava migrazione all'ambiente dell'app dopo backup e verifica destinazione, rigenerare Prisma e riavviare.
+- [ ] Configurare `PDF_RENDERER_SECRET` e avviare il profilo Compose `pdf` prima dei collaudi export.
+- [ ] Registrare B19–B26 oltre ai precedenti casi browser/email; correggere e ricollaudare eventuali difetti.
+- [ ] Verificare CI del candidato finale, inclusa la dipendenza `test-pdf` del job `build`.
 
 ## Verifiche del 16 ottobre 2026
 

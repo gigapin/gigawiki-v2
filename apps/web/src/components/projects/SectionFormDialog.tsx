@@ -31,6 +31,7 @@ export function SectionFormDialog({
   const [values, setValues] = useState<ResourceValues>({
     name: section?.title ?? '',
     description: section?.description ?? '',
+    descriptionFormat: section?.descriptionFormat ?? 'text',
     visibility: section?.visibility ?? 'PUBLIC',
   })
   const { save } = useSectionMutations(projectSlug)
@@ -41,6 +42,7 @@ export function SectionFormDialog({
         slug: section?.slug,
         title: values.name.trim(),
         description: values.description.trim(),
+        descriptionFormat: values.descriptionFormat,
         visibility: values.visibility,
       })
       toast.success(section ? 'Section updated' : 'Section created')

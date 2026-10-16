@@ -23,7 +23,9 @@ export async function fetchFavorites(fastify: FastifyInstance) {
         include: {
           page: { select: { id: true, title: true, slug: true } },
           project: { select: { id: true, name: true, slug: true } },
-          section: { select: { id: true, title: true, slug: true } },
+          section: {
+            select: { id: true, title: true, slug: true, project: { select: { slug: true } } },
+          },
         },
         orderBy: { createdAt: 'desc' },
         skip,

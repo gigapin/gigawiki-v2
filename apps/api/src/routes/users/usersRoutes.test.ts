@@ -91,6 +91,8 @@ beforeEach(() => {
 
 const fakeUser = {
   authVersion: 0,
+  mustChangePassword: false,
+  temporaryPasswordExpiresAt: null,
   id: 'user-1',
   name: 'John Doe',
   email: 'john@example.com',

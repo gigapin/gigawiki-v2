@@ -9,6 +9,8 @@ import { InviteUsersLink } from '@/components/auth/InviteUsersLink'
 import { useLogout } from '@/api/auth'
 import { Button } from '@/components/ui/button'
 import { useSections } from '@/api/sections'
+import { useParityRead, type PageResult, type ResourceLink } from '@/api/parity'
+import { Pagination } from '@/components/shared/Pagination'
 import { useProjects } from '@/api/projects'
 import { useSubjects } from '@/api/subjects'
 import { useAuthStore } from '@/stores/auth.store'
@@ -24,6 +26,71 @@ function initials(name: string) {
 }
 
 type SubjectNode = Subject & { _count: { projects: number } }
+
+function SectionItem({
+  section,
+  projectSlug,
+}: {
+  section: { id: string; slug: string; title: string }
+  projectSlug: string
+}) {
+  const [open, setOpen] = useState(false)
+  const [page, setPage] = useState(1)
+  const query = useParityRead<PageResult<ResourceLink, 'pages'>>(
+    'pages',
+    `/sections/${section.slug}/pages`,
+    { page, limit: 20 },
+    open,
+  )
+  return (
+    <div>
+      <div className="flex items-center">
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={`Toggle pages in ${section.title}`}
+          aria-expanded={open}
+          onClick={() => setOpen(!open)}
+        >
+          <ChevronRight className={open ? 'rotate-90' : ''} />
+        </Button>
+        <Link
+          to="/projects/$slug"
+          params={{ slug: projectSlug }}
+          search={{ section: section.slug }}
+        >
+          {section.title}
+        </Link>
+      </div>
+      {open && (
+        <div className="ml-4 border-l pl-2">
+          {query.isPending ? (
+            <p>Loading pages…</p>
+          ) : query.isError ? (
+            <Button variant="ghost" onClick={() => void query.refetch()}>
+              Retry pages
+            </Button>
+          ) : (
+            <>
+              {query.data.pages.length === 0 && <p>No pages yet.</p>}
+              {query.data.pages.map((item) => (
+                <Link
+                  className="block py-1 text-sm"
+                  to="/pages/$slug"
+                  params={{ slug: item.slug }}
+                  key={item.id}
+                >
+                  {item.title}
+                </Link>
+              ))}
+              <Pagination page={page} limit={20} total={query.data.total} onChange={setPage} />
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function ProjectItem({ project }: { project: { id: string; slug: string; name: string } }) {
   const [open, setOpen] = useState(false)
@@ -57,15 +124,7 @@ function ProjectItem({ project }: { project: { id: string; slug: string; name: s
             <button onClick={() => void sections.refetch()}>Retry loading sections</button>
           )}
           {sections.data?.map((section) => (
-            <Link
-              key={section.id}
-              to="/projects/$slug"
-              params={{ slug: project.slug }}
-              search={{ section: section.slug }}
-              className="block rounded p-2 text-sm hover:bg-secondary"
-            >
-              {section.title}
-            </Link>
+            <SectionItem key={section.id} section={section} projectSlug={project.slug} />
           ))}
           {sections.data?.length === 0 && <p className="text-xs">No sections yet.</p>}
         </div>
@@ -232,7 +291,11 @@ export function Sidebar({ collapsed, onToggleCollapse }: SidebarProps) {
   const avatarInitials = user ? initials(user.name) : '?'
   const w = collapsed ? 52 : 264
 
-  const pinnedItems = [{ icon: 'home' as IconName, label: 'Dashboard', path: '/' as const }]
+  const pinnedItems = [
+    { icon: 'home' as IconName, label: 'Dashboard', path: '/' as const },
+    { icon: 'book' as IconName, label: 'Projects', path: '/projects' as const },
+    { icon: 'book' as IconName, label: 'Tags', path: '/tags' as const },
+  ]
 
   return (
     <aside

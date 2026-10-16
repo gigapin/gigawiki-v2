@@ -42,7 +42,8 @@
     "react-dom": "^19.2.4",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
-    "zustand": "^5.0.14"
+    "zustand": "^5.0.14",
+    "wiki-content": "workspace:*"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

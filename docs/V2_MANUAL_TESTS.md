@@ -38,6 +38,21 @@ Per ogni difetto registrare: ID caso, SHA, ruolo, prerequisiti, passi esatti, at
 | B17 | Provare nome sito, registrazione autonoma e ruolo predefinito su account di prova; ripristinare i valori annotati. | Branding aggiornato e policy applicata alle nuove registrazioni; i ruoli esistenti non cambiano. |
 | B18 | Ripetere login, Project, reader, editor e Settings in light/dark, desktop e viewport mobile di circa 390 px; usare Tab, Escape e conferme. | Testi e controlli leggibili, azioni raggiungibili, nessuna sovrapposizione che impedisce un flusso; preferenza tema conservata al reload. |
 
+## Nuovi incrementi V1/V2 — dopo attivazione della migrazione e renderer
+
+Seguire prima [V1_FEATURE_IMPLEMENTATION.md](V1_FEATURE_IMPLEMENTATION.md). I casi restano da eseguire dall'utente; non usare dati reali per prove distruttive e non modificare la policy per aggirare errori.
+
+| ID | Passi | Risultato atteso |
+| --- | --- | --- |
+| B19 | Esportare PDF come Guest/Editor/Admin da pagine accessibili; riprovare bozze, restricted e antenati privati/eliminati. Provare titolo Unicode, tabelle lunghe, codice e immagini locali/S3. | Download della sola pagina salvata, accessi uguali al reader, impaginazione leggibile; asset mancanti o renderer fermo producono errore esplicito con retry. |
+| B20 | Eliminare una pagina di prova come Admin, aprire cestino, annullare poi confermare restore; riprovare con un antenato eliminato e come altro ruolo. | Solo Admin può recuperare; 409 con antenato eliminato; pagina e revisioni/metadati preservati; nessun pulsante di eliminazione definitiva. |
+| B21 | Aggiungere tag a Subject, rinominare una propria associazione, aprire catalogo e risultati, cambiare privacy e account. | Conteggi e link solo alle risorse accessibili; niente titoli privati; catalogo paginato, associazioni su tutti i target corretti. |
+| B22 | Aprire sezioni della sidebar con oltre venti pagine; navigare precedente/successiva attraversando sezioni; creare più di sei preferiti e aprire “View all”; filtrare progetti Miei/Accessibili e visite Recenti/Più visitati. | Paginazione e selezione corrette, nessuna pagina nascosta suggerita; preferiti personali completi e statistiche/contributi coerenti con account corrente. |
+| B23 | Su contenuti di prova attivare descrizione formattata, colori/highlight/allineamento pagina e fullscreen; salvare/ricaricare e controllare anteprima revisione/PDF. | Formati conservati, testo precedente non reinterpretato; uscita fullscreen da pulsante/Escape; nessuna perdita di contenuti non supportati. |
+| B24 | Disabilitare commenti come Admin; ricaricare come altri ruoli, tentare invio da un form precedentemente aperto; riabilitare. | Thread nascosti e scritture rifiutate dal server; dati tornano visibili alla riattivazione; moderazione DELETE resta solo Admin durante il blocco. Ripristinare il setting originale. |
+| B25 | Creare un account di prova senza email attestando l'indirizzo, copiare la password una volta, accedere e cambiare password; provare URL wiki prima del cambio. Riemettere su un secondo account pending e provare vecchie credenziali/challenge. | Nessuna sessione wiki prima del cambio; poi login ordinario; vecchie challenge/password inutilizzabili. Scadenza 24 ore e challenge 10 minuti anche in development; nessun segreto nell'URL o storage persistente. |
+| B26 | Avviare audit immagini Admin, attendere completamento e paginare; includere immagini in uso solo in revisioni e un file temporaneo senza record. | Riferimenti preservati, warning per driver non leggibile, candidati distinti da file mancanti; nessun file spostato o cancellato. Altri ruoli esclusi. |
+
 ## Email — invii effettuati dall'utente
 
 Eseguire con API e worker email attivi, URL frontend corretto e caselle di prova del proprietario. Verificare nome sito, oggetto, mittente, logo e destinazione dei link in ogni messaggio. Connessione/autenticazione SMTP non dimostrano consegna; il logo deve essere raggiungibile dal client email per verificarne il rendering.
@@ -54,7 +69,7 @@ Errori di accodamento/invio sono coperti dai test automatici pertinenti; eventua
 
 ## Registro degli esiti e chiusura
 
-Duplicare una riga per ogni caso B01–B18 ed E01–E05, distinguendo i sottocasi non completati:
+Duplicare una riga per ogni caso B01–B26 ed E01–E05, distinguendo i sottocasi non completati:
 
 | Caso/sottocaso | Data | SHA | Ruolo/browser/viewport | Esito | Evidenza o difetto anonimo |
 | --- | --- | --- | --- | --- | --- |

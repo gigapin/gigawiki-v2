@@ -117,6 +117,7 @@ describe('GET /views', () => {
     await app.inject({ method: 'GET', url: '/views' })
     const where = mockView.findMany.mock.calls[0][0]!.where!
     expect(where.OR).toEqual([
+      { subject: { is: { deletedAt: null } } },
       {
         page: {
           is: {

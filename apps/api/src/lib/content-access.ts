@@ -79,16 +79,21 @@ export function modelAccess(
     case 'Revision':
       return { page: { is: pageAccess(actor) } }
     case 'Comment':
-    case 'Tag':
-    case 'Favorite':
-    case 'View':
       return relatedAccess(actor)
+    case 'Tag':
+      return relatedAccess(actor, true)
+    case 'Favorite':
+      return relatedAccess(actor)
+    case 'View':
+      return relatedAccess(actor, true)
     case 'Activity':
-      return actor.role === 'ADMIN' ? undefined : relatedAccess(actor, true)
+      return actor.role === 'ADMIN'
+        ? undefined
+        : { OR: [relatedAccess(actor, true), { resourceType: 'AUTH', userId: actor.id }] }
   }
 }
 const relations: Record<string, Record<string, string>> = {
-  Subject: { projects: 'Project' },
+  Subject: { projects: 'Project', tags: 'Tag' },
   Project: { sections: 'Section', pages: 'Page', tags: 'Tag', comments: 'Comment' },
   Section: { pages: 'Page', tags: 'Tag', comments: 'Comment' },
   Page: { tags: 'Tag', comments: 'Comment', revisions: 'Revision' },

@@ -29,6 +29,8 @@ const envSchema = z.object({
     .string()
     .default('data/uploads')
     .transform((value) => path.resolve(storageRoot, value)),
+  PDF_RENDERER_URL: z.string().url().default('http://127.0.0.1:3002'),
+  PDF_RENDERER_SECRET: z.string().default(''),
   PORT: z.coerce.number().int().positive().default(3001),
 
   API_URL: z.string().min(1),

@@ -29,6 +29,7 @@ vi.mock('../../lib/prisma.js', () => ({
       create: vi.fn(),
       update: vi.fn(),
     },
+    activity: { create: vi.fn().mockResolvedValue({ id: 'activity' }) },
     refreshToken: {
       create: vi.fn(),
       findFirst: vi.fn(),
@@ -116,6 +117,8 @@ beforeEach(() => {
 
 const fakeUser = {
   authVersion: 0,
+  mustChangePassword: false,
+  temporaryPasswordExpiresAt: null,
   id: 'user-1',
   name: 'Alice',
   email: 'alice@example.com',
@@ -821,7 +824,12 @@ it('revokes sessions and increases the version on password reset', async () => {
   expect(result.statusCode).toBe(200)
   expect(mockUser.update).toHaveBeenCalledWith({
     where: { id: 'user-1' },
-    data: { password: 'hashed_password', authVersion: { increment: 1 } },
+    data: {
+      password: 'hashed_password',
+      mustChangePassword: false,
+      temporaryPasswordExpiresAt: null,
+      authVersion: { increment: 1 },
+    },
   })
   expect(mockRefreshToken.updateMany).toHaveBeenCalledWith(
     expect.objectContaining({ where: { userId: 'user-1', revokedAt: null } }),

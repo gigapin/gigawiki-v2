@@ -14,6 +14,7 @@ import {
 
 vi.mock('../../lib/prisma.js', () => ({
   prisma: {
+    setting: { findUnique: vi.fn().mockResolvedValue(null) },
     $transaction: vi.fn(),
     activity: { create: vi.fn().mockResolvedValue({ id: 'activity' }) },
     page: { findFirst: vi.fn() },

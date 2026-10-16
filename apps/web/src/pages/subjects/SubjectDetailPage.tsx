@@ -1,6 +1,9 @@
+import { descriptionText } from 'wiki-content/text'
 import { useState } from 'react'
 import { useParams, useNavigate } from '@tanstack/react-router'
 
+import { Description } from '@/components/shared/Description'
+import { ResourceMetadata } from '@/components/shared/ResourceMetadata'
 import { SubjectActions } from '@/components/subjects/SubjectActions'
 import { CARD_TONES, toneForColor } from '@/styles/cover-colors'
 import { useSubject } from '@/api/subjects'
@@ -160,7 +163,7 @@ function ProjectCard({ project, toneIndex, onClick }: ProjectCardProps) {
               overflow: 'hidden',
             }}
           >
-            {project.description}
+            {descriptionText(project.description, project.descriptionFormat)}
           </p>
         ) : (
           <div style={{ marginBottom: 10 }} />
@@ -467,8 +470,12 @@ export function SubjectDetailPage() {
           {subject.visibility}
         </div>
 
+        <ResourceMetadata
+          resource={{ type: 'subjects', id: subject.id, slug: subject.slug }}
+          tags={subject.tags}
+        />
         {subject.description && (
-          <p
+          <div
             style={{
               fontSize: 14.5,
               color: 'var(--db-muted)',
@@ -477,8 +484,8 @@ export function SubjectDetailPage() {
               lineHeight: 1.6,
             }}
           >
-            {subject.description}
-          </p>
+            <Description value={subject.description} format={subject.descriptionFormat} />
+          </div>
         )}
 
         {/* owner row */}

@@ -1,6 +1,6 @@
 # Interventi di conformità implementati — 13 ottobre 2026
 
-Implementazione del piano successivo a [V2_PARITY_AUDIT.md](V2_PARITY_AUDIT.md). Il rapporto originale rimane una fotografia precedente agli interventi. La parità con la V1 non è certificabile finché non è disponibile il codice/inventario originale; import dati/password e PDF restano esclusi, come concordato.
+Implementazione del piano successivo a [V2_PARITY_AUDIT.md](V2_PARITY_AUDIT.md). Il rapporto originale rimane una fotografia precedente agli interventi. Il 16 ottobre è diventato disponibile il codice V1: differenze verificate, PDF e requisiti di import sono ora documentati in [V1_V2_FEATURE_COMPARISON.md](V1_V2_FEATURE_COMPARISON.md). La parità non è ancora raggiunta; import dati/password e PDF restano esclusi dall'implementazione F01–F14 descritta qui.
 
 ## Aggiornamento operativo — 16 ottobre 2026
 

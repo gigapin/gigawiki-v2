@@ -11,15 +11,19 @@ export async function recordActivity(
   type: ActivityType,
   details?: string,
 ) {
-  const key = { PAGE: 'pageId', PROJECT: 'projectId', SECTION: 'sectionId', SUBJECT: 'subjectId' }[
-    resourceType
-  ]
+  const key = {
+    AUTH: null,
+    PAGE: 'pageId',
+    PROJECT: 'projectId',
+    SECTION: 'sectionId',
+    SUBJECT: 'subjectId',
+  }[resourceType]
   await tx.activity.create({
     data: {
       userId: request.user.id,
       type,
       resourceType,
-      [key]: resourceId,
+      ...(key ? { [key]: resourceId } : {}),
       details,
       ip: request.ip,
     },

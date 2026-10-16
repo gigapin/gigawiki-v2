@@ -9,6 +9,10 @@ import { useAuthStore } from '../src/stores/auth.store'
 import apiClient from '../src/api/client'
 vi.mock('../src/api/client', () => ({ default: { get: vi.fn(), post: vi.fn(), delete: vi.fn() } }))
 vi.mock('../src/components/dashboard/RecentlyVisited', () => ({ RecentlyVisited: () => null }))
+vi.mock('@tanstack/react-router', () => ({
+  Link: ({ children, to }) => createElement('a', { href: to }, children),
+}))
+vi.mock('../src/components/shared/Contributions', () => ({ Contributions: () => null }))
 let client
 beforeEach(() => {
   vi.resetAllMocks()

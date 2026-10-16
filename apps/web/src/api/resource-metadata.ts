@@ -8,14 +8,18 @@ export type ResourceMetadataAction = {
   id?: string
   name?: string
 }
-export function useResourceMetadata(resource: CommentResource) {
+export function useResourceMetadata(
+  resource: CommentResource | { type: 'subjects'; id: string; slug: string },
+) {
   const client = useQueryClient()
   const key =
-    resource.type === 'projects'
-      ? 'projectId'
-      : resource.type === 'sections'
-        ? 'sectionId'
-        : 'pageId'
+    resource.type === 'subjects'
+      ? 'subjectId'
+      : resource.type === 'projects'
+        ? 'projectId'
+        : resource.type === 'sections'
+          ? 'sectionId'
+          : 'pageId'
   return useMutation({
     mutationFn: async (action: ResourceMetadataAction): Promise<void> => {
       if (action.type === 'favorite')

@@ -70,6 +70,7 @@ const fakeSection = {
   title: 'Introduction',
   slug: 'introduction',
   description: 'Intro section',
+  descriptionFormat: 'text',
   position: 0,
   visibility: Visibility.PUBLIC,
   projectId: 'proj-1',

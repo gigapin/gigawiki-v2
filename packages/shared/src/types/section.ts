@@ -5,6 +5,7 @@ export interface Section {
   projectId: string
   title: string
   slug: string
+  descriptionFormat?: 'text' | 'html'
   description: string | null
   position: number
   visibility: Visibility

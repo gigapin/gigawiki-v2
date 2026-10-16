@@ -14,6 +14,7 @@ const ALLOWED_KEYS = [
   'ALLOW_SELF_REGISTRATION',
   'DEFAULT_USER_ROLE',
   'SITE_NAME',
+  'COMMENTS_ENABLED',
   'SITE_LOGO_IMAGE_ID',
 ] as const
 
@@ -81,7 +82,7 @@ export async function updateSetting(fastify: FastifyInstance) {
       }
 
       const valid =
-        key === 'ALLOW_SELF_REGISTRATION'
+        key === 'ALLOW_SELF_REGISTRATION' || key === 'COMMENTS_ENABLED'
           ? ['true', 'false'].includes(value)
           : key === 'DEFAULT_USER_ROLE'
             ? ['GUEST', 'EDITOR'].includes(value)

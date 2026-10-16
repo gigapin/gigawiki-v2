@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Star, X } from 'lucide-react'
 
+import { TagLabel } from '@/components/shared/TagLabel'
 import type { PageDetail } from '@/api/pages'
 import { useToggleFavorite } from '@/api/favorites'
 import { usePageTags, useTagSearch } from '@/api/tags'
@@ -41,7 +42,7 @@ export function PageMetadata({ page }: { page: PageDetail }) {
         {tags.length === 0 && <p className="text-sm text-muted-foreground">No tags yet</p>}
         {tags.map((tag) => (
           <Badge key={tag.id} variant="secondary">
-            {tag.name}
+            <TagLabel tag={tag} />
             {(user?.role === 'ADMIN' || user?.id === tag.userId) && (
               <button
                 type="button"

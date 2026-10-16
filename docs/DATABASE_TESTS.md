@@ -11,6 +11,7 @@ temporaneo, mai a quello dell'app. L'ambiente esplicito prevale sul `.env`.
 ./bin/pnpm --filter gigawiki-v2-api test:integration:db
 ./bin/pnpm --filter gigawiki-v2-api test:settings:db
 ./bin/pnpm --filter gigawiki-v2-api test:parity:db
+./bin/pnpm --filter gigawiki-v2-api test:features:db
 ```
 
 Il comando standard `test` salta tutte e tre le suite PostgreSQL; la CI le esegue
@@ -37,3 +38,5 @@ Redis e accodamento email sono simulati nei test pertinenti; SMTP, storage e
 browser non sono coperti. `pg` segnala query concorrenti sullo stesso client nelle
 suite con rollback. Vedere [CI.md](CI.md) e la
 [checklist dei collaudi reali](V2_RELEASE_CHECKLIST.md).
+
+Incremento funzionale del 16 ottobre: ottava migrazione verificata sul database temporaneo e nuova suite `test:features:db` con 10 casi (PDF autorizzato coperto separatamente, tag Subject, cataloghi, restore, commenti, navigazione, descrizioni, cancellazione account e password iniziale). Le suite PostgreSQL sono ora quattro, per 30 casi complessivi. Nessuna migrazione applicata al database dell’app.

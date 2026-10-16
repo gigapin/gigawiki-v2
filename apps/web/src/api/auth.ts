@@ -7,6 +7,7 @@ import type { MutationOptions } from './hook-options'
 import { publicSettingsOptions } from './settings'
 import apiClient from './client'
 
+import { useInitialPasswordStore } from '@/stores/initial-password.store'
 import { useAuthStore } from '@/stores/auth.store'
 import { apiErrorMessage } from '@/lib/api-error'
 
@@ -76,7 +77,9 @@ export function useInvitationSession() {
 }
 
 export type LoginInput = { email: string; password: string }
-export type AuthSession = { user: User; accessToken: string }
+export type AuthSession =
+  | { user: User; accessToken: string }
+  | { requiresPasswordChange: true; passwordChangeToken: string }
 export function useMe() {
   const userId = useAuthStore((s) => s.user?.id)
   return useQuery({
@@ -91,10 +94,15 @@ export function useLogin(options: MutationOptions<AuthSession, LoginInput> = {})
     ...options,
     mutationFn: async (input: LoginInput) => {
       const previousAccount = useAuthStore.getState().user?.id
-      const { data } = await apiClient.post<{ accessToken: string }>('/api/v2/auth/login', {
+      const { data } = await apiClient.post<
+        { accessToken: string } | { requiresPasswordChange: true; passwordChangeToken: string }
+      >('/api/v2/auth/login', {
         ...input,
         email: input.email.trim().toLowerCase(),
       })
+      if (useAuthStore.getState().user?.id !== previousAccount)
+        throw new Error('Session changed during login')
+      if ('requiresPasswordChange' in data) return data
       const {
         data: { user },
       } = await apiClient.get<{ user: User }>('/api/v2/auth/me', {
@@ -105,7 +113,13 @@ export function useLogin(options: MutationOptions<AuthSession, LoginInput> = {})
       return { user, accessToken: data.accessToken }
     },
     onSuccess: async (session, variables, result, context) => {
-      useAuthStore.getState().setAuth(session.user, session.accessToken)
+      if ('requiresPasswordChange' in session) {
+        useAuthStore.getState().clearAuth()
+        useInitialPasswordStore.getState().set(session.passwordChangeToken)
+      } else {
+        useInitialPasswordStore.getState().clear()
+        useAuthStore.getState().setAuth(session.user, session.accessToken)
+      }
       await options.onSuccess?.(session, variables, result, context)
     },
   })

@@ -6,6 +6,7 @@ type TagIdParams = { id: string }
 type TagQuery = { name?: string }
 type CreateTagBody = {
   name: string
+  subjectId?: string
   pageId?: string
   projectId?: string
   sectionId?: string
@@ -35,9 +36,9 @@ export async function createTag(fastify: FastifyInstance) {
       return reply.status(403).send({ error: 'Editor or Admin role required' })
     }
 
-    const { name, pageId, projectId, sectionId } = req.body
+    const { name, pageId, projectId, sectionId, subjectId } = req.body
 
-    const targets = [pageId, projectId, sectionId].filter(Boolean)
+    const targets = [pageId, projectId, sectionId, subjectId].filter(Boolean)
     if (targets.length !== 1) {
       return reply
         .status(400)
@@ -46,7 +47,13 @@ export async function createTag(fastify: FastifyInstance) {
 
     const normalizedName = name.toLowerCase()
 
-    const where = pageId ? { pageId } : projectId ? { projectId } : { sectionId }
+    const where = subjectId
+      ? { subjectId }
+      : pageId
+        ? { pageId }
+        : projectId
+          ? { projectId }
+          : { sectionId }
     const count = await prisma.tag.count({ where })
 
     if (count >= 10) {
@@ -56,6 +63,7 @@ export async function createTag(fastify: FastifyInstance) {
     const tag = await prisma.tag.create({
       data: {
         userId: req.user.id,
+        subjectId,
         name: normalizedName,
         pageId,
         projectId,

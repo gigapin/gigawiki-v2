@@ -51,7 +51,11 @@ export function LoginPage() {
     if (!okEmail || !okPw) return
 
     try {
-      await login.mutateAsync({ email, password })
+      const result = await login.mutateAsync({ email, password })
+      if ('requiresPasswordChange' in result) {
+        await navigate({ to: '/initial-password' })
+        return
+      }
       navigate({ to: (search as { redirect?: string }).redirect || '/' })
     } catch (error) {
       setServerError(apiErrorMessage(error))

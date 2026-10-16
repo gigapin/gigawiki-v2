@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import { History, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
+import { usePDF, useParityRead, type ResourceLink } from '@/api/parity'
 import { useDeletePage, usePage } from '@/api/pages'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { ProjectBreadcrumb } from '@/components/shared/ProjectBreadcrumb'
@@ -18,6 +19,11 @@ import { useAuthStore } from '@/stores/auth.store'
 
 export function PageReaderPage() {
   const { slug } = useParams({ from: '/_auth/pages/$slug' })
+  const pdf = usePDF(slug)
+  const navigation = useParityRead<{ previous: ResourceLink | null; next: ResourceLink | null }>(
+    'page-navigation',
+    `/pages/${slug}/navigation`,
+  )
   const query = usePage(slug, { refetchOnMount: 'always' })
   const user = useAuthStore((s) => s.user)
   const canViewHistory = user?.role === 'EDITOR' || user?.role === 'ADMIN'
@@ -58,6 +64,9 @@ export function PageReaderPage() {
             <div className="flex flex-wrap items-start justify-between gap-4">
               <h1 className="min-w-0 break-words text-3xl font-semibold">{page.title}</h1>
               <div className="flex flex-wrap gap-2">
+                <Button variant="outline" disabled={pdf.isPending} onClick={() => pdf.mutate()}>
+                  {pdf.isPending ? 'Exporting…' : 'Export PDF'}
+                </Button>
                 {canViewHistory && (
                   <Button
                     variant="outline"
@@ -97,6 +106,19 @@ export function PageReaderPage() {
               {new Date(page.updatedAt).toLocaleDateString('en-GB')}
             </p>
           </header>
+          {pdf.isError && <p role="alert">{apiErrorMessage(pdf.error)}</p>}
+          <nav aria-label="Page navigation" className="flex justify-between gap-4">
+            {navigation.data?.previous && (
+              <Link to="/pages/$slug" params={{ slug: navigation.data.previous.slug }}>
+                ← {navigation.data.previous.title}
+              </Link>
+            )}
+            {navigation.data?.next && (
+              <Link to="/pages/$slug" params={{ slug: navigation.data.next.slug }}>
+                {navigation.data.next.title} →
+              </Link>
+            )}
+          </nav>
           <PageMetadata key={page.id} page={page} />
           <PageContent key={`${page.id}:${page.currentRevision}`} content={page.content} />
           <CommentSection

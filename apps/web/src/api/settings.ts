@@ -9,6 +9,7 @@ import { useSettingsStore } from '@/stores/settings.store'
 export type EditableSettingKey =
   | 'ALLOW_SELF_REGISTRATION'
   | 'DEFAULT_USER_ROLE'
+  | 'COMMENTS_ENABLED'
   | 'SITE_NAME'
   | 'SITE_LOGO_IMAGE_ID'
 export function useSettings() {
@@ -29,6 +30,7 @@ export function useUpdateSetting() {
         .put<{ key: string; value: string }>(`/api/v2/settings/${key}`, { value })
         .then((r) => r.data),
     onSuccess: async ({ key, value }) => {
+      if (key === 'COMMENTS_ENABLED') await client.invalidateQueries({ queryKey: ['comments'] })
       await client.cancelQueries({ queryKey: queryKeys.settings() })
       useSettingsStore.setState((s) => ({ settings: { ...s.settings, [key]: value } }))
       client.setQueriesData<Record<string, string>>(

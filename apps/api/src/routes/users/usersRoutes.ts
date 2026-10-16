@@ -25,6 +25,7 @@ const USER_SELECT = {
   avatarId: true,
   avatar: true,
   emailConfirmed: true,
+  mustChangePassword: true,
   createdAt: true,
   updatedAt: true,
 }

@@ -29,6 +29,7 @@ export const createSubject = (body: {
 
 export type SubjectInput = {
   name: string
+  descriptionFormat?: 'text' | 'html'
   description: string
   visibility: 'PUBLIC' | 'PRIVATE'
   color: string
@@ -42,6 +43,7 @@ export const deleteSubject = (slug: string) =>
 
 export type SubjectsParams = { page?: number; limit?: number; visibility?: string }
 export type SubjectDetail = Subject & {
+  tags?: { id: string; name: string; userId: string }[]
   user: { id: string; name: string }
   _count: { projects: number }
 }

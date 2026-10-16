@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify'
 
 import { adminTransaction } from '../../lib/admin-transaction.js'
 import { recordActivity } from '../../lib/activity.js'
+import { commentsEnabled, requireCommentsEnabled } from '../../lib/comment-policy.js'
 import { prisma } from '../../lib/prisma.js'
 
 const COMMENT_SELECT = {
@@ -58,6 +59,8 @@ export async function fetchPageComments(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Page not found' })
       }
 
+      if (!(await commentsEnabled()))
+        return reply.send({ comments: [], total: 0, page: Number(page), limit: Number(limit) })
       const skip = (parseInt(page) - 1) * parseInt(limit)
       const take = parseInt(limit)
       const where = { pageId: pageRecord.id, parentId: null }
@@ -94,6 +97,8 @@ export async function fetchProjectComments(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Project not found' })
       }
 
+      if (!(await commentsEnabled()))
+        return reply.send({ comments: [], total: 0, page: Number(page), limit: Number(limit) })
       const skip = (parseInt(page) - 1) * parseInt(limit)
       const take = parseInt(limit)
       const where = { projectId: project.id, parentId: null }
@@ -130,6 +135,8 @@ export async function fetchSectionComments(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Section not found' })
       }
 
+      if (!(await commentsEnabled()))
+        return reply.send({ comments: [], total: 0, page: Number(page), limit: Number(limit) })
       const skip = (parseInt(page) - 1) * parseInt(limit)
       const take = parseInt(limit)
       const where = { sectionId: section.id, parentId: null }
@@ -152,6 +159,7 @@ export async function fetchSectionComments(fastify: FastifyInstance) {
 
 export async function createComment(fastify: FastifyInstance) {
   fastify.post<{ Body: CreateCommentBody }>('/comments', async (req, reply) => {
+    await requireCommentsEnabled()
     const { body, pageId, projectId, sectionId, parentId } = req.body
 
     if (typeof body !== 'string' || !body.trim())
@@ -226,6 +234,7 @@ export async function updateComment(fastify: FastifyInstance) {
   fastify.patch<{ Params: CommentIdParams; Body: UpdateCommentBody }>(
     '/comments/:id',
     async (req, reply) => {
+      await requireCommentsEnabled()
       const { id } = req.params
       if (typeof req.body.body !== 'string' || !req.body.body.trim())
         return reply.status(400).send({ error: 'Comment body is required' })
@@ -278,6 +287,8 @@ export async function updateComment(fastify: FastifyInstance) {
 
 export async function deleteComment(fastify: FastifyInstance) {
   fastify.delete<{ Params: CommentIdParams }>('/comments/:id', async (req, reply) => {
+    if (!(await commentsEnabled()) && req.user.role !== 'ADMIN')
+      return reply.status(403).send({ error: 'Comments are disabled' })
     const { id } = req.params
 
     const existing = await prisma.comment.findFirst({

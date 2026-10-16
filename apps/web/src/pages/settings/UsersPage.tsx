@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table'
 import { isAxiosError } from 'axios'
 
+import { ProvisionAccount, ReissuePassword } from '@/components/settings/ProvisionAccount'
 import {
   useUsers,
   useUpdateRole,
@@ -216,6 +217,15 @@ export function UsersPage() {
   if (account?.role !== 'ADMIN') return <p role="alert">Admin access required.</p>
   return (
     <div className="space-y-4">
+      <ProvisionAccount />
+      {query.data?.users
+        .filter((account) => account.mustChangePassword)
+        .map((account) => (
+          <div key={account.id}>
+            <p>{account.name} — initial password change pending</p>
+            <ReissuePassword id={account.id} />
+          </div>
+        ))}
       <h2 className="text-xl font-semibold">Users</h2>
       <Input
         aria-label="Search users"

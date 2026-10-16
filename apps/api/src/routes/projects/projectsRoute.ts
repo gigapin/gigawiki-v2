@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { FastifyInstance } from 'fastify'
+import { sanitizeContent } from 'wiki-content/server'
 
 import { generateUniqueSlug } from '../../lib/slugify.js'
 import { prisma } from '../../lib/prisma.js'
@@ -10,6 +11,7 @@ const PROJECT_SELECT = {
   name: true,
   slug: true,
   description: true,
+  descriptionFormat: true,
   visibility: true,
   imageId: true,
   image: { select: { id: true, url: true } },
@@ -28,6 +30,7 @@ type ActivityQuery = { page?: string; limit?: string }
 type CreateProjectBody = {
   name: string
   subjectId: string
+  descriptionFormat?: 'text' | 'html'
   description?: string
   visibility?: 'PUBLIC' | 'PRIVATE'
   imageId?: string | null
@@ -36,6 +39,7 @@ type CreateProjectBody = {
 type PatchProjectBody = {
   subjectId?: string
   name?: string
+  descriptionFormat?: 'text' | 'html'
   description?: string
   visibility?: 'PUBLIC' | 'PRIVATE'
   imageId?: string | null
@@ -140,13 +144,14 @@ export async function createProject(fastify: FastifyInstance) {
       .object({
         name: z.string().trim().min(1).max(100),
         description: z.string().optional(),
+        descriptionFormat: z.enum(['text', 'html']).optional(),
         visibility: z.enum(['PUBLIC', 'PRIVATE']).optional(),
         imageId: z.string().min(1).nullable().optional(),
         subjectId: z.string().min(1),
       })
       .safeParse(req.body)
     if (!parsed.success) return reply.status(400).send({ error: 'Invalid project fields' })
-    const { name, subjectId, description, visibility, imageId } = parsed.data
+    const { name, subjectId, description, descriptionFormat, visibility, imageId } = parsed.data
 
     const slug = await generateUniqueSlug(name, async (candidate) =>
       Boolean(
@@ -156,7 +161,17 @@ export async function createProject(fastify: FastifyInstance) {
 
     const project = await auditedWrite(req, 'PROJECT', 'CREATED', (tx) =>
       tx.project.create({
-        data: { userId: req.user.id, subjectId, name, slug, description, visibility, imageId },
+        data: {
+          userId: req.user.id,
+          subjectId,
+          name,
+          slug,
+          description:
+            descriptionFormat === 'html' ? sanitizeContent(description ?? '') : description,
+          descriptionFormat,
+          visibility,
+          imageId,
+        },
         select: PROJECT_SELECT,
       }),
     )
@@ -175,16 +190,17 @@ export async function updateProject(fastify: FastifyInstance) {
           subjectId: z.string().min(1).optional(),
           name: z.string().trim().min(1).max(100).optional(),
           description: z.string().optional(),
+          descriptionFormat: z.enum(['text', 'html']).optional(),
           visibility: z.enum(['PUBLIC', 'PRIVATE']).optional(),
           imageId: z.string().min(1).nullable().optional(),
         })
         .safeParse(req.body)
       if (!parsed.success) return reply.status(400).send({ error: 'Invalid project fields' })
-      const { name, description, visibility, imageId, subjectId } = parsed.data
+      const { name, description, descriptionFormat, visibility, imageId, subjectId } = parsed.data
 
       const existing = await prisma.project.findFirst({
         where: { slug, deletedAt: null },
-        select: { id: true, userId: true, name: true },
+        select: { id: true, userId: true, name: true, description: true, descriptionFormat: true },
       })
 
       if (!existing) {
@@ -210,7 +226,15 @@ export async function updateProject(fastify: FastifyInstance) {
             return Boolean(match && match.id !== existing.id)
           })
       }
-      if (description !== undefined) data.description = description
+      if (descriptionFormat !== undefined) {
+        data.descriptionFormat = descriptionFormat
+        if (descriptionFormat === 'html' && description === undefined)
+          data.description = sanitizeContent(existing.description ?? '')
+      }
+      if (description !== undefined) {
+        const format = descriptionFormat ?? existing.descriptionFormat
+        data.description = format === 'html' ? sanitizeContent(description) : description
+      }
       if (visibility !== undefined) data.visibility = visibility
       if (imageId !== undefined) data.imageId = imageId
       if (subjectId !== undefined) {

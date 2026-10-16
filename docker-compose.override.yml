@@ -11,6 +11,7 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+    networks: [default, pdf_network]
     ports:
       - '3001:3001'
     env_file:
@@ -21,6 +22,8 @@ services:
       NODE_ENV: production
       LOCAL_STORAGE_PATH: /app/data/uploads
       PORT: 3001
+      PDF_RENDERER_URL: http://pdf:3002
+      PDF_RENDERER_SECRET: ${PDF_RENDERER_SECRET:-}
       # Service names, not localhost — these resolve on the compose network.
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/gigawiki
       REDIS_URL: redis://redis:6379

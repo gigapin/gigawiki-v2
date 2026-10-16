@@ -45,6 +45,10 @@ Usare esclusivamente un PostgreSQL temporaneo dedicato chiamato `gigawiki_test`,
 ./bin/pnpm --filter gigawiki-v2-api test:settings:db
 ```
 
-La suite crea account/risorse temporanei con identificatori casuali e annulla **tutte** le scritture al termine di ciascun test, anche in caso di errore. Non esegue migrazioni, truncate o pulizia delle tabelle esistenti. Le prove su DB sono disattivate nella suite standard. Il rollback non autorizza a usare il database dell'app: la procedura corrente prescrive un database temporaneo isolato per tutte e tre le suite. La suite può emettere un warning non bloccante di `pg` sulle query concorrenti sullo stesso client.
+La suite crea account/risorse temporanei con identificatori casuali e annulla **tutte** le scritture al termine di ciascun test, anche in caso di errore. Non esegue migrazioni, truncate o pulizia delle tabelle esistenti. Le prove su DB sono disattivate nella suite standard. Il rollback non autorizza a usare il database dell'app: la procedura corrente prescrive un database temporaneo isolato per tutte e quattro le suite. La suite può emettere un warning non bloccante di `pg` sulle query concorrenti sullo stesso client.
 
 Appearance usa il tema light/dark locale, condiviso con la Topbar, senza modificare il profilo. Il logo si gestisce in App Settings: upload/selezione, rimozione e fallback; gli asset condivisi non vengono cancellati automaticamente.
+
+## Incremento V1
+
+La nuova ottava migrazione aggiunge account con password temporanea e altri campi descritti in [V1_FEATURE_IMPLEMENTATION.md](V1_FEATURE_IMPLEMENTATION.md); non è stata applicata al database dell’app. Settings include ora `COMMENTS_ENABLED` (default true), creazione account offline con attestazione email e cambio iniziale obbligatorio, cestino pagine e audit immagini senza cancellazioni. Seguire le istruzioni di attivazione e i casi B19–B26 prima di considerare concluso il collaudo.

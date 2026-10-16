@@ -9,7 +9,12 @@ export type SectionWithCount = Section & {
   favorites?: { id: string }[]
   _count: { pages: number }
 }
-export type SectionInput = { title: string; description: string; visibility: 'PUBLIC' | 'PRIVATE' }
+export type SectionInput = {
+  title: string
+  descriptionFormat?: 'text' | 'html'
+  description: string
+  visibility: 'PUBLIC' | 'PRIVATE'
+}
 
 export function useSections(projectSlug: string, enabled = true) {
   return useQuery({

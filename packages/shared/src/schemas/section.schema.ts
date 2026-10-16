@@ -4,12 +4,14 @@ export const CreateSectionSchema = z.object({
   projectId: z.string().min(1),
   title: z.string().min(1).max(190),
   description: z.string().optional(),
+  descriptionFormat: z.enum(['text', 'html']).optional(),
   visibility: z.enum(['PUBLIC', 'PRIVATE']).default('PUBLIC'),
 })
 
 export const UpdateSectionSchema = z.object({
   title: z.string().min(1).max(190).optional(),
   description: z.string().optional(),
+  descriptionFormat: z.enum(['text', 'html']).optional(),
   visibility: z.enum(['PUBLIC', 'PRIVATE']).optional(),
 })
 

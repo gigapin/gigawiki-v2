@@ -7,6 +7,7 @@ export interface Subject {
   userId: string
   name: string
   slug: string
+  descriptionFormat?: 'text' | 'html'
   description: string | null
   color: string
   icon: string

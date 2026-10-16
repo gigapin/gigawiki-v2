@@ -36,3 +36,5 @@ The web normally runs at http://localhost:5173 and the API at http://localhost:3
 - [Settings](docs/SETTINGS.md): migrations and account/admin features.
 - [Session log](docs/SESSION_LOG.md): current implementation state and next steps.
 - [V2 release checklist](docs/V2_RELEASE_CHECKLIST.md): completed checks, access policy rollout and remaining acceptance tests.
+
+- [V1 feature implementation](docs/V1_FEATURE_IMPLEMENTATION.md): added features, PDF renderer setup and pending application schema update; no V1 data migration.

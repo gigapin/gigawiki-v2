@@ -5,6 +5,9 @@ import { render, screen, cleanup, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { PageMetadata } from '../src/components/pages/PageMetadata'
 import apiClient from '../src/api/client'
+vi.mock('@tanstack/react-router', () => ({
+  Link: ({ children, to }) => createElement('a', { href: to }, children),
+}))
 const session = vi.hoisted(() => ({ user: { id: 'me', role: 'EDITOR' } }))
 vi.mock('../src/stores/auth.store', () => ({
   useAuthStore: Object.assign((selector) => selector(session), { getState: () => session }),

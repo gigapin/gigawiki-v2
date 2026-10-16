@@ -1,5 +1,7 @@
 # Audit funzionale V2: copertura delle specifiche e parità con la V1
 
+> **16 ottobre 2026 — confronto con il codice V1 ora disponibile:** il checkout originale `GiGaWiki` è stato analizzato alla revisione `0a1a08d`. Il nuovo riferimento per differenze V1/V2, PDF e requisiti di import è [V1_V2_FEATURE_COMPARISON.md](V1_V2_FEATURE_COMPARISON.md). Le affermazioni sotto sulla V1 non disponibile sono storiche; questo audit continua a descrivere lo stato V2 del 13 ottobre, precedente a F01–F14.
+
 > Aggiornamento: gli interventi F01–F14 sono implementati. Esito, policy concordate, test e comandi di migrazione/attivazione in [PARITY_IMPLEMENTATION.md](PARITY_IMPLEMENTATION.md). Questo audit conserva lo stato del codice prima degli interventi; import/PDF e confronto con la V1 restano aperti.
 
 > **14 ottobre 2026:** il codice post-audit è nel commit `af7e030` e il database dell’app ha già tutte le migrazioni. Policy locale attivata e quattro account disconnessi dopo conferma dell’utente; dati invariati verificati contro backup. Manutenzione/verifiche aggiornate e collaudi aperti in [V2_RELEASE_CHECKLIST.md](V2_RELEASE_CHECKLIST.md). Il resto di questo documento conserva gli esiti del 13 ottobre.

@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify'
+import { sanitizeContent } from 'wiki-content/server'
 
 import { generateUniqueSlug } from '../../lib/slugify.js'
 import { prisma } from '../../lib/prisma.js'
@@ -10,6 +11,7 @@ const SECTION_SELECT = {
   title: true,
   slug: true,
   description: true,
+  descriptionFormat: true,
   position: true,
   visibility: true,
   projectId: true,
@@ -24,12 +26,14 @@ type ProjectSectionsParams = { projectSlug: string }
 type CreateSectionBody = {
   projectId: string
   title: string
+  descriptionFormat?: 'text' | 'html'
   description?: string
   visibility?: 'PUBLIC' | 'PRIVATE'
 }
 
 type PatchSectionBody = {
   title?: string
+  descriptionFormat?: 'text' | 'html'
   description?: string
   visibility?: 'PUBLIC' | 'PRIVATE'
 }
@@ -98,7 +102,7 @@ export async function createSection(fastify: FastifyInstance) {
       return reply.status(403).send({ error: 'Editor or Admin role required' })
     }
 
-    const { projectId, title, description, visibility } = req.body
+    const { projectId, title, description, descriptionFormat, visibility } = req.body
 
     const slug = await generateUniqueSlug(title, async (candidate) =>
       Boolean(
@@ -114,7 +118,16 @@ export async function createSection(fastify: FastifyInstance) {
 
     const section = await auditedWrite(req, 'SECTION', 'CREATED', (tx) =>
       tx.section.create({
-        data: { projectId, title, slug, description, visibility, position },
+        data: {
+          projectId,
+          title,
+          slug,
+          description:
+            descriptionFormat === 'html' ? sanitizeContent(description ?? '') : description,
+          descriptionFormat,
+          visibility,
+          position,
+        },
         select: SECTION_SELECT,
       }),
     )
@@ -128,12 +141,14 @@ export async function updateSection(fastify: FastifyInstance) {
     '/sections/:slug',
     async (req, reply) => {
       const { slug } = req.params
-      const { title, description, visibility } = req.body
+      const { title, description, descriptionFormat, visibility } = req.body
 
       const existing = await prisma.section.findFirst({
         where: { slug, deletedAt: null },
         select: {
           id: true,
+          description: true,
+          descriptionFormat: true,
           project: { select: { userId: true } },
         },
       })
@@ -160,7 +175,15 @@ export async function updateSection(fastify: FastifyInstance) {
           return Boolean(match && match.id !== existing.id)
         })
       }
-      if (description !== undefined) data.description = description
+      if (descriptionFormat !== undefined) {
+        data.descriptionFormat = descriptionFormat
+        if (descriptionFormat === 'html' && description === undefined)
+          data.description = sanitizeContent(existing.description ?? '')
+      }
+      if (description !== undefined) {
+        const format = descriptionFormat ?? existing.descriptionFormat
+        data.description = format === 'html' ? sanitizeContent(description) : description
+      }
       if (visibility !== undefined) data.visibility = visibility
 
       const section = await auditedWrite(req, 'SECTION', 'UPDATED', (tx) =>

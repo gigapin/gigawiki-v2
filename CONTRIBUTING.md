@@ -64,7 +64,7 @@ Run the same package checks used by CI from the repository root:
 ./bin/pnpm turbo build
 ```
 
-The ordinary API command skips the three opt-in PostgreSQL suites. Follow [DATABASE_TESTS.md](docs/DATABASE_TESTS.md) using only a disposable, dedicated database named `gigawiki_test`, with an explicit shell `DATABASE_URL`. The API and Settings suites roll back their fixtures; the parity suite commits concurrent transactions and cleans up its own fixtures. CI applies migrations to a fresh database and executes all three suites. Never target the application database for these checks. Browser interactions follow the [manual test guide](docs/V2_MANUAL_TESTS.md); jsdom tests do not replace them. Settings-specific instructions are in [SETTINGS.md](docs/SETTINGS.md).
+The ordinary API command skips the four opt-in PostgreSQL suites. Follow [DATABASE_TESTS.md](docs/DATABASE_TESTS.md) using only a disposable, dedicated database named `gigawiki_test`, with an explicit shell `DATABASE_URL`. The API and Settings suites roll back their fixtures; the parity and new feature suites commit transactions and clean up their own fixtures. CI applies migrations to a fresh database and executes all four suites. Never target the application database for these checks. Browser interactions follow the [manual test guide](docs/V2_MANUAL_TESTS.md); jsdom tests do not replace them. Settings-specific instructions are in [SETTINGS.md](docs/SETTINGS.md).
 
 For a schema change, generate and inspect a migration on a disposable development database, commit its SQL alongside `schema.prisma`, and regenerate Prisma Client. Verify the complete migration chain on an empty database. Applying production/app migrations is an operator action; do not use `migrate reset` on an existing application database.
 
@@ -76,3 +76,5 @@ For a schema change, generate and inspect a migration on a disposable developmen
 - Include a reviewed migration when the database schema changes and verify it against a fresh database.
 - Update relevant docs; record completed work and remaining checks in `docs/SESSION_LOG.md`.
 - Keep secrets and machine-specific settings out of the diff.
+
+Build `wiki-content` and `shared` before starting development (`./bin/pnpm --filter wiki-content build`, `./bin/pnpm --filter shared build`). PDF requires the optional Compose `pdf` profile and a shared random renderer secret; see [feature activation](docs/V1_FEATURE_IMPLEMENTATION.md). V1 data migration is excluded.

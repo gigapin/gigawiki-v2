@@ -40,7 +40,7 @@ function SettingField({
       }}
     >
       <Label htmlFor={settingKey}>{label}</Label>
-      {settingKey === 'ALLOW_SELF_REGISTRATION' ? (
+      {settingKey === 'ALLOW_SELF_REGISTRATION' || settingKey === 'COMMENTS_ENABLED' ? (
         <div>
           <Switch
             id={settingKey}
@@ -137,6 +137,11 @@ export function AppSettingsPage() {
       </CardHeader>
       <CardContent className="space-y-4">
         <LogoField imageId={query.data.SITE_LOGO_IMAGE_ID} url={query.data.SITE_LOGO_URL} />
+        <SettingField
+          settingKey="COMMENTS_ENABLED"
+          label="Enable comments"
+          initial={query.data?.COMMENTS_ENABLED ?? 'true'}
+        />
         <SettingField
           settingKey="ALLOW_SELF_REGISTRATION"
           label="Self registration"

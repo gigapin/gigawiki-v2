@@ -40,6 +40,7 @@ export type ProjectDetail = Project & {
 export type ProjectInput = {
   subjectId?: string
   name: string
+  descriptionFormat?: 'text' | 'html'
   description: string
   visibility: 'PUBLIC' | 'PRIVATE'
   imageId?: string | null

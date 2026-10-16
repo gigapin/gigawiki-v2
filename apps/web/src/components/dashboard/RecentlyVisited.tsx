@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { BookOpen, Folder, History } from 'lucide-react'
 
@@ -16,9 +17,9 @@ function visitedLabel(date: string) {
   return formatter.format(-Math.floor(minutes / 1440), 'day')
 }
 function RecentViewCard({ view }: { view: RecentView }) {
-  const resource = view.page ?? view.project ?? view.section
+  const resource = view.page ?? view.project ?? view.section ?? view.subject
   if (!resource) return null
-  const type = view.page ? 'Page' : view.project ? 'Project' : 'Section'
+  const type = view.page ? 'Page' : view.project ? 'Project' : view.section ? 'Section' : 'Subject'
   const title = 'title' in resource ? resource.title : resource.name
   const Glyph = view.page ? BookOpen : Folder
   const content = (
@@ -68,10 +69,17 @@ function RecentViewCard({ view }: { view: RecentView }) {
         {content}
       </Link>
     )
+  if (view.subject)
+    return (
+      <Link className={className} to="/subjects/$slug" params={{ slug: view.subject.slug }}>
+        {content}
+      </Link>
+    )
   return null
 }
 export function RecentlyVisited() {
-  const query = useRecentViews()
+  const [ranking, setRanking] = useState<'recent' | 'popular'>('recent')
+  const query = useRecentViews(6, ranking)
   return (
     <section aria-label="Recently visited" className="mt-6 space-y-4">
       <h2
@@ -81,6 +89,17 @@ export function RecentlyVisited() {
         <History className="size-5 text-muted-foreground" />
         Recently visited
       </h2>
+      <label>
+        Order{' '}
+        <select
+          aria-label="Visit order"
+          value={ranking}
+          onChange={(e) => setRanking(e.target.value as 'recent' | 'popular')}
+        >
+          <option value="recent">Recent visits</option>
+          <option value="popular">Most visited</option>
+        </select>
+      </label>
       {query.isPending ? (
         <ListSkeleton />
       ) : query.isError ? (

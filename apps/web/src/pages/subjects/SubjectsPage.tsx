@@ -1,3 +1,4 @@
+import { descriptionText } from 'wiki-content/text'
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 
@@ -13,6 +14,7 @@ import { CreateSubjectModal } from '@/components/subjects/CreateSubjectModal'
 interface SubjectCardProps {
   name: string
   slug: string
+  descriptionFormat?: 'text' | 'html'
   description: string | null
   projectCount: number
   color: string
@@ -24,6 +26,7 @@ interface SubjectCardProps {
 function SubjectCard({
   name,
   description,
+  descriptionFormat,
   projectCount,
   color,
   icon,
@@ -155,7 +158,7 @@ function SubjectCard({
               overflow: 'hidden',
             }}
           >
-            {description}
+            {descriptionText(description, descriptionFormat)}
           </p>
         ) : (
           <p style={{ fontSize: 13, color: 'var(--db-muted-2)', margin: 0, fontStyle: 'italic' }}>
@@ -359,6 +362,7 @@ export function SubjectsPage() {
               name={subject.name}
               slug={subject.slug}
               description={subject.description}
+              descriptionFormat={subject.descriptionFormat}
               projectCount={
                 (subject as typeof subject & { _count: { projects: number } })._count?.projects ?? 0
               }

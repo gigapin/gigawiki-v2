@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 
+import { Contributions } from '@/components/shared/Contributions'
 import { useSaveProfile } from '@/api/users'
 import { IMAGE_TYPES, MAX_IMAGE_SIZE } from '@/api/images'
 import { useAuthStore } from '@/stores/auth.store'
@@ -47,6 +48,7 @@ export function ProfilePage() {
         <CardTitle>Profile</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        <Contributions />
         <form
           className="space-y-5"
           noValidate

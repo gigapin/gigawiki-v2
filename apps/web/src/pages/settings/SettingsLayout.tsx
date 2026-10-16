@@ -32,6 +32,12 @@ export function SettingsLayout() {
           </Link>
           {isAdmin && (
             <>
+              <Link to="/settings/recycle-bin" className="rounded-md px-3 py-2 text-sm">
+                Recycle bin
+              </Link>
+              <Link to="/settings/image-audit" className="rounded-md px-3 py-2 text-sm">
+                Image audit
+              </Link>
               <Link
                 to="/settings/users"
                 className="rounded-md px-3 py-2 text-sm"

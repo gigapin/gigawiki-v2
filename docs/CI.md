@@ -5,7 +5,7 @@ Il workflow [.github/workflows/ci.yml](../.github/workflows/ci.yml) parte su pus
 I quattro job, utilizzabili come status check per la protezione dei branch, sono:
 
 - `quality`: lint e typecheck di API, web e shared.
-- `test-api`: PostgreSQL 16 e Redis 7 temporanei, tutte le migrazioni, test ordinari e le tre suite PostgreSQL (API, parità/concorrenza, Settings).
+- `test-api`: PostgreSQL 16 e Redis 7 temporanei, tutte le migrazioni, test ordinari e le quattro suite PostgreSQL (API, parità/concorrenza, nuove funzionalità, Settings).
 - `test-web`: test Vitest/Testing Library/jsdom.
 - `build`: attende gli altri tre, compila API e web e conserva `web-dist` per 7 giorni.
 
@@ -34,3 +34,5 @@ Comandi locali dalla root:
 Le suite PostgreSQL locali sono opzionali: seguire [DATABASE_TESTS.md](DATABASE_TESTS.md). Non copiare il comando di migrazione CI sul database dell’app per eseguire i test.
 
 Per permessi e collaudi reali vedere [V2_RELEASE_CHECKLIST.md](V2_RELEASE_CHECKLIST.md).
+
+L’incremento V1 aggiunge il job `test-pdf` (unitari e Chromium Docker con sandbox); `build` dipende anche da questo job. Il setup compila `wiki-content` e `shared`. I conteggi e le run precedenti sono storici; vedere [V1_FEATURE_IMPLEMENTATION.md](V1_FEATURE_IMPLEMENTATION.md) e session log per il nuovo incremento.

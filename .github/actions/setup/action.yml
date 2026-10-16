@@ -19,7 +19,7 @@ runs:
       run: pnpm install --frozen-lockfile
     - name: Build shared schemas
       shell: bash
-      run: pnpm --filter shared build
+      run: pnpm --filter wiki-content build && pnpm --filter shared build
     - name: Generate Prisma Client
       shell: bash
       run: pnpm --filter gigawiki-v2-api exec prisma generate

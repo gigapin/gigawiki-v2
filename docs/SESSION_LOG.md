@@ -20,15 +20,17 @@
 |---|---|
 | Branch di lavoro | `dev` (il default remoto è `main`) |
 | Remote | `git@github.com:gigapin/gigawiki-v2.git` |
-| Task completati | 40 / 40 obiettivi principali implementati con scostamenti concordati; F01–F14 chiusi nel codice (vedi PARITY_IMPLEMENTATION.md). Parità V1 da verificare |
-| Fase corrente | **Chiusura interventi post-audit** — implementazione funzionale completata, migrazioni app già applicate; policy attiva sull’app locale; collaudi browser/email ancora aperti |
-| Backend | Audit F01–F14 implementato: accesso gerarchico, attività atomiche, revisioni/concorrenza, validazione shared, statistiche, logo/storage locale e refresh. 343 test ordinari e 20 test PostgreSQL temporaneo superati |
+| Task completati | 40 / 40 obiettivi principali implementati con scostamenti concordati; F01–F14 chiusi nel codice. Confronto statico V1 completato e incrementi R01–R15 implementati secondo le scelte approvate; import M01–M03 escluso; parità totale non certificata |
+| Fase corrente | **Implementazione incrementi V1/V2** — incrementi selezionati implementati, controlli locali superati e verifica Docker/CI in chiusura; migrazione dati esclusa. Ottava migrazione Prisma da applicare all’app dopo backup; collaudi browser/email ancora aperti |
+| Backend | Audit F01–F14 implementato: accesso gerarchico, attività atomiche, revisioni/concorrenza, validazione shared, statistiche, logo/storage locale e refresh. 350 test ordinari e 30 test PostgreSQL temporaneo superati; incrementi descritti nella guida funzionale |
 | Frontend | Login, Register, Verify email, ForgotPassword, ResetPassword, AcceptInvite, Dashboard, Subjects, Project detail, scelta destinazione nuova pagina, reader ed editor Tiptap. Bozza/pubblicazione, breadcrumb, tema light/dark, upload e resize immagini, link, syntax highlighting, autosave, drawer revisioni, menzioni e menu contestuale implementati. Tag/preferiti/commenti su Page/Project/Section, sidebar con Section, ricerca per Project, spostamento Project, toolbar completa e logo implementati; Settings complete (Profile, Password, Appearance, Users, Invites, App Settings) |
 | CI/CD | Workflow task 39 attivo: quality, test-api, test-web e build tutti superati su GitHub |
 
 **Base applicativa verificata:** `f6be5ca` (`feat: permissions set`), su `dev`, coincidente con il branch remoto controllato il 16 ottobre. Include gli interventi F01–F14 e le modifiche della chiusura del 14 ottobre, precedentemente descritte come locali. Le verifiche del database dell'app e l'attivazione della policy del 14 ottobre restano storiche: non sono state ripetute né modificate in questo ciclo.
 
-**Ultime verifiche (16 ottobre):** `./bin/pnpm turbo typecheck lint test build` superato: 11 task, 6 da cache, 343 test API ordinari e 218 frontend (29 file). Sette migrazioni applicate da zero su PostgreSQL 16 temporaneo dedicato `gigawiki_test`; 20 test DB superati (8 API, 3 Settings, 9 parità/concorrenza), nessuna scrittura sul database dell'app. CI base `f6be5ca` verde nei quattro job: [run 38570737573](https://github.com/gigapin/gigawiki-v2/actions/runs/38570737573). Nessun collaudo browser o invio email in questo ciclo; [guida manuale](V2_MANUAL_TESTS.md) pronta. Docker/storage/MinIO/SMTP restano verifiche del 14 ottobre, non ripetute perché l'implementazione non cambia. La V2 resta aperta fino agli esiti manuali e alla CI del candidato finale.
+**Verifiche storiche della base (16 ottobre):** `./bin/pnpm turbo typecheck lint test build` superato: 11 task, 6 da cache, 343 test API ordinari e 218 frontend (29 file). Sette migrazioni applicate da zero su PostgreSQL 16 temporaneo dedicato `gigawiki_test`; 20 test DB superati (8 API, 3 Settings, 9 parità/concorrenza), nessuna scrittura sul database dell'app. CI base `f6be5ca` verde nei quattro job: [run 38570737573](https://github.com/gigapin/gigawiki-v2/actions/runs/38570737573). Nessun collaudo browser o invio email in questo ciclo; [guida manuale](V2_MANUAL_TESTS.md) pronta. Docker/storage/MinIO/SMTP restano verifiche del 14 ottobre, non ripetute perché l'implementazione non cambia. La V2 resta aperta fino agli esiti manuali e alla CI del candidato finale.
+
+**Nuovo riferimento V1 (16 ottobre):** [V1_V2_FEATURE_COMPARISON.md](V1_V2_FEATURE_COMPARISON.md), confronto del checkout V1 `0a1a08d` con V2 `47cee08` (ultimo commit pubblicato del ciclo precedente, CI [38873527081](https://github.com/gigapin/gigawiki-v2/actions/runs/38873527081) verificata verde in quel ciclo). PDF singola pagina confermato nella V1; gap e proposte separati dalle scelte concordate. Audit statico, senza avvio della V1, import, nuove verifiche runtime o scritture ai dati.
 
 ---
 
@@ -121,13 +123,13 @@ Punti in cui il codice si discosta da `GIGAWIKI_V2_TASKS.md`. Vanno **letti prim
 
 ## Prossimi passi — ripresa del lavoro
 
-**Implementazione e manutenzione completate.** Esiti e checklist in [V2_RELEASE_CHECKLIST.md](V2_RELEASE_CHECKLIST.md); policy e comandi in [PARITY_IMPLEMENTATION.md](PARITY_IMPLEMENTATION.md).
+Gli incrementi approvati R01–R15 sono implementati secondo [V1_FEATURE_IMPLEMENTATION.md](V1_FEATURE_IMPLEMENTATION.md), con revisioni conservate e migrazione dati V1 esclusa.
 
-1. Eseguire nuovo login nel browser e collaudare la policy attiva. Backup ripristinato e confrontato; revoca dei quattro account verificata, zero refresh token. API/web avviati con `./bin/pnpm dev`; nessuna migrazione pendente.
-2. Prove browser a cura dell’utente: seguire B01–B18 nella [guida manuale](V2_MANUAL_TESTS.md), registrare gli esiti e correggere/ricollaudare i difetti funzionali con regressioni mirate.
-3. Il proprietario esegue gli invii e i casi E01–E05 della guida: consegna, invito/verifica/reset, reinvio e token scaduti/usati. Autenticazione SMTP verificata il 14 ottobre senza invii.
-4. Pubblicare gli aggiornamenti del ciclo su `dev` e verificare i quattro check sullo stesso SHA; base `f6be5ca` già verde. Nessun merge in `main` o deployment.
-5. Parità/import/password V1, PDF e revisione grafica restano fuori dal ciclo senza codice/inventario originale.
+1. Dopo backup e verifica destinazione, applicare l’ottava migrazione Prisma all’app, rigenerare il client e riavviare: non è stata applicata durante l’implementazione.
+2. Configurare il segreto renderer e avviare il profilo Docker `pdf` secondo la guida funzionale.
+3. Prove browser a cura dell’utente: seguire B01–B26 nella [guida manuale](V2_MANUAL_TESTS.md), registrare gli esiti e correggere/ricollaudare gli eventuali difetti.
+4. Il proprietario esegue gli invii E01–E05: consegna, invito/verifica/reset, reinvio e token scaduti/usati. Nessuna email inviata durante questo incremento.
+5. Pubblicare su `dev` e controllare CI sullo stesso SHA, incluso il nuovo `test-pdf`. Nessun merge in `main` o deployment.
 
 **Comportamenti da preservare:** dettaglio Subject senza banner grande, icona/titolo a sinistra e azioni a destra; commenti richiusi inizialmente sotto “Comments” con freccia, bozze mantenute alla chiusura; Save draft mantiene l’editor aperto e usa la stessa pagina nei salvataggi successivi, Publish apre il reader. Guest senza cronologia, preferiti personali per account e temporizzazione login disattivata in development come richiesto.
 
@@ -159,6 +161,26 @@ Chi clona il repo su una macchina nuova deve ricreare `init.sh` (o avere Node su
 ---
 
 ## Log delle sessioni
+
+### 2026-10-16 — Implementazione incrementi V1/V2 senza import
+
+- Applicate le scelte del piano: PDF per lettori autorizzati con renderer separato, cestino solo ripristino, tag Subject/catalogo/rinomina, commenti configurabili, navigazione e preferiti completi, descrizioni e editor formattati, visite/contributi, account temporanei e audit immagini read-only. Revisioni conservate; nessun import V1, purge o sorgente HTML.
+- Nuovi pacchetti `wiki-content` e `gigawiki-pdf`; migrazione additiva `20261016000000_v1_feature_parity`. Configurazione/contratti/comandi in [V1_FEATURE_IMPLEMENTATION.md](V1_FEATURE_IMPLEMENTATION.md). Non applicata al database dell'app; nessuna modifica alla sua policy o ai suoi dati.
+- Aggiunti test per contenuti, PDF, audit immagini, UI e flussi HTTP PostgreSQL con challenge password/ruoli/restore/privacy. Controlli locali superati: typecheck/lint/build, 350 test API, 225 frontend, 3 renderer e 30 PostgreSQL (8 API, 9 parità, 3 Settings, 10 incrementi), con otto migrazioni da zero. Smoke Docker con API/Redis/PostgreSQL/Chromium isolati: challenge/cambio/login Guest, upload PNG convertito WebP, PDF Guest con asset registrato e audit BullMQ completati; PDF valido di 16.199 byte. Nessun invio email.
+- Guida manuale estesa a B19–B26; browser/email restano aperti e non sono dichiarati superati.
+
+**Aperto:** completare verifica automatica/CI sul candidato; applicazione ottava migrazione e configurazione renderer nell'ambiente dell'app prima dei nuovi collaudi manuali. Nessuna migrazione dati V1 o modifica distruttiva autorizzata da questo incremento.
+
+
+### 2026-10-16 — Confronto codice V1/V2 e riferimento per PDF/feature mancanti
+
+- Analizzato in sola lettura `/Users/pino/Projects/GiGaWiki`, revisione `0a1a08d`, contro V2 `47cee08`: rotte effettive, controller, viste, servizi, migrazioni, modelli e test di riferimento. V1 non avviata; nessuna lettura di database applicativi o trasferimento file.
+- Creato `V1_V2_FEATURE_COMPARISON.md`: inventario funzionale, backlog R01–R15, requisiti di migrazione M01–M03, decisioni D01–D06, dipendenze e criteri di accettazione. Distinte funzionalità effettive, differenze concordate, proposte ed elementi V1 incompleti.
+- PDF V1 confermato: Dompdf, singola pagina, download sincrono; rotta usa il servizio con filtro sull'ultimo modificatore. Documentata proposta V2 senza quel vincolo, con policy gerarchica, renderer isolato e spike Docker prima dell'integrazione.
+- Evidenziati cestino Page/restore, tag Subject/catalogo, descrizioni rich text, precedente/successiva e preferiti completi; verificati bcrypt V1 contro Argon2 V2, HTML Summernote, mapping ID/polimorfismi/revisioni/asset e limiti di import. Non replicare cleanup immagini, autorizzazioni/API pubbliche incoerenti o promesse UI V1 non implementate.
+- Collegato il nuovo riferimento da audit storico, rapporto F01–F14 e checklist. Verifiche di questa sessione limitate a documenti/riferimenti; nessun nuovo test applicativo necessario, nessuna modifica funzionale o invio email.
+
+**Aperto:** prioritizzare gli incrementi desiderati; dati/configurazione V1 reale e prove runtime restano da acquisire se si procede all'import. Collaudi browser/email V2 ancora aperti. Nessuna nuova feature, import o modifica delle policy implementata in questo audit.
 
 ### 2026-10-16 — Chiusura V2: base verificata e collaudo guidato
 

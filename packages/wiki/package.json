@@ -1,0 +1,46 @@
+{
+  "name": "wiki-content",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js"
+    },
+    "./text": {
+      "types": "./dist/text.d.ts",
+      "import": "./dist/text.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@tiptap/core": "3.31.4",
+    "@tiptap/starter-kit": "3.31.4",
+    "@tiptap/extension-image": "3.31.4",
+    "@tiptap/extension-mention": "3.31.4",
+    "@tiptap/extension-table": "3.31.4",
+    "@tiptap/extension-code-block-lowlight": "3.31.4",
+    "@tiptap/extension-text-style": "3.31.4",
+    "@tiptap/extension-text-align": "3.31.4",
+    "@tiptap/extension-highlight": "3.31.4",
+    "@tiptap/html": "3.31.4",
+    "lowlight": "^3.3.0",
+    "sanitize-html": "^2.17.0"
+  },
+  "devDependencies": {
+    "@types/sanitize-html": "^2.16.0"
+  }
+}

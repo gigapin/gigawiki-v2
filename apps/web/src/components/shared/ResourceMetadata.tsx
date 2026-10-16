@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Star } from 'lucide-react'
 
+import { TagLabel } from './TagLabel'
+
 import { useResourceMetadata } from '@/api/resource-metadata'
 import { useAuthStore } from '@/stores/auth.store'
 import { apiErrorMessage } from '@/lib/api-error'
@@ -13,7 +15,7 @@ export function ResourceMetadata({
   tags = [],
   favorited = false,
 }: {
-  resource: CommentResource
+  resource: CommentResource | { type: 'subjects'; id: string; slug: string }
   tags?: { id: string; name: string; userId: string }[]
   favorited?: boolean
 }) {
@@ -22,20 +24,22 @@ export function ResourceMetadata({
   const mutation = useResourceMetadata(resource)
   return (
     <section aria-label={`${resource.type} tags and favorite`} className="space-y-3">
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={mutation.isPending}
-        aria-pressed={favorited}
-        onClick={() => mutation.mutate({ type: 'favorite' })}
-      >
-        <Star className={favorited ? 'fill-current' : ''} />
-        {favorited ? 'Remove favorite' : 'Add favorite'}
-      </Button>
+      {resource.type !== 'subjects' && (
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={mutation.isPending}
+          aria-pressed={favorited}
+          onClick={() => mutation.mutate({ type: 'favorite' })}
+        >
+          <Star className={favorited ? 'fill-current' : ''} />
+          {favorited ? 'Remove favorite' : 'Add favorite'}
+        </Button>
+      )}
       <div className="flex flex-wrap gap-2">
         {tags.map((tag) => (
           <span key={tag.id} className="rounded border px-2 py-1 text-sm">
-            {tag.name}
+            <TagLabel tag={tag} />
             {(tag.userId === user?.id || user?.role === 'ADMIN') && (
               <button
                 aria-label={`Remove tag ${tag.name}`}

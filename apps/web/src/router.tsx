@@ -6,6 +6,10 @@ import {
   redirect,
 } from '@tanstack/react-router'
 
+import { FavoritesPage, ProjectsPage, TagsPage, TagResourcesPage } from '@/pages/LibraryPages'
+import { InitialPasswordPage } from '@/pages/auth/InitialPasswordPage'
+import { RecycleBinPage } from '@/pages/settings/RecycleBinPage'
+import { ImageAuditPage } from '@/pages/settings/ImageAuditPage'
 import { PasswordPage } from '@/pages/settings/PasswordPage'
 import { AppearancePage } from '@/pages/settings/AppearancePage'
 import { UsersPage } from '@/pages/settings/UsersPage'
@@ -220,7 +224,49 @@ const invitesRoute = createRoute({
   component: InvitesPage,
 })
 
+const initialPasswordRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/initial-password',
+  component: InitialPasswordPage,
+})
+const favoritesRoute = createRoute({
+  getParentRoute: () => authLayout,
+  path: '/favorites',
+  component: FavoritesPage,
+})
+const projectsRoute = createRoute({
+  getParentRoute: () => authLayout,
+  path: '/projects',
+  component: ProjectsPage,
+})
+const tagsRoute = createRoute({
+  getParentRoute: () => authLayout,
+  path: '/tags',
+  component: TagsPage,
+})
+const tagResourcesRoute = createRoute({
+  getParentRoute: () => authLayout,
+  path: '/tags/$name',
+  component: TagResourcesPage,
+})
+function adminOnly() {
+  if (useAuthStore.getState().user?.role !== 'ADMIN') throw redirect({ to: '/settings/profile' })
+}
+const recycleBinRoute = createRoute({
+  getParentRoute: () => settingsRoute,
+  path: '/recycle-bin',
+  beforeLoad: adminOnly,
+  component: RecycleBinPage,
+})
+const imageAuditRoute = createRoute({
+  getParentRoute: () => settingsRoute,
+  path: '/image-audit',
+  beforeLoad: adminOnly,
+  component: ImageAuditPage,
+})
+
 const routeTree = rootRoute.addChildren([
+  initialPasswordRoute,
   loginRoute,
   registerRoute,
   verifyEmailRoute,
@@ -228,9 +274,15 @@ const routeTree = rootRoute.addChildren([
   resetPasswordRoute,
   acceptInviteRoute,
   authLayout.addChildren([
+    favoritesRoute,
+    projectsRoute,
+    tagsRoute,
+    tagResourcesRoute,
     indexRoute,
     settingsRoute.addChildren([
       settingsIndexRoute,
+      recycleBinRoute,
+      imageAuditRoute,
       profileRoute,
       passwordRoute,
       appearanceRoute,

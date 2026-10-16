@@ -1,3 +1,6 @@
+import { Link } from '@tanstack/react-router'
+
+import { Contributions } from '@/components/shared/Contributions'
 import { RecentlyVisited } from '@/components/dashboard/RecentlyVisited'
 import { useSubjects } from '@/api/subjects'
 import { useFavorites } from '@/api/favorites'
@@ -215,6 +218,9 @@ const VERB_LABEL: Record<string, string> = {
   COMMENTED: 'commented on',
   REPLIED: 'replied to',
   RESTORED: 'restored',
+  LOGIN: 'signed in',
+  ACCOUNT_CREATED: 'created an account',
+  TEMP_PASSWORD_ISSUED: 'reissued temporary credentials',
 }
 
 function ActivityFeed() {
@@ -423,6 +429,9 @@ function FavoritesList() {
           }}
         >
           Your favorites
+          <Link to="/favorites" className="text-sm">
+            View all
+          </Link>
           {data && (
             <span
               style={{
@@ -631,6 +640,7 @@ export function DashboardPage() {
         <FavoritesList />
       </div>
       <RecentlyVisited />
+      <Contributions />
     </div>
   )
 }

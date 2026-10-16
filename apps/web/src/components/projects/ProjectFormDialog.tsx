@@ -38,6 +38,7 @@ export function ProjectFormDialog({
   const [values, setValues] = useState<ResourceValues>({
     name: project?.name ?? '',
     description: project?.description ?? '',
+    descriptionFormat: project?.descriptionFormat ?? 'text',
     visibility: project?.visibility ?? 'PUBLIC',
   })
   const mutation = useSaveProject(
@@ -46,6 +47,7 @@ export function ProjectFormDialog({
         ...values,
         name: values.name.trim(),
         description: values.description.trim(),
+        descriptionFormat: values.descriptionFormat,
         imageId: await cover.resolveImageId(),
       }
       return { ...input, subjectId: selectedSubjectId }

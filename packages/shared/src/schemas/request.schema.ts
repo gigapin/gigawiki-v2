@@ -12,9 +12,12 @@ export const RequestQuerySchema = z
     visibility: z.enum(['PUBLIC', 'PRIVATE']).optional(),
     order: z.enum(['asc', 'desc']).optional(),
     sort: z.enum(['createdAt', 'updatedAt', 'name', 'title', 'position']).optional(),
-    resourceType: z.enum(['PAGE', 'PROJECT', 'SECTION', 'SUBJECT']).optional(),
+    resourceType: z.enum(['PAGE', 'PROJECT', 'SECTION', 'SUBJECT', 'AUTH']).optional(),
     type: z
       .enum([
+        'LOGIN',
+        'ACCOUNT_CREATED',
+        'TEMP_PASSWORD_ISSUED',
         'CREATED',
         'UPDATED',
         'DELETED',

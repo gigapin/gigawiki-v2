@@ -1,59 +1,39 @@
-import { getSchema, type JSONContent } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
-import Image from '@tiptap/extension-image'
-import Mention from '@tiptap/extension-mention'
-import { Table, TableRow, TableHeader, TableCell } from '@tiptap/extension-table'
-import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
-import { common, createLowlight } from 'lowlight'
+import { contentExtensions } from 'wiki-content'
 
 import { mentionSuggestion } from './mention-suggestion'
-import { editorContent } from './page-content'
 import { normalizeLink } from './editor-link'
 
-const lowlight = createLowlight(common)
-export const CODE_LANGUAGES = lowlight.listLanguages()
+export { prepareWikiContent, CODE_LANGUAGES } from 'wiki-content'
 
 export function wikiExtensions(editable: boolean) {
-  return [
-    StarterKit.configure({
-      codeBlock: false,
-      link: {
-        openOnClick: !editable,
-        defaultProtocol: 'https',
-        isAllowedUri: (url, context) => context.defaultValidate(url) && normalizeLink(url) !== null,
-      },
-    }),
-    Mention.configure({
-      HTMLAttributes: { class: 'mention' },
-      suggestion: editable ? mentionSuggestion : { char: '@', items: () => [] },
-    }),
-    Image.configure({
-      allowBase64: false,
-      resize: editable
-        ? {
-            enabled: true,
-            directions: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
-            minWidth: 48,
-            minHeight: 24,
-            alwaysPreserveAspectRatio: true,
-          }
-        : false,
-    }),
-    Table.configure({ resizable: false }),
-    TableRow,
-    TableHeader,
-    TableCell,
-    CodeBlockLowlight.configure({ lowlight, defaultLanguage: 'plaintext' }),
-  ]
-}
-
-export function prepareWikiContent(content: string) {
-  const parsed = editorContent(content)
-  if (typeof parsed !== 'string') {
-    // Fail visibly for unknown nodes/marks rather than silently deleting them.
-    getSchema(wikiExtensions(false))
-      .nodeFromJSON(parsed as JSONContent)
-      .check()
-  }
-  return parsed
+  return contentExtensions().map((extension) => {
+    if (extension.name === 'starterKit')
+      return extension.configure({
+        codeBlock: false,
+        link: {
+          openOnClick: !editable,
+          defaultProtocol: 'https',
+          isAllowedUri: (url: string, context: { defaultValidate: (url: string) => boolean }) =>
+            context.defaultValidate(url) && normalizeLink(url) !== null,
+        },
+      })
+    if (extension.name === 'mention')
+      return extension.configure({
+        suggestion: editable ? mentionSuggestion : { char: '@', items: () => [] },
+      })
+    if (extension.name === 'image')
+      return extension.configure({
+        allowBase64: false,
+        resize: editable
+          ? {
+              enabled: true,
+              directions: ['top-left', 'top-right', 'bottom-left', 'bottom-right'],
+              minWidth: 48,
+              minHeight: 24,
+              alwaysPreserveAspectRatio: true,
+            }
+          : false,
+      })
+    return extension
+  })
 }

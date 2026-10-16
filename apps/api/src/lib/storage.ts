@@ -8,6 +8,8 @@ import {
   PutObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
+  ListObjectsV2Command,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl as awsGetSignedUrl } from '@aws-sdk/s3-request-presigner'
 
@@ -113,4 +115,56 @@ export async function getSignedUrl(
   return awsGetSignedUrl(s3, new GetObjectCommand({ Bucket: env.AWS_BUCKET, Key: key }), {
     expiresIn,
   })
+}
+
+export async function storageExists(key: string, driver: StorageDriver): Promise<boolean> {
+  try {
+    if (driver === 's3') await s3.send(new HeadObjectCommand({ Bucket: env.AWS_BUCKET, Key: key }))
+    else if (!(await lstat(await checkedLocalFile(key))).isFile()) throw new Error('Not a file')
+    return true
+  } catch (error) {
+    const value = error as { code?: string; name?: string; $metadata?: { httpStatusCode?: number } }
+    if (
+      value.code === 'ENOENT' ||
+      value.name === 'NoSuchKey' ||
+      value.name === 'NotFound' ||
+      value.$metadata?.httpStatusCode === 404
+    )
+      return false
+    throw error
+  }
+}
+export async function* storageFiles(driver: StorageDriver): AsyncGenerator<string> {
+  if (driver === 's3') {
+    let token: string | undefined
+    do {
+      const result = await s3.send(
+        new ListObjectsV2Command({
+          Bucket: env.AWS_BUCKET,
+          Prefix: 'uploads/',
+          ContinuationToken: token,
+        }),
+      )
+      for (const item of result.Contents ?? []) if (item.Key) yield item.Key
+      token = result.IsTruncated ? result.NextContinuationToken : undefined
+    } while (token)
+  } else {
+    const { readdir } = await import('node:fs/promises')
+    async function* walk(key: string): AsyncGenerator<string> {
+      let entries
+      try {
+        entries = await readdir(await checkedLocalFile(key), { withFileTypes: true })
+      } catch (error) {
+        if ((error as { code?: string }).code === 'ENOENT') return
+        throw error
+      }
+      for (const entry of entries) {
+        if (entry.isSymbolicLink()) continue
+        const child = key + '/' + entry.name
+        if (entry.isDirectory()) yield* walk(child)
+        else if (entry.isFile()) yield child
+      }
+    }
+    yield* walk('uploads')
+  }
 }

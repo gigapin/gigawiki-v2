@@ -1,3 +1,4 @@
+import { startImageAuditWorker } from './workers/image-audit.worker.js'
 import { app } from './app.js'
 import { env } from './config/env.js'
 import { startEmailWorker } from './workers/email.worker.js'
@@ -11,4 +12,5 @@ app.listen({ port: env.PORT, host: '0.0.0.0' }, (err, address) => {
   app.log.info(`Server listening at ${address}`)
   startEmailWorker()
   startImageWorker()
+  startImageAuditWorker()
 })

@@ -5,6 +5,7 @@ import { BooleanQuery } from './request.schema.js'
 export const CreateSubjectSchema = z.object({
   name: z.string().trim().min(1).max(100),
   description: z.string().optional(),
+  descriptionFormat: z.enum(['text', 'html']).optional(),
   color: z.string().optional(),
   icon: z.string().optional(),
   visibility: z.enum(['PUBLIC', 'PRIVATE']).default('PUBLIC'),
@@ -14,6 +15,7 @@ export const CreateSubjectSchema = z.object({
 export const UpdateSubjectSchema = z.object({
   name: z.string().trim().min(1).max(100).optional(),
   description: z.string().optional(),
+  descriptionFormat: z.enum(['text', 'html']).optional(),
   color: z.string().optional(),
   icon: z.string().optional(),
   visibility: z.enum(['PUBLIC', 'PRIVATE']).optional(),

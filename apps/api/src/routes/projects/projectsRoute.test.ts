@@ -83,6 +83,7 @@ const fakeProject = {
   name: 'My Project',
   slug: 'my-project',
   description: 'A project',
+  descriptionFormat: 'text',
   visibility: Visibility.PUBLIC,
   imageId: null,
   userId: 'user-1',

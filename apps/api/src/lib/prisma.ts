@@ -11,8 +11,12 @@ export const prisma = new PrismaClient({ adapter }).$extends({
         const request = contentContext.getStore()?.request
         const route = request?.routeOptions.url ?? ''
         const accountManagement =
-          /^\/(api\/v2\/)?users(\/|$)/.test(route) && !route.endsWith('/activities')
+          /^\/(api\/v2\/)?users(\/|$)/.test(route) &&
+          !route.endsWith('/activities') &&
+          !route.endsWith('/contributions')
+        const trash = request?.user?.role === 'ADMIN' && route.startsWith('/api/v2/admin/trash/')
         if (
+          !trash &&
           !accountManagement &&
           request?.user?.id &&
           ['findFirst', 'findMany', 'count', 'aggregate', 'groupBy'].includes(operation)

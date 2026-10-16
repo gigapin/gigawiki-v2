@@ -9,6 +9,7 @@ export default fastifyPlugin(async function (fastify: FastifyInstance) {
     origin: env.FRONTEND_URL,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    exposedHeaders: ['Content-Disposition'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 })

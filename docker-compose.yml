@@ -1,4 +1,27 @@
 services:
+  pdf:
+    profiles: [pdf]
+    build:
+      context: .
+      dockerfile: apps/pdf/Dockerfile
+    init: true
+    cap_add: [SYS_ADMIN]
+    ports: ['127.0.0.1:3002:3002']
+    environment:
+      PDF_RENDERER_SECRET: '${PDF_RENDERER_SECRET:-}'
+    networks: [pdf_network]
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3002/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   postgres:
     image: postgres:16-alpine
     ports:
@@ -53,3 +76,7 @@ volumes:
   postgres_data:
   redis_data:
   minio_data:
+
+networks:
+  pdf_network:
+    internal: true

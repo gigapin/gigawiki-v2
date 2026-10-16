@@ -3,6 +3,10 @@ import type { FastifyInstance } from 'fastify'
 import { contentContext } from '../lib/content-access.js'
 import { guardContentRequest, normalizeError, validateRequest } from '../lib/request-validation.js'
 
+import { imageAuditRoutes } from './image-audits.js'
+import { pdfRoutes } from './pdf.js'
+import { parityRoutes } from './parity.js'
+import { provisioningRoutes, completeInitialPassword } from './users/provisioning.js'
 import { dashboardStats } from './dashboard.js'
 import { deletionPreview } from './users/userDeletion.js'
 import { fetchInvites, resendInvite, cancelInvite } from './users/invitesRoutes.js'
@@ -83,6 +87,7 @@ export function registerRoutes(app: FastifyInstance) {
   // Auth routes (unprotected, under /api/v2)
   app.register(
     (instance, _, done) => {
+      instance.register(completeInitialPassword)
       instance.register(login)
       instance.register(logout)
       instance.register(refresh)
@@ -102,37 +107,16 @@ export function registerRoutes(app: FastifyInstance) {
     { prefix: '/api/v2' },
   )
 
-  // Public routes
-  /* app.register(
-    (instance, _, done) => {
-      instance.register(dashboardStats)
-      instance.register(fetchAllSubjects)
-      instance.register(fetchSubject)
-      instance.register(fetchProjectsBySubject)
-      instance.register(fetchProject)
-      instance.register(fetchSectionsByProject)
-      instance.register(fetchSection)
-      instance.register(fetchPagesBySection)
-      instance.register(fetchPage)
-      instance.register(fetchRevisions)
-      instance.register(fetchRevision)
-      instance.register(fetchPageComments)
-      instance.register(fetchProjectComments)
-      instance.register(fetchSectionComments)
-      instance.register(fetchTags)
-      instance.register(fetchPageViews)
-
-      done()
-    },
-    { prefix: '/api/v2' },
-  )
-*/
   // Protected routes
   app.register(
     (instance, _, done) => {
       instance.addHook('preHandler', instance.authenticate)
       instance.addHook('preHandler', guardContentRequest)
 
+      instance.register(imageAuditRoutes)
+      instance.register(pdfRoutes)
+      instance.register(parityRoutes)
+      instance.register(provisioningRoutes)
       instance.register(dashboardStats)
       instance.register(fetchAllSubjects)
       instance.register(fetchSubject)

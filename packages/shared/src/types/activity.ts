@@ -1,7 +1,16 @@
 import type { UserPublic } from './user.js'
 
-export type ActivityType = 'CREATED' | 'UPDATED' | 'DELETED' | 'COMMENTED' | 'REPLIED' | 'RESTORED'
-export type ResourceType = 'PAGE' | 'PROJECT' | 'SECTION' | 'SUBJECT'
+export type ActivityType =
+  | 'LOGIN'
+  | 'ACCOUNT_CREATED'
+  | 'TEMP_PASSWORD_ISSUED'
+  | 'CREATED'
+  | 'UPDATED'
+  | 'DELETED'
+  | 'COMMENTED'
+  | 'REPLIED'
+  | 'RESTORED'
+export type ResourceType = 'AUTH' | 'PAGE' | 'PROJECT' | 'SECTION' | 'SUBJECT'
 
 export interface Activity {
   id: string

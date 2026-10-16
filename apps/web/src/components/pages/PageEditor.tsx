@@ -42,7 +42,7 @@ export function PageEditor({
   const bookmark = useRef<SelectionBookmark | null>(null)
   const prepared = useMemo(() => {
     try {
-      return { value: prepareWikiContent(content), error: '' }
+      return { value: prepareWikiContent(content, true), error: '' }
     } catch {
       return {
         value: '',
@@ -223,13 +223,68 @@ export function PageEditor({
     setLinkOpen(false)
   }
 
+  const [fullscreen, setFullscreen] = useState(false)
   return (
-    <fieldset disabled={blocked} className="min-w-0 overflow-hidden rounded-lg border bg-card">
+    <fieldset
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && fullscreen && !linkOpen) {
+          event.preventDefault()
+          setFullscreen(false)
+        }
+      }}
+      disabled={blocked}
+      className={`min-w-0 overflow-auto rounded-lg border bg-card ${fullscreen ? 'fixed inset-0 z-50 h-dvh' : ''}`}
+    >
       <div
         role="toolbar"
         aria-label="Text formatting"
         className="flex flex-wrap gap-1 border-b p-2"
       >
+        <Button
+          type="button"
+          variant="outline"
+          aria-pressed={fullscreen}
+          onClick={() => setFullscreen(!fullscreen)}
+        >
+          {fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+        </Button>
+        <label>
+          Text color{' '}
+          <input
+            aria-label="Text color"
+            type="color"
+            onChange={(event) => editor?.chain().focus().setColor(event.target.value).run()}
+          />
+        </label>
+        <label>
+          Highlight color{' '}
+          <input
+            aria-label="Highlight color"
+            type="color"
+            onChange={(event) =>
+              editor?.chain().focus().setHighlight({ color: event.target.value }).run()
+            }
+          />
+        </label>
+        {(['left', 'center', 'right', 'justify'] as const).map((align) => (
+          <Button
+            type="button"
+            variant="ghost"
+            key={align}
+            onClick={() => editor?.chain().focus().setTextAlign(align).run()}
+          >
+            Align {align}
+          </Button>
+        ))}
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() =>
+            editor?.chain().focus().unsetColor().unsetHighlight().unsetTextAlign().run()
+          }
+        >
+          Reset text style
+        </Button>
         {controls.map((control) => (
           <Button
             type="button"

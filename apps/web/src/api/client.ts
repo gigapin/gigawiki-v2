@@ -43,7 +43,8 @@ apiClient.interceptors.response.use(
       error.response?.status !== 401 ||
       !originalRequest ||
       originalRequest._retry ||
-      originalRequest.url?.startsWith('/api/v2/auth/login')
+      originalRequest.url?.startsWith('/api/v2/auth/login') ||
+      originalRequest.url?.startsWith('/api/v2/auth/complete-initial-password')
     ) {
       return Promise.reject(error)
     }
