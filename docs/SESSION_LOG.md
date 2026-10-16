@@ -166,6 +166,7 @@ Chi clona il repo su una macchina nuova deve ricreare `init.sh` (o avere Node su
 - Allineato lo stato a `f6be5ca`, già sul remoto e verde nei quattro job CI (run 38570737573). Corrette istruzioni obsolete Settings/Contributing su migrazioni, database di test, logo e servizi Compose; audit originali conservati come storici.
 - Verifica locale: 343 test API ordinari, 218 frontend, lint/typecheck/build superati; sette migrazioni da zero e 20 integrazioni superate su PostgreSQL 16 temporaneo isolato. Nessuna modifica funzionale necessaria sulla base degli esiti automatici.
 - Preparata guida manuale B01–B18 ed E01–E05: prerequisiti, ruoli, fixture, risultati attesi, registro esiti e pulizia. Browser e invii a cura dell'utente, non dichiarati superati. Nessuna scrittura sul database dell'app, variazione della policy o revoca massiva; nessuna email inviata.
+- Pubblicato su `dev` il commit documentale `b6721e9`; CI verificata verde nei quattro job sullo stesso SHA ([run 38873305042](https://github.com/gigapin/gigawiki-v2/actions/runs/38873305042)). Container PostgreSQL temporaneo rimosso. Anche la registrazione di questo esito richiede CI dopo la pubblicazione.
 
 **Aperto:** eseguire collaudi manuali, correggere eventuali difetti con regressioni e ricollaudo, confermare i quattro job sul candidato finale. La V2 non è dichiarata chiusa. Pubblicazione e CI di questo aggiornamento documentale registrate nella checklist.
 

@@ -20,6 +20,8 @@ React Compiler/TanStack Table, bundle oltre 500 kB, Browserslist e `pg`.
 Verifica del 16 ottobre: la [run 38570737573](https://github.com/gigapin/gigawiki-v2/actions/runs/38570737573)
 è verde nei quattro job sul commit `f6be5cac413355159bc02750438b63e265890416`, presente anche sul branch remoto `dev`. Include gli interventi prima descritti come locali. Anche i controlli locali `turbo typecheck lint test build` sono passati (11 task, 6 da cache; test API 343 e frontend 218), insieme ai 20 test PostgreSQL su container temporaneo con sette migrazioni da zero. Le modifiche successive richiedono un nuovo controllo dei quattro job sul proprio SHA; la base verde non le certifica.
 
+Pubblicata anche la guida di collaudo nel commit `b6721e9f249432fd0fb00fe8003c04e387b5b3d6` su `dev`: [run 38873305042](https://github.com/gigapin/gigawiki-v2/actions/runs/38873305042) verificata il 16 ottobre, tutti e quattro i job verdi. Browser e consegna email restano aperti; eventuali commit successivi, inclusa la registrazione degli esiti, richiedono il proprio controllo CI.
+
 Comandi locali dalla root:
 
 ```sh

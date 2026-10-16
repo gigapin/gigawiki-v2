@@ -13,7 +13,7 @@ PDF e revisione grafica restano fuori da questo ciclo.
 - [x] Tutte le sette migrazioni applicate da zero su PostgreSQL 16 temporaneo `gigawiki_test`; suite API 8/8, Settings 3/3 e parità/concorrenza 9/9 superate. Nessuna scrittura sul database dell'app. Container temporaneo rimosso al termine, senza volumi persistenti.
 - [x] Guide Settings e Contributing allineate a database temporaneo, logo e servizi attuali; procedura manuale con casi B01–B18 ed E01–E05 pronta.
 - [ ] Eseguire e registrare tutti i casi browser/email sul candidato finale; correggere e ricollaudare gli eventuali difetti.
-- [ ] Dopo la pubblicazione degli aggiornamenti di questo ciclo, verificare i quattro check sul nuovo SHA. La CI della base non certifica modifiche successive.
+- [x] Guida e aggiornamenti pubblicati su `dev` nel commit `b6721e9f249432fd0fb00fe8003c04e387b5b3d6`; [run 38873305042](https://github.com/gigapin/gigawiki-v2/actions/runs/38873305042) completata con `quality`, `test-api`, `test-web`, `build` tutti verdi sullo stesso SHA. Questo risultato non chiude i collaudi manuali e non certifica commit successivi.
 
 Log locali temporanei: `/tmp/gigawiki-v2-validation-20261016.log` e `/tmp/gigawiki-v2-db-validation-20261016.log`; i risultati sintetici sono conservati qui. Warning non bloccanti: console API, React Compiler/TanStack Table, Browserslist, chunk oltre 500 kB, query concorrenti `pg` e output coverage assente per i task Turbo test.
 
