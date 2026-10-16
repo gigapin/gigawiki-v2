@@ -14,4 +14,4 @@ La CI è attiva su GitHub: [run 38378305259](https://github.com/gigapin/gigawiki
 
 Configurazione applicata e riletta dall’API GitHub il 13 ottobre 2026 dopo conferma dell’utente: zero approvazioni esterne, obbligo di PR e tutti e quattro i check CI, requisiti applicati anche agli Admin. Non sono stati effettuati push, merge, modifiche alla visibilità o aggiunte di collaboratori. I branch di lavoro e i comandi sono descritti in [CONTRIBUTING.md](../CONTRIBUTING.md).
 
-Aggiornamento 14 ottobre 2026: verificata verde anche la [run 38559849609](https://github.com/gigapin/gigawiki-v2/actions/runs/38559849609) sul commit `af7e030`. Le modifiche locali successive richiedono un nuovo controllo CI dopo il push.
+Aggiornamento 16 ottobre 2026: verificata verde la [run 38570737573](https://github.com/gigapin/gigawiki-v2/actions/runs/38570737573) sul commit `f6be5cac413355159bc02750438b63e265890416`, coincidente con `dev` remoto. Tutti e quattro i job superati. Le modifiche successive richiedono un nuovo controllo CI sul relativo SHA dopo il push. Nessuna modifica alle protezioni durante questa verifica.

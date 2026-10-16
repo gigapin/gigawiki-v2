@@ -2,7 +2,7 @@
 
 Le pagine sono disponibili sotto `/settings`: Profile, Password e Appearance per tutti gli account autenticati; Users, Invites e App Settings solo per Admin. I controlli API verificano il ruolo corrente dal database.
 
-## Migrazione da applicare prima di usare il codice aggiornato
+## Stato delle migrazioni
 
 La migrazione è in `apps/api/prisma/migrations/20261011000000_user_auth_version/migration.sql`:
 
@@ -10,19 +10,13 @@ La migrazione è in `apps/api/prisma/migrations/20261011000000_user_auth_version
 ALTER TABLE "users" ADD COLUMN "authVersion" INTEGER NOT NULL DEFAULT 0;
 ```
 
-L'applicazione è lasciata all'utente. Non eseguire reset del database. Dopo la migrazione, Prisma Client deve essere rigenerato e l'API riavviata (il client è già stato generato nella workspace durante l'implementazione).
+La verifica del 14 ottobre 2026 ha confermato tutte le sette migrazioni già applicate al database dell'app, inclusa questa. Non ripetere SQL manuali, reset, seed o revoche massive per il collaudo. Stato operativo in [V2_RELEASE_CHECKLIST.md](V2_RELEASE_CHECKLIST.md).
 
-Per applicare la migrazione con Prisma, dalla root:
+Solo per installazioni con migrazioni pendenti, dopo backup e verifica della destinazione, dalla root:
 
 ```sh
 ./bin/pnpm --filter gigawiki-v2-api exec prisma migrate deploy
 ./bin/pnpm --filter gigawiki-v2-api exec prisma generate
-```
-
-Se invece si esegue il SQL manualmente, registrare successivamente la migrazione come applicata, senza rieseguire il SQL:
-
-```sh
-./bin/pnpm --filter gigawiki-v2-api exec prisma migrate resolve --applied 20261011000000_user_auth_version
 ```
 
 I JWT precedenti non hanno `authVersion`: vengono sostituiti tramite refresh o richiedono login. Il cambio/reset password incrementa la versione e revoca tutti i refresh token, anche in development. Il cambio password richiede quella attuale e termina la sessione corrente.
@@ -33,7 +27,7 @@ I JWT precedenti non hanno `authVersion`: vengono sostituiti tramite refresh o r
 - `GET /api/v2/users`: `page`, `limit` (1–100), `search`, `role`; risposta `{ users, total, page, limit }`.
 - `GET /api/v2/users/:id/deletion-preview`: account, conteggi e `fingerprint`. `DELETE /api/v2/users/:id` richiede `{ fingerprint }`; 409 quando il contenuto è cambiato. Nessuna cancellazione del proprio account o retrocessione dell'ultimo Admin.
 - `GET /api/v2/users/invites`: elenco paginato non accettati, inclusi scaduti, senza token. `POST /api/v2/users/invites/:id/resend` rinnova token/scadenza (sette giorni); `DELETE /api/v2/users/invites/:id` cancella solo inviti non accettati. L'accettazione verifica anche il token corrente per impedire l'uso del vecchio link durante un reinvio.
-- `PUT /api/v2/settings/:key`: `{ value: string }`; validazione di `ALLOW_SELF_REGISTRATION`, `DEFAULT_USER_ROLE` (Guest/Editor) e `SITE_NAME` (1–100 caratteri). Il ruolo riguarda solo nuove autoregistrazioni; il nome si applica a branding UI, titolo browser, template, oggetti e nome mittente email.
+- `PUT /api/v2/settings/:key`: `{ value: string }`; validazione di `ALLOW_SELF_REGISTRATION`, `DEFAULT_USER_ROLE` (Guest/Editor), `SITE_NAME` (1–100 caratteri) e `SITE_LOGO_IMAGE_ID` (immagine esistente o stringa vuota per rimuovere il logo). Il ruolo riguarda solo nuove autoregistrazioni; nome e logo si applicano al branding UI e alle email. `SITE_LOGO_URL` è derivato dal server, non modificabile direttamente.
 
 ## Eliminazione utenti
 
@@ -45,12 +39,12 @@ Subject/Project con pagine o contenitori di altri, oppure commenti/tag altrui ne
 
 ## Verifiche PostgreSQL opzionali
 
-Dopo aver applicato la migrazione, usare il database configurato dell'app come richiesto dall'utente:
+Usare esclusivamente un PostgreSQL temporaneo dedicato chiamato `gigawiki_test`, con `DATABASE_URL` esplicita nella shell. Preparare il database e applicare lì le migrazioni seguendo [DATABASE_TESTS.md](DATABASE_TESTS.md), poi eseguire:
 
 ```sh
 ./bin/pnpm --filter gigawiki-v2-api test:settings:db
 ```
 
-La suite crea solo account/risorse temporanei con identificatori casuali e annulla **tutte** le scritture al termine di ciascun test, anche in caso di errore. Non esegue migrazioni, truncate o pulizia delle tabelle esistenti. Le prove su DB sono disattivate nella suite standard. Il 13 ottobre 2026, dopo la migrazione applicata dall’utente, tutti e tre i test sono superati sul database dell’app. La suite emette un warning non bloccante di `pg` sulle query concorrenti sullo stesso client.
+La suite crea account/risorse temporanei con identificatori casuali e annulla **tutte** le scritture al termine di ciascun test, anche in caso di errore. Non esegue migrazioni, truncate o pulizia delle tabelle esistenti. Le prove su DB sono disattivate nella suite standard. Il rollback non autorizza a usare il database dell'app: la procedura corrente prescrive un database temporaneo isolato per tutte e tre le suite. La suite può emettere un warning non bloccante di `pg` sulle query concorrenti sullo stesso client.
 
-Appearance usa il tema light/dark locale già esistente, condiviso con la Topbar. Nessuna modifica del profilo per il tema; gestione logo esclusa.
+Appearance usa il tema light/dark locale, condiviso con la Topbar, senza modificare il profilo. Il logo si gestisce in App Settings: upload/selezione, rimozione e fallback; gli asset condivisi non vengono cancellati automaticamente.

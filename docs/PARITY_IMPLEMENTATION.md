@@ -2,7 +2,11 @@
 
 Implementazione del piano successivo a [V2_PARITY_AUDIT.md](V2_PARITY_AUDIT.md). Il rapporto originale rimane una fotografia precedente agli interventi. La parità con la V1 non è certificabile finché non è disponibile il codice/inventario originale; import dati/password e PDF restano esclusi, come concordato.
 
-## Aggiornamento operativo — 14 ottobre 2026
+## Aggiornamento operativo — 16 ottobre 2026
+
+La base più recente è `f6be5ca`, già pubblicata su `dev`; CI verde nei quattro job ([run 38570737573](https://github.com/gigapin/gigawiki-v2/actions/runs/38570737573)), verificata il 16 ottobre. Ripetuti con successo 343 test API, 218 frontend e 20 integrazioni su PostgreSQL temporaneo con sette migrazioni da zero; lint/typecheck/build superati. I dettagli operativi del 14 ottobre sotto restano storici. Browser e consegna email ancora aperti: [guida manuale](V2_MANUAL_TESTS.md).
+
+### Operazioni del 14 ottobre 2026
 
 Interventi inclusi nel commit utente `af7e030`, CI verde ([run 38559849609](https://github.com/gigapin/gigawiki-v2/actions/runs/38559849609)). Verificato in sola lettura: il database dell’app ha tutte le sette migrazioni già applicate. Nessuna migrazione dell’app necessaria in questa sessione. Dopo conferma dell’utente, policy attivata nel `.env` locale e sessioni dei quattro account revocate. Backup aggiornato e ripristinato per confronto: contenuti, proprietà e visibilità invariati. Vecchio JWT respinto (401), versione corrente accettata (200), zero refresh token; bozze escluse dalle liste Guest. Per manutenzione, verifiche aggiornate e collaudi aperti vedere [V2_RELEASE_CHECKLIST.md](V2_RELEASE_CHECKLIST.md).
 
@@ -66,7 +70,7 @@ Per storage locale usare `STORAGE_DRIVER=local`; `LOCAL_STORAGE_PATH` relativo �
 
 ## Verifiche
 
-343 test API ordinari, 20 test PostgreSQL (8 integrazioni precedenti + 3 Settings + 9 nuovi casi di policy/concorrenza) e 218 test frontend superati (verifica 14 ottobre). Typecheck, lint e build API/shared/web superati; immagine Docker compilata e smoke test runtime di shared/Prisma/storage locale superato; restano i warning preesistenti bundle >500 kB, React Compiler/TanStack Table e query concorrenti `pg`. CI del commit af7e030 verde; le modifiche locali del 14 ottobre richiedono un nuovo commit/push e controllo dello stesso SHA.
+343 test API ordinari, 20 test PostgreSQL (8 integrazioni precedenti + 3 Settings + 9 nuovi casi di policy/concorrenza) e 218 test frontend superati (verifica 14 ottobre). Typecheck, lint e build API/shared/web superati; immagine Docker compilata e smoke test runtime di shared/Prisma/storage locale superato; restano i warning preesistenti bundle >500 kB, React Compiler/TanStack Table e query concorrenti `pg`. CI della base `f6be5ca` verde, verificata il 16 ottobre (run 38570737573); nuove modifiche richiedono CI sul proprio SHA. Collaudo corrente in [V2_RELEASE_CHECKLIST.md](V2_RELEASE_CHECKLIST.md).
 
 Le suite PostgreSQL della nuova policy effettuano commit/concorrenza e richiedono **esclusivamente un database temporaneo chiamato `gigawiki_test`**; cancellano solo le proprie fixture. Non eseguirle sul database dell’app, né su un database di test condiviso con altri servizi. Le suite precedenti mantengono il rollback.
 

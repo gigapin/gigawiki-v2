@@ -1,9 +1,23 @@
 # Chiusura operativa V2
 
-Aggiornamento: 14 ottobre 2026. F01–F14 implementati; parità V1, import dati/password,
+Aggiornamento: 16 ottobre 2026. F01–F14 implementati; parità V1, import dati/password,
 PDF e revisione grafica restano fuori da questo ciclo.
 
-## Verifiche completate
+**Stato: chiusura ancora aperta.** Collaudo manuale browser e consegna email non ancora eseguiti in questo ciclo. Seguire [V2_MANUAL_TESTS.md](V2_MANUAL_TESTS.md) e registrare ogni caso, inclusi i sottocasi bloccati. Traguardo concordato: versione verificata su `dev`, senza merge in `main` o deployment.
+
+## Verifiche del 16 ottobre 2026
+
+- [x] Base applicativa `f6be5cac413355159bc02750438b63e265890416` su `dev`, identica al branch remoto verificato in lettura. Include le modifiche del 14 ottobre precedentemente descritte come locali.
+- [x] CI della base: [run 38570737573](https://github.com/gigapin/gigawiki-v2/actions/runs/38570737573), `quality`, `test-api`, `test-web`, `build` tutti verdi sul medesimo SHA.
+- [x] `./bin/pnpm turbo typecheck lint test build`: 11 task riusciti (6 da cache), 343 test API ordinari e 218 frontend superati; 20 test DB esclusi dal comando standard, eseguiti separatamente sotto.
+- [x] Tutte le sette migrazioni applicate da zero su PostgreSQL 16 temporaneo `gigawiki_test`; suite API 8/8, Settings 3/3 e parità/concorrenza 9/9 superate. Nessuna scrittura sul database dell'app. Container temporaneo rimosso al termine, senza volumi persistenti.
+- [x] Guide Settings e Contributing allineate a database temporaneo, logo e servizi attuali; procedura manuale con casi B01–B18 ed E01–E05 pronta.
+- [ ] Eseguire e registrare tutti i casi browser/email sul candidato finale; correggere e ricollaudare gli eventuali difetti.
+- [ ] Dopo la pubblicazione degli aggiornamenti di questo ciclo, verificare i quattro check sul nuovo SHA. La CI della base non certifica modifiche successive.
+
+Log locali temporanei: `/tmp/gigawiki-v2-validation-20261016.log` e `/tmp/gigawiki-v2-db-validation-20261016.log`; i risultati sintetici sono conservati qui. Warning non bloccanti: console API, React Compiler/TanStack Table, Browserslist, chunk oltre 500 kB, query concorrenti `pg` e output coverage assente per i task Turbo test.
+
+## Verifiche precedenti — 14 ottobre 2026
 
 - [x] Base: `dev`, commit `af7e030`; interventi post-audit già committati dall'utente.
 - [x] Database app: sette migrazioni già applicate, compresa `20261013000000_activity_subject_storage_driver`; nessuna nuova migrazione necessaria.
@@ -14,7 +28,7 @@ PDF e revisione grafica restano fuori da questo ciclo.
 - [x] Storage locale: lettura dopo nuovo processo e persistenza dopo riavvio del container con volume.
 - [x] MinIO/S3 configurato: upload, lettura e cancellazione di un solo asset temporaneo.
 - [x] SMTP: connessione e autenticazione riuscite; nessun messaggio inviato.
-- [x] CI di `af7e030` verde: [run 38559849609](https://github.com/gigapin/gigawiki-v2/actions/runs/38559849609). Non copre le modifiche locali successive.
+- [x] CI di `af7e030` verde: [run 38559849609](https://github.com/gigapin/gigawiki-v2/actions/runs/38559849609). La verifica della base più recente è riportata sopra.
 
 ## Attivazione permessi — completata il 14 ottobre 2026
 
@@ -39,7 +53,7 @@ configurazione. Non occorre annullare la migrazione già applicata.
 
 Usare Admin, Editor proprietario, altro Editor e Guest. Creare contenuti di prova
 riconoscibili e rimuovere solo quelli al termine. Registrare data, ruolo, esito e
-passi per riprodurre eventuali difetti.
+passi per riprodurre eventuali difetti. Passi dettagliati e registro esiti in [V2_MANUAL_TESTS.md](V2_MANUAL_TESTS.md); non segnare come PASS casi solo documentati o verificati in jsdom.
 
 | Caso | Risultato atteso | Esito |
 | --- | --- | --- |

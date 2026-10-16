@@ -31,6 +31,8 @@ Verifica del 14 ottobre 2026: sette migrazioni applicate da zero su PostgreSQL
 16 temporaneo; tutti i 20 casi superati. Anche i 343 test API ordinari sono passati.
 Nessuna migrazione o fixture scritta nel database dell'app durante queste prove.
 
+Verifica ripetuta il 16 ottobre 2026 sulla base `f6be5ca`: sette migrazioni applicate da zero e tutti i 20 casi superati (8 API, 3 Settings, 9 parità/concorrenza) su un container PostgreSQL 16 temporaneo dedicato, senza volumi persistenti. Il database dell'app non è stato usato.
+
 Redis e accodamento email sono simulati nei test pertinenti; SMTP, storage e
 browser non sono coperti. `pg` segnala query concorrenti sullo stesso client nelle
 suite con rollback. Vedere [CI.md](CI.md) e la

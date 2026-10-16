@@ -14,7 +14,7 @@
 
 ## Stato attuale
 
-**Aggiornato al:** 2026-10-14
+**Aggiornato al:** 2026-10-16
 
 | | |
 |---|---|
@@ -26,9 +26,9 @@
 | Frontend | Login, Register, Verify email, ForgotPassword, ResetPassword, AcceptInvite, Dashboard, Subjects, Project detail, scelta destinazione nuova pagina, reader ed editor Tiptap. Bozza/pubblicazione, breadcrumb, tema light/dark, upload e resize immagini, link, syntax highlighting, autosave, drawer revisioni, menzioni e menu contestuale implementati. Tag/preferiti/commenti su Page/Project/Section, sidebar con Section, ricerca per Project, spostamento Project, toolbar completa e logo implementati; Settings complete (Profile, Password, Appearance, Users, Invites, App Settings) |
 | CI/CD | Workflow task 39 attivo: quality, test-api, test-web e build tutti superati su GitHub |
 
-**Ultimo commit presente:** `af7e030` (`feat: complete user section`), su `dev`, 14 ottobre 2026. Include già gli interventi F01–F14 e i documenti post-audit. Le modifiche della sessione di chiusura sono locali; nessun commit/push dell’assistente. Verificato sul database dell’app: tutte le sette migrazioni sono applicate. Policy attiva nel `.env` locale dopo conferma dell’utente; sessioni dei quattro account revocate. Contenuti/proprietà/visibilità invariati, verificati contro backup ripristinato.
+**Base applicativa verificata:** `f6be5ca` (`feat: permissions set`), su `dev`, coincidente con il branch remoto controllato il 16 ottobre. Include gli interventi F01–F14 e le modifiche della chiusura del 14 ottobre, precedentemente descritte come locali. Le verifiche del database dell'app e l'attivazione della policy del 14 ottobre restano storiche: non sono state ripetute né modificate in questo ciclo.
 
-**Ultime verifiche (14 ottobre):** 343 API ordinari, 20 PostgreSQL su database temporaneo e 218 frontend (29 file); lint/typecheck/build superati. Sette migrazioni verificate da zero sul database temporaneo. Immagine Docker compilata, health/shared/Prisma e storage locale persistente dopo riavvio verificati. Upload/lettura/cancellazione MinIO reali e connessione/autenticazione SMTP riusciti; nessuna email inviata. Audit app: due bozze attive e una pagina eliminata segnalate. Policy attiva: vecchio JWT 401, JWT aggiornato 200, zero refresh token e Guest senza bozze nelle liste API. CI `af7e030` verde, run 38559849609; modifiche locali ancora da pubblicare. Browser e consegna email aperti: [checklist](V2_RELEASE_CHECKLIST.md).
+**Ultime verifiche (16 ottobre):** `./bin/pnpm turbo typecheck lint test build` superato: 11 task, 6 da cache, 343 test API ordinari e 218 frontend (29 file). Sette migrazioni applicate da zero su PostgreSQL 16 temporaneo dedicato `gigawiki_test`; 20 test DB superati (8 API, 3 Settings, 9 parità/concorrenza), nessuna scrittura sul database dell'app. CI base `f6be5ca` verde nei quattro job: [run 38570737573](https://github.com/gigapin/gigawiki-v2/actions/runs/38570737573). Nessun collaudo browser o invio email in questo ciclo; [guida manuale](V2_MANUAL_TESTS.md) pronta. Docker/storage/MinIO/SMTP restano verifiche del 14 ottobre, non ripetute perché l'implementazione non cambia. La V2 resta aperta fino agli esiti manuali e alla CI del candidato finale.
 
 ---
 
@@ -98,7 +98,7 @@ Legenda: ✅ fatto · 🟡 parziale · ⬜ non iniziato
 | 36 | Test backend | ✅ | 343 test ordinari e 20 PostgreSQL superati (8 integrazioni + 3 Settings + 9 policy/concorrenza). Nuovi test con commit su DB temporaneo gigawiki_test; suite precedenti con rollback. |
 | 37 | Test componenti frontend | ✅ | 218 test Vitest Node/jsdom su 29 file; vero Tiptap, toolbar, conflitti/bozze, logo, ricerca e metadati contenitori. Prove browser affidate all’utente. |
 | 38 | Dockerfile per l'API | ✅ | Build shared e packaging pnpm deploy/Prisma; immagine compilata e smoke runtime shared/Prisma/storage locale superato. |
-| 39 | GitHub Actions CI | ✅ | quality, test-api, test-web e build; shared compilato, migrazioni e 20 integrazioni su PostgreSQL temporaneo. CI af7e030 verde; modifiche locali da verificare dopo il push. |
+| 39 | GitHub Actions CI | ✅ | quality, test-api, test-web e build; shared compilato, migrazioni e 20 integrazioni su PostgreSQL temporaneo. CI f6be5ca verde; ogni nuovo candidato richiede CI sul proprio SHA. |
 | 40 | Init repo GitHub | ✅ | CONTRIBUTING e README aggiornati; main/dev mantenuti. Main protetto: PR, quattro check CI, branch aggiornato, conversazioni risolte, niente bypass Admin/force push/eliminazione. Zero review esterne confermate dall’utente, unico collaboratore. Repo pubblico conservato. Vedere REPOSITORY.md |
 
 ---
@@ -124,9 +124,9 @@ Punti in cui il codice si discosta da `GIGAWIKI_V2_TASKS.md`. Vanno **letti prim
 **Implementazione e manutenzione completate.** Esiti e checklist in [V2_RELEASE_CHECKLIST.md](V2_RELEASE_CHECKLIST.md); policy e comandi in [PARITY_IMPLEMENTATION.md](PARITY_IMPLEMENTATION.md).
 
 1. Eseguire nuovo login nel browser e collaudare la policy attiva. Backup ripristinato e confrontato; revoca dei quattro account verificata, zero refresh token. API/web avviati con `./bin/pnpm dev`; nessuna migrazione pendente.
-2. Prove browser a cura dell’utente: accessi, sidebar, spostamento progetto, metadati, editor/conflitti, revisioni e logo/avatar/cover.
-3. Completare consegna email e flussi invito/verifica/reset con casella del proprietario; autenticazione SMTP già verificata senza invii.
-4. Dopo commit/push delle modifiche locali, verificare i quattro check CI sullo stesso SHA. CI af7e030 già verde.
+2. Prove browser a cura dell’utente: seguire B01–B18 nella [guida manuale](V2_MANUAL_TESTS.md), registrare gli esiti e correggere/ricollaudare i difetti funzionali con regressioni mirate.
+3. Il proprietario esegue gli invii e i casi E01–E05 della guida: consegna, invito/verifica/reset, reinvio e token scaduti/usati. Autenticazione SMTP verificata il 14 ottobre senza invii.
+4. Pubblicare gli aggiornamenti del ciclo su `dev` e verificare i quattro check sullo stesso SHA; base `f6be5ca` già verde. Nessun merge in `main` o deployment.
 5. Parità/import/password V1, PDF e revisione grafica restano fuori dal ciclo senza codice/inventario originale.
 
 **Comportamenti da preservare:** dettaglio Subject senza banner grande, icona/titolo a sinistra e azioni a destra; commenti richiusi inizialmente sotto “Comments” con freccia, bozze mantenute alla chiusura; Save draft mantiene l’editor aperto e usa la stessa pagina nei salvataggi successivi, Publish apre il reader. Guest senza cronologia, preferiti personali per account e temporizzazione login disattivata in development come richiesto.
@@ -159,6 +159,15 @@ Chi clona il repo su una macchina nuova deve ricreare `init.sh` (o avere Node su
 ---
 
 ## Log delle sessioni
+
+### 2026-10-16 — Chiusura V2: base verificata e collaudo guidato
+
+- Confermati con l'utente: collaudo manuale guidato e traguardo su `dev`, senza E2E aggiuntivi, merge in `main` o deployment. Import V1/password, PDF e revisione grafica esclusi.
+- Allineato lo stato a `f6be5ca`, già sul remoto e verde nei quattro job CI (run 38570737573). Corrette istruzioni obsolete Settings/Contributing su migrazioni, database di test, logo e servizi Compose; audit originali conservati come storici.
+- Verifica locale: 343 test API ordinari, 218 frontend, lint/typecheck/build superati; sette migrazioni da zero e 20 integrazioni superate su PostgreSQL 16 temporaneo isolato. Nessuna modifica funzionale necessaria sulla base degli esiti automatici.
+- Preparata guida manuale B01–B18 ed E01–E05: prerequisiti, ruoli, fixture, risultati attesi, registro esiti e pulizia. Browser e invii a cura dell'utente, non dichiarati superati. Nessuna scrittura sul database dell'app, variazione della policy o revoca massiva; nessuna email inviata.
+
+**Aperto:** eseguire collaudi manuali, correggere eventuali difetti con regressioni e ricollaudo, confermare i quattro job sul candidato finale. La V2 non è dichiarata chiusa. Pubblicazione e CI di questo aggiornamento documentale registrate nella checklist.
 
 ### 2026-10-14 — Attivazione permessi e revoca sessioni confermate
 
